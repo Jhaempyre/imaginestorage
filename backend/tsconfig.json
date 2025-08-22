@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "ES6",                          // Use modern JavaScript features
+    "module": "commonjs",                     // For Node.js compatibility
+    "rootDir": ".",                           // Your code is in both root (server.ts) and src/
+    "outDir": "dist",                         // Compiled output goes to /dist
+    "strict": true,                           // Enable strict type-checking
+    "esModuleInterop": true,                  // Allow default imports from CommonJS
+    "forceConsistentCasingInFileNames": true, // Avoid case-related import bugs
+    "skipLibCheck": true                      // Skip type checks on libraries for speed
+  },
+  "include": ["src/**/*", "server.ts"],
+  "exclude": ["node_modules", "dist", "public"]
+}
