@@ -1,16 +1,19 @@
 {
-  "compilerOptions": {                          // Use modern JavaScript features
-    "module": "ESNext",       // or "ES2022"
-    "target": "ES2022",                     // For Node.js compatibility
-    "rootDir": ".",                           // Your code is in both root (server.ts) and src/
-    "outDir": "dist",                         // Compiled output goes to /dist
-    "strict": true,                           // Enable strict type-checking
-    "esModuleInterop": true,                  // Allow default imports from CommonJS
-    "forceConsistentCasingInFileNames": true, // Avoid case-related import bugs
-    "skipLibCheck": true,
+  "compilerOptions": {
+    "module": "ES2022",
+    "target": "ES2022",
     "moduleResolution": "node",
-    "resolveJsonModule": true,                      // Skip type checks on libraries for speed
+    "rootDir": ".",
+    "outDir": "dist",
+    "strict": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "sourceMap": true
   },
-  "include": ["src/**/*", "server.ts"],
+  "include": ["src/**/*", "server.ts", "app.ts"],
   "exclude": ["node_modules", "dist", "public"]
 }
