@@ -5,5 +5,6 @@ declare namespace NodeJS {
     MONGODB_URI: string | undefined;
     DB_NAME: string | undefined;
     CORS_ORIGIN: string | undefined;
+    ACCESS_TOKEN_EXPIRY: string;
   }
 }

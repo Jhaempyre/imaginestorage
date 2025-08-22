@@ -9,11 +9,16 @@ export interface IUser extends Document {
   firstName?: string;
   lastName?: string;
   avatar?: string;
-  accessToken?: string;
+  isEmailVerified: boolean;
+  emailVerificationToken?: string;
+  passwordResetToken?: string;
+  passwordResetExpires?: Date;
+  lastLogin?: Date;
+  isActive: boolean;
   refreshToken?: string;
   createdAt: Date;
   updatedAt: Date;
-  comparePassword(candidatePassword: string): Promise<boolean>;
+  comparePassword(candidatePassword: string): boolean;
   generateEmailVerificationToken(): string;
   generatePasswordResetToken(): string;
 }
@@ -56,23 +61,47 @@ const userSchema = new Schema<IUser>({
     type: String,
     default: null
   },
+  isEmailVerified: {
+    type: Boolean,
+    default: false
+  },
+  emailVerificationToken: {
+    type: String,
+    select: false
+  },
+  passwordResetToken: {
+    type: String,
+    select: false
+  },
+  passwordResetExpires: {
+    type: Date,
+    select: false
+  },
+  lastLogin: {
+    type: Date,
+    default: null
+  },
+  isActive: {
+    type: Boolean,
+    default: true
+  },
   refreshToken: {
     type: String,
-    default: null
+    select: false
   }
-},
-  {
-    timestamps: true,
-    //   toJSON: {
-    //     transform: function(doc, ret) {
-    //       delete ret.password;
-    //       delete ret.emailVerificationToken;
-    //       delete ret.passwordResetToken;
-    //       delete ret.passwordResetExpires;
-    //       return ret;
-    //     }
-    //   }
-  }
+}, {
+  timestamps: true,
+  // toJSON: {
+  //   transform: function(doc, ret) {
+  //     delete ret.password;
+  //     delete ret.emailVerificationToken;
+  //     delete ret.passwordResetToken;
+  //     delete ret.passwordResetExpires;
+  //     delete ret.refreshToken;
+  //     return ret;
+  //   }
+  // }
+}
 );
 
 // Index for better query performance
@@ -113,7 +142,6 @@ userSchema.methods.comparePassword = function (candidatePassword: string): boole
 
 // Instance method to generate email verification token
 userSchema.methods.generateEmailVerificationToken = function (): string {
-  const crypto = require('crypto');
   const token = crypto.randomBytes(32).toString('hex');
   this.emailVerificationToken = token;
   return token;
@@ -121,7 +149,6 @@ userSchema.methods.generateEmailVerificationToken = function (): string {
 
 // Instance method to generate password reset token
 userSchema.methods.generatePasswordResetToken = function (): string {
-  const crypto = require('crypto');
   const token = crypto.randomBytes(32).toString('hex');
   this.passwordResetToken = token;
   this.passwordResetExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
