@@ -1,12 +1,26 @@
-import express, { Request, Response } from 'express';
+import dotenv from 'dotenv';
+import mongoose from 'mongoose';
+import { app } from './app';
+import connectDB from './src/db/database';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
-const app = express();
-const PORT = 8000;
 
-app.get('/', (req: Request, res: Response) => {
-  res.send('Hello from Express + TypeScript!');
+// Initialize dotenv
+dotenv.config({
+  path: join(__dirname, '..', '.env'),
 });
 
-app.listen(PORT, () => {
-  console.log(`Server is running at http://localhost:${PORT}`);
-});
+console.log("Bharat mata ki jai");
+console.log("PORT:", process.env.PORT);
+
+// Connecting to MongoDB and starting the server
+connectDB()
+  .then(() => {
+    app.listen(process.env.PORT || 8000, () => {
+      console.log(`Server is running at port ${process.env.PORT || 8000}`);
+    });
+  })
+  .catch((err) => {
+    console.log("MongoDB connection failure!!!", err);
+  });
