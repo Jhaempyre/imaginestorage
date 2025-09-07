@@ -22,3 +22,13 @@ export {
   getUserFiles,
   searchUsers
 } from './user.controller';
+
+// File Management Controllers
+export {
+  uploadFileToCloud,
+  getUserFiles as getFiles,
+  getFileById,
+  getFileDownloadUrl,
+  deleteFile,
+  upload
+} from './file.controller';

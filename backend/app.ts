@@ -1,8 +1,8 @@
-import express, { Application } from 'express';
-import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import apiRoutes from './src/routes/index.js';
+import cors from 'cors';
+import express, { Application } from 'express';
 import { errorHandler, notFoundHandler } from './src/middlewares/index.js';
+import apiRoutes from './src/routes/index.js';
 
 const app: Application = express();
 
@@ -59,7 +59,9 @@ app.get('/', (req, res) => {
       health: '/api/health',
       docs: '/api/docs',
       auth: '/api/auth',
-      users: '/api/users'
+      users: '/api/users',
+      files: '/api/files',
+      storage: '/api/storage'
     }
   });
 });

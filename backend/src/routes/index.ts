@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import authRoutes from './auth.routes';
 import userRoutes from './user.routes';
+import fileRoutes from './file.routes';
+// import storageRoutes from './storage.routes';
 import { ApiResponse } from '../utils/ApiResponse';
 
 const router = Router();
@@ -32,6 +34,8 @@ router.get('/version', (req, res) => {
 // Mount route modules
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
+router.use('/files', fileRoutes);
+// router.use('/storage', storageRoutes);
 
 // API documentation endpoint
 router.get('/docs', (req, res) => {
@@ -58,6 +62,20 @@ router.get('/docs', (req, res) => {
           'GET /api/users/stats': 'Get user statistics',
           'GET /api/users/files': 'Get user files',
           'GET /api/users/search': 'Search users (Admin)'
+        },
+        files: {
+          'POST /api/files/upload': 'Upload file to cloud storage',
+          'GET /api/files': 'Get user files with pagination',
+          'GET /api/files/:id': 'Get file details by ID',
+          'GET /api/files/:id/download': 'Get file download URL',
+          'DELETE /api/files/:id': 'Delete file (soft delete)'
+        },
+        storage: {
+          'GET /api/storage/status': 'Get storage provider status',
+          'GET /api/storage/providers': 'Get available providers',
+          'GET /api/storage/health': 'Test provider health',
+          'POST /api/storage/switch': 'Switch storage provider',
+          'POST /api/storage/initialize': 'Initialize provider with config'
         },
         utility: {
           'GET /api/health': 'Health check',
