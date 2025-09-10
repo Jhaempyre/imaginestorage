@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
@@ -8,6 +8,7 @@ import { User, UserDocument } from '@/schemas/user.schema';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
+  private logger = new Logger(JwtStrategy.name);
   constructor(
     private configService: ConfigService,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
@@ -15,11 +16,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
         ExtractJwt.fromAuthHeaderAsBearerToken(),
-        ExtractJwt.fromExtractors([
-          (request) => {
-            return request?.cookies?.accessToken;
-          },
-        ]),
+        (request) => {
+          console.log({ requestCookies: request?.cookies?.accessToken });
+          return request?.cookies?.accessToken
+        }, // cookie
       ]),
       ignoreExpiration: false,
       secretOrKey: configService.get<string>('ACCESS_TOKEN_SECRET'),
@@ -28,10 +28,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: any): Promise<UserDocument> {
     const { sub: userId } = payload;
-    
+
     const user = await this.userModel.findById(userId).select('-password -refreshToken');
-    
+
     if (!user || !user.isActive || user.deletedAt) {
+      this.logger.debug('User not found or inactive');
       throw new UnauthorizedException('User not found or inactive');
     }
 

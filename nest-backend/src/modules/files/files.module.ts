@@ -48,7 +48,7 @@ import * as fs from 'fs';
           }
         },
         limits: {
-          fileSize: parseInt(configService.get('MAX_FILE_SIZE') || '50') * 1024 * 1024, // Convert MB to bytes
+          fileSize: parseInt(configService.get('MAX_FILE_SIZE') || '500') * 1024 * 1024, // Convert MB to bytes
         },
       }),
       inject: [ConfigService],

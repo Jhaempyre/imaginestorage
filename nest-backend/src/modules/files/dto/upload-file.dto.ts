@@ -1,5 +1,6 @@
-import { IsOptional, IsBoolean, IsObject } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
+import { IsBoolean, IsObject, IsOptional } from 'class-validator';
 
 export class UploadFileDto {
   @ApiPropertyOptional({
@@ -16,5 +17,15 @@ export class UploadFileDto {
   })
   @IsOptional()
   @IsObject()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return {}; // fallback to empty object
+      }
+    }
+    return value;
+  })
   metadata?: Record<string, any>;
 }

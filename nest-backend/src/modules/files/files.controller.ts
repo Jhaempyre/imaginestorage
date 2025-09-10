@@ -1,24 +1,24 @@
-import { 
-  Controller, 
-  Post, 
-  Get, 
-  Delete, 
+import {
+  Controller,
+  Post,
+  Get,
+  Delete,
   Patch,
-  Param, 
-  Body, 
+  Param,
+  Body,
   Query,
-  UseGuards, 
-  UseInterceptors, 
+  UseGuards,
+  UseInterceptors,
   UploadedFile,
   Req,
   HttpCode,
   HttpStatus
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { 
-  ApiTags, 
-  ApiOperation, 
-  ApiResponse, 
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
   ApiBearerAuth,
   ApiConsumes,
   ApiBody,
@@ -34,7 +34,7 @@ import { GetFilesDto } from './dto/get-files.dto';
 @ApiTags('Files')
 @Controller('files')
 export class FilesController {
-  constructor(private readonly filesService: FilesService) {}
+  constructor(private readonly filesService: FilesService) { }
 
   @Post('upload')
   @UseGuards(JwtAuthGuard)
@@ -192,8 +192,12 @@ export class FilesController {
   @ApiParam({ name: 'id', description: 'File ID' })
   @ApiResponse({ status: 200, description: 'Public download URL generated successfully' })
   @ApiResponse({ status: 404, description: 'Public file not found' })
-  async getPublicDownloadUrl(@Param('id') fileId: string) {
-    const result = await this.filesService.getPublicDownloadUrl(fileId);
+  async getPublicDownloadUrl(
+    @Param('id') fileId: string,
+    @Req() request: Request,
+  ) {
+    const userId = request.user['_id'];
+    const result = await this.filesService.getPublicDownloadUrl(userId, fileId);
 
     return {
       success: true,
@@ -208,8 +212,11 @@ export class FilesController {
   @ApiResponse({ status: 200, description: 'Shared download URL generated successfully' })
   @ApiResponse({ status: 404, description: 'Shared file not found' })
   @ApiResponse({ status: 400, description: 'Share link has expired' })
-  async getSharedDownloadUrl(@Param('token') shareToken: string) {
-    const result = await this.filesService.getSharedDownloadUrl(shareToken);
+  async getSharedDownloadUrl(
+    @Req() request: Request,
+    @Param('token') shareToken: string) {
+    const userId = request.user['_id'];
+    const result = await this.filesService.getSharedDownloadUrl(userId, shareToken);
 
     return {
       success: true,

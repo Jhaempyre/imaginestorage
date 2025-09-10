@@ -1,23 +1,26 @@
-import { Injectable, ConflictException, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
-import { ConfigService } from '@nestjs/config';
 import { Model } from 'mongoose';
-import * as bcrypt from 'bcrypt';
+import { NavigationService } from '../../common/services/navigation.service';
+import { UserStorageConfig, UserStorageConfigDocument } from '../../schemas/user-storage-config.schema';
 import { User, UserDocument } from '../../schemas/user.schema';
-import { RegisterDto } from './dto/register.dto';
-import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectModel(UserStorageConfig.name) private storageConfigModel: Model<UserStorageConfigDocument>,
     private jwtService: JwtService,
     private configService: ConfigService,
-  ) {}
+    private navigationService: NavigationService,
+  ) { }
 
-  async register(registerDto: RegisterDto): Promise<{ user: any; tokens: any }> {
+  async register(registerDto: RegisterDto): Promise<{ user: any; tokens: any; navigation: any }> {
     const { email, username, password, firstName, lastName } = registerDto;
 
     // Check if user already exists
@@ -49,7 +52,7 @@ export class AuthService {
 
     // Generate tokens
     const tokens = await this.generateTokens(user._id);
-    
+
     // Save refresh token
     user.refreshToken = tokens.refreshToken;
     await user.save();
@@ -62,22 +65,27 @@ export class AuthService {
     return {
       user: userResponse,
       tokens,
+      navigation: null
     };
   }
 
-  async login(loginDto: LoginDto): Promise<{ user: any; tokens: any }> {
+  async login(loginDto: LoginDto): Promise<{ user: any; tokens: any; navigation: any }> {
     const user = await this.validateUser(loginDto.emailOrUsername, loginDto.password);
-    
+
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    if (!user.isEmailVerified) {
+      throw new UnauthorizedException('Email not verified');
+    }
+
     // Update last login
     user.lastLoginAt = new Date();
-    
+
     // Generate tokens
     const tokens = await this.generateTokens(user._id);
-    
+
     // Save refresh token
     user.refreshToken = tokens.refreshToken;
     await user.save();
@@ -90,6 +98,7 @@ export class AuthService {
     return {
       user: userResponse,
       tokens,
+      navigation: null
     };
   }
 
@@ -113,17 +122,17 @@ export class AuthService {
   async refreshTokens(refreshToken: string): Promise<{ tokens: any }> {
     try {
       const payload = this.jwtService.verify(refreshToken, {
-        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+        secret: this.configService.get<string>('REFRESH_TOKEN_SECRET'),
       });
 
       const user = await this.userModel.findById(payload.sub);
-      
+
       if (!user || !user.isActive || user.deletedAt || user.refreshToken !== refreshToken) {
         throw new UnauthorizedException('Invalid refresh token');
       }
 
       const tokens = await this.generateTokens(user._id);
-      
+
       // Update refresh token
       user.refreshToken = tokens.refreshToken;
       await user.save();
@@ -142,7 +151,7 @@ export class AuthService {
 
   async changePassword(userId: string, changePasswordDto: ChangePasswordDto): Promise<void> {
     const { currentPassword, newPassword } = changePasswordDto;
-    
+
     const user = await this.userModel.findById(userId);
     if (!user) {
       throw new UnauthorizedException('User not found');
@@ -160,7 +169,7 @@ export class AuthService {
     await user.save();
   }
 
-  async verifyEmail(token: string): Promise<void> {
+  async verifyEmail(token: string): Promise<{ user: any; navigation: any }> {
     const user = await this.userModel.findOne({
       emailVerificationToken: token,
       emailVerificationExpiry: { $gt: new Date() },
@@ -174,11 +183,22 @@ export class AuthService {
     user.emailVerificationToken = null;
     user.emailVerificationExpiry = null;
     await user.save();
+
+    // Get navigation after email verification
+    const navigation = this.navigationService.getAuthNavigation('verify-email');
+
+    return {
+      user: {
+        isEmailVerified: true,
+        isOnboardingComplete: user.isOnboardingComplete,
+      },
+      navigation,
+    };
   }
 
   async resendEmailVerification(email: string): Promise<void> {
     const user = await this.userModel.findOne({ email });
-    
+
     if (!user) {
       throw new BadRequestException('User not found');
     }
@@ -196,7 +216,7 @@ export class AuthService {
 
   async forgotPassword(email: string): Promise<void> {
     const user = await this.userModel.findOne({ email });
-    
+
     if (!user) {
       // Don't reveal if email exists
       return;
@@ -228,7 +248,7 @@ export class AuthService {
 
   async getCurrentUser(userId: string): Promise<UserDocument> {
     const user = await this.userModel.findById(userId).select('-password -refreshToken');
-    
+
     if (!user || !user.isActive || user.deletedAt) {
       throw new UnauthorizedException('User not found');
     }
@@ -241,12 +261,12 @@ export class AuthService {
 
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
-        secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
-        expiresIn: this.configService.get<string>('JWT_ACCESS_EXPIRY') || '15m',
+        secret: this.configService.get<string>('ACCESS_TOKEN_SECRET'),
+        expiresIn: this.configService.get<string>('ACCESS_TOKEN_EXPIRY') || '15m',
       }),
       this.jwtService.signAsync(payload, {
-        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-        expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRY') || '7d',
+        secret: this.configService.get<string>('REFRESH_TOKEN_SECRET'),
+        expiresIn: this.configService.get<string>('REFRESH_TOKEN_EXPIRY') || '7d',
       }),
     ]);
 

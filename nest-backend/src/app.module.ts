@@ -7,6 +7,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { FilesModule } from './modules/files/files.module';
 import { StorageModule } from './modules/storage/storage.module';
+import { OnboardingModule } from './modules/onboarding/onboarding.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { StorageModule } from './modules/storage/storage.module';
     UsersModule,
     FilesModule,
     StorageModule,
+    OnboardingModule,
   ],
   controllers: [AppController],
   providers: [AppService],

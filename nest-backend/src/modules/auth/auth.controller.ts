@@ -7,7 +7,8 @@ import {
   Req, 
   Res, 
   HttpCode, 
-  HttpStatus 
+  HttpStatus, 
+  Logger
 } from '@nestjs/common';
 import { 
   ApiTags, 
@@ -23,10 +24,13 @@ import { LocalAuthGuard } from '../../common/guards/local-auth.guard';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
+import { ResendEmailVerificationDto } from './dto/resend-verification-token.dto';
 
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
+  private logger = new Logger(AuthController.name);
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
@@ -57,11 +61,12 @@ export class AuthController {
 
     return {
       success: true,
-      message: 'User registered successfully',
+      message: 'User registered successfully. Please verify your email.',
       data: {
         user: result.user,
         accessToken: result.tokens.accessToken,
       },
+      navigation: result.navigation,
     };
   }
 
@@ -77,6 +82,7 @@ export class AuthController {
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
   ) {
+    this.logger.log({ loginDto });
     const result = await this.authService.login(loginDto);
     
     // Set refresh token in httpOnly cookie
@@ -85,14 +91,16 @@ export class AuthController {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      path: '/',
     });
-
+    
     // Set access token in cookie (optional)
     response.cookie('accessToken', result.tokens.accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 15 * 60 * 1000, // 15 minutes
+      maxAge: 15 * 60 * 1000, // 15 minutes,
+      path: '/',
     });
 
     return {
@@ -102,6 +110,7 @@ export class AuthController {
         user: result.user,
         accessToken: result.tokens.accessToken,
       },
+      navigation: result.navigation,
     };
   }
 
@@ -176,7 +185,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Current user retrieved successfully' })
   async getCurrentUser(@Req() request: Request) {
     const user = await this.authService.getCurrentUser(request.user['_id']);
-    
+    this.logger.log({ user });
     return {
       success: true,
       message: 'Current user retrieved successfully',
@@ -213,12 +222,14 @@ export class AuthController {
   @ApiOperation({ summary: 'Verify email address' })
   @ApiResponse({ status: 200, description: 'Email verified successfully' })
   @ApiResponse({ status: 400, description: 'Invalid or expired verification token' })
-  async verifyEmail(@Body('token') token: string) {
-    await this.authService.verifyEmail(token);
+  async verifyEmail(@Body() dto: VerifyEmailDto) {
+    const result = await this.authService.verifyEmail(dto.token);
     
     return {
       success: true,
       message: 'Email verified successfully',
+      data: result.user,
+      navigation: result.navigation,
     };
   }
 
@@ -226,8 +237,8 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Resend email verification' })
   @ApiResponse({ status: 200, description: 'Verification email sent successfully' })
-  async resendEmailVerification(@Body('email') email: string) {
-    await this.authService.resendEmailVerification(email);
+  async resendEmailVerification(@Body() dto: ResendEmailVerificationDto) {
+    await this.authService.resendEmailVerification(dto.email);
     
     return {
       success: true,

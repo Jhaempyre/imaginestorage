@@ -3,13 +3,13 @@ import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, Head
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import * as fs from 'fs';
 import * as path from 'path';
-import { 
-  IStorageProvider, 
-  UploadParams, 
-  UploadResult, 
-  DownloadUrlParams, 
-  DeleteParams, 
-  StorageConfig 
+import {
+  IStorageProvider,
+  UploadParams,
+  UploadResult,
+  DownloadUrlParams,
+  DeleteParams,
+  StorageConfig
 } from '../interfaces/storage-provider.interface';
 
 export interface AWSConfig extends StorageConfig {
@@ -24,14 +24,14 @@ export interface AWSConfig extends StorageConfig {
 export class AWSStorageProvider implements IStorageProvider {
   readonly name = 'AWS S3';
   readonly type = 'aws' as const;
-  
+
   private s3Client?: S3Client;
   private config?: AWSConfig;
   private isInitialized = false;
 
   async initialize(config: AWSConfig): Promise<void> {
     this.config = config;
-    
+
     this.s3Client = new S3Client({
       region: config.region,
       credentials: {
@@ -61,6 +61,17 @@ export class AWSStorageProvider implements IStorageProvider {
       const fileStream = fs.createReadStream(filePath);
       const fileStats = fs.statSync(filePath);
 
+      console.log({
+        Bucket: this.config!.bucketName,
+        Key: key,
+        ContentType: mimeType,
+        ContentLength: fileStats.size,
+        Metadata: {
+          userId,
+          originalName: path.basename(filePath),
+          uploadedAt: new Date().toISOString()
+        }
+      })
       const uploadCommand = new PutObjectCommand({
         Bucket: this.config!.bucketName,
         Key: key,
@@ -77,7 +88,7 @@ export class AWSStorageProvider implements IStorageProvider {
       await this.s3Client!.send(uploadCommand);
 
       const storageLocation = `s3://${this.config!.bucketName}/${key}`;
-      
+
       return {
         storageLocation,
         fileName: key,
@@ -132,11 +143,11 @@ export class AWSStorageProvider implements IStorageProvider {
   }
 
   isConfigured(): boolean {
-    return this.isInitialized && 
-           !!this.s3Client && 
-           !!this.config?.bucketName &&
-           !!this.config?.accessKeyId &&
-           !!this.config?.secretAccessKey;
+    return this.isInitialized &&
+      !!this.s3Client &&
+      !!this.config?.bucketName &&
+      !!this.config?.accessKeyId &&
+      !!this.config?.secretAccessKey;
   }
 
   getProviderInfo() {
@@ -164,8 +175,8 @@ export class AWSStorageProvider implements IStorageProvider {
     }
 
     try {
-      await this.s3Client!.send(new HeadBucketCommand({ 
-        Bucket: this.config!.bucketName 
+      await this.s3Client!.send(new HeadBucketCommand({
+        Bucket: this.config!.bucketName
       }));
       return true;
     } catch (error) {

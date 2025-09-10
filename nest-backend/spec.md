@@ -429,9 +429,9 @@ export class File {
 ```typescript
 JwtModule.registerAsync({
   useFactory: (configService: ConfigService) => ({
-    secret: configService.get<string>('JWT_ACCESS_SECRET'),
+    secret: configService.get<string>('ACCESS_TOKEN_SECRET'),
     signOptions: {
-      expiresIn: configService.get<string>('JWT_ACCESS_EXPIRY') || '15m',
+      expiresIn: configService.get<string>('ACCESS_TOKEN_EXPIRY') || '15m',
     },
   }),
 })
@@ -458,7 +458,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
           (request) => request?.cookies?.accessToken,
         ]),
       ]),
-      secretOrKey: configService.get<string>('JWT_ACCESS_SECRET'),
+      secretOrKey: configService.get<string>('ACCESS_TOKEN_SECRET'),
     });
   }
 }
@@ -600,10 +600,10 @@ CORS_ORIGIN=http://localhost:3000
 MONGODB_URI=mongodb://localhost:27017/imaginary-storage
 
 # JWT Configuration
-JWT_ACCESS_SECRET=your_super_secret_access_token
-JWT_REFRESH_SECRET=your_super_secret_refresh_token
-JWT_ACCESS_EXPIRY=15m
-JWT_REFRESH_EXPIRY=7d
+ACCESS_TOKEN_SECRET=your_super_secret_access_token
+REFRESH_TOKEN_SECRET=your_super_secret_refresh_token
+ACCESS_TOKEN_EXPIRY=15m
+REFRESH_TOKEN_EXPIRY=7d
 
 # File Upload Configuration
 MAX_FILE_SIZE=50MB
@@ -776,8 +776,8 @@ NODE_ENV=production
 PORT=3000
 
 # Secure JWT secrets (use strong random strings)
-JWT_ACCESS_SECRET=<strong-random-secret>
-JWT_REFRESH_SECRET=<different-strong-random-secret>
+ACCESS_TOKEN_SECRET=<strong-random-secret>
+REFRESH_TOKEN_SECRET=<different-strong-random-secret>
 
 # Production MongoDB URI
 MONGODB_URI=mongodb://username:password@host:port/database

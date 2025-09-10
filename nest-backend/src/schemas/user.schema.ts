@@ -52,6 +52,13 @@ export class User {
   @Prop({ default: null })
   lastLoginAt: Date;
 
+  // New onboarding fields
+  @Prop({ default: false })
+  isOnboardingComplete: boolean;
+
+  @Prop({ default: null })
+  onboardingCompletedAt: Date;
+
   @Prop({ default: null })
   deletedAt: Date;
 

@@ -1,95 +1,91 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { UserStorageConfig, UserStorageConfigDocument } from '@/schemas/user-storage-config.schema';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { DeleteParams, DownloadUrlParams, IStorageProvider, UploadParams, UploadResult } from './interfaces/storage-provider.interface';
 import { AWSStorageProvider } from './providers/aws-storage.provider';
-import { IStorageProvider, UploadParams, UploadResult, DownloadUrlParams, DeleteParams } from './interfaces/storage-provider.interface';
 
 export type SupportedProviders = 'aws' | 'gcp' | 'azure' | 'local';
 
 @Injectable()
-export class StorageService implements OnModuleInit {
+export class StorageService {
   private providers: Map<SupportedProviders, IStorageProvider> = new Map();
-  private activeProvider?: IStorageProvider;
+  // private activeProvider?: IStorageProvider;
 
   constructor(
     private configService: ConfigService,
     private awsProvider: AWSStorageProvider,
+    @InjectModel(UserStorageConfig.name) private userStorageConfigModel: Model<UserStorageConfigDocument>,
   ) {
     this.registerProvider('aws', this.awsProvider);
   }
 
   async onModuleInit() {
-    await this.initializeFromEnv();
+    // await this.initializeFromEnv();
   }
 
   registerProvider(type: SupportedProviders, provider: IStorageProvider): void {
     this.providers.set(type, provider);
   }
 
-  async initializeProvider(type: SupportedProviders, config: any): Promise<void> {
-    const provider = this.providers.get(type);
-    if (!provider) {
-      throw new Error(`Storage provider '${type}' not found`);
+  /**
+   * 
+   * @param userId 
+   * @returns provider info with credentials for internal use only
+   */
+  private async _getActiveProviderForUser(userId: string): Promise<IStorageProvider> {
+    const userConfig = await this.userStorageConfigModel.findOne({ userId, isActive: true }).select('provider credentials');
+
+    if (!userConfig) {
+      throw new Error('No active storage config found for user');
     }
 
-    await provider.initialize(config);
-    this.activeProvider = provider;
-  }
+    const provider = this.providers.get(userConfig.provider);
+    await provider.initialize(userConfig.credentials);
 
-  async switchProvider(type: SupportedProviders, config?: any): Promise<void> {
-    const provider = this.providers.get(type);
-    if (!provider) {
-      throw new Error(`Storage provider '${type}' not found`);
-    }
-
-    if (config) {
-      await provider.initialize(config);
-    }
-
+    // Check if provider is configured
     if (!provider.isConfigured()) {
-      throw new Error(`Provider '${type}' is not properly configured`);
+      throw new Error('Storage provider is not configured');
     }
-
-    this.activeProvider = provider;
+    return provider;
   }
 
-  getActiveProvider(): IStorageProvider {
-    if (!this.activeProvider) {
-      throw new Error('No storage provider is active. Please initialize a provider first.');
-    }
-    return this.activeProvider;
+  async getUserStorageConfig(userId: string) {
+    return this.userStorageConfigModel.findOne({ userId, isActive: true }).select('provider isValidated lastValidatedAt validationError isActive createdAt');
   }
 
-  getAvailableProviders(): Array<{ type: SupportedProviders; info: any }> {
-    return Array.from(this.providers.entries()).map(([type, provider]) => ({
-      type,
-      info: provider.getProviderInfo()
-    }));
-  }
+  // async getActiveProviderForUser(userId: string) {
+  //   const userConfig = await this.userStorageConfigModel.findOne({ userId, isActive: true }).select('provider');
+  //   const provider = this.providers.get(userConfig.provider);
+  //   await provider.initialize(userConfig.credentials);
+  //   return provider;
+  // }
 
-  async uploadFile(params: UploadParams): Promise<UploadResult & { provider: string }> {
-    const provider = this.getActiveProvider();
+  async uploadFile(userId: string, params: UploadParams): Promise<UploadResult & { provider: string }> {
+    const provider = await this._getActiveProviderForUser(userId);
     const result = await provider.uploadFile(params);
-    
+
     return {
       ...result,
-      provider: provider.name
+      provider: provider.type,
     };
   }
 
-  async getDownloadUrl(params: DownloadUrlParams): Promise<string> {
-    const provider = this.getActiveProvider();
+  async getDownloadUrl(userId: string, params: DownloadUrlParams): Promise<string> {
+    const provider = await this._getActiveProviderForUser(userId);
     return provider.getDownloadUrl(params);
   }
 
-  async deleteFile(params: DeleteParams): Promise<void> {
-    const provider = this.getActiveProvider();
+  async deleteFile(userId: string, params: DeleteParams): Promise<void> {
+    const provider = await this._getActiveProviderForUser(userId);
     return provider.deleteFile(params);
   }
 
-  async healthCheck(): Promise<{ provider: string; healthy: boolean }> {
-    const provider = this.getActiveProvider();
+  async healthCheck(userId: string): Promise<{ provider: string; healthy: boolean }> {
+    const provider = await this._getActiveProviderForUser(userId);
     const healthy = await provider.healthCheck();
-    
+
     return {
       provider: provider.name,
       healthy
@@ -98,7 +94,7 @@ export class StorageService implements OnModuleInit {
 
   async healthCheckAll(): Promise<Array<{ type: SupportedProviders; provider: string; healthy: boolean }>> {
     const results = [];
-    
+
     for (const [type, provider] of this.providers.entries()) {
       if (provider.isConfigured()) {
         const healthy = await provider.healthCheck();
@@ -109,54 +105,7 @@ export class StorageService implements OnModuleInit {
         });
       }
     }
-    
+
     return results;
-  }
-
-  getProviderStats(): {
-    active: string;
-    available: number;
-    configured: number;
-    providers: Array<{ type: SupportedProviders; name: string; configured: boolean }>;
-  } {
-    const providers = Array.from(this.providers.entries()).map(([type, provider]) => ({
-      type,
-      name: provider.name,
-      configured: provider.isConfigured()
-    }));
-
-    return {
-      active: this.activeProvider?.name || 'None',
-      available: this.providers.size,
-      configured: providers.filter(p => p.configured).length,
-      providers
-    };
-  }
-
-  private async initializeFromEnv(): Promise<void> {
-    try {
-      // AWS Configuration
-      if (this.configService.get('AWS_ACCESS_KEY_ID') && 
-          this.configService.get('AWS_SECRET_ACCESS_KEY') && 
-          this.configService.get('AWS_S3_BUCKET')) {
-        
-        const awsConfig = {
-          accessKeyId: this.configService.get('AWS_ACCESS_KEY_ID'),
-          secretAccessKey: this.configService.get('AWS_SECRET_ACCESS_KEY'),
-          region: this.configService.get('AWS_REGION') || 'us-east-1',
-          bucketName: this.configService.get('AWS_S3_BUCKET'),
-        };
-
-        await this.initializeProvider('aws', awsConfig);
-        console.log('✅ AWS Storage provider initialized successfully');
-      } else {
-        console.warn('⚠️  AWS credentials not found, storage provider not initialized');
-      }
-    } catch (error) {
-      console.error('❌ Storage initialization failed:', error);
-      if (process.env.NODE_ENV === 'production') {
-        throw error;
-      }
-    }
   }
 }

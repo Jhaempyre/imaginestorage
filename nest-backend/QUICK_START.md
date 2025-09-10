@@ -24,8 +24,8 @@ nano .env
 ```env
 PORT=3000
 MONGODB_URI=mongodb://localhost:27017/imaginary-storage
-JWT_ACCESS_SECRET=your_super_secret_access_token_here
-JWT_REFRESH_SECRET=your_super_secret_refresh_token_here
+ACCESS_TOKEN_SECRET=your_super_secret_access_token_here
+REFRESH_TOKEN_SECRET=your_super_secret_refresh_token_here
 
 # Optional AWS (for file storage)
 AWS_ACCESS_KEY_ID=your_aws_key

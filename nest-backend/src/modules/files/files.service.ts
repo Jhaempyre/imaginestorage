@@ -15,7 +15,7 @@ export class FilesService {
   constructor(
     @InjectModel(File.name) private fileModel: Model<FileDocument>,
     private storageService: StorageService,
-  ) {}
+  ) { }
 
   async uploadFile(
     file: Express.Multer.File,
@@ -32,15 +32,30 @@ export class FilesService {
     const mimeType = file.mimetype;
     const fileExtension = path.extname(originalName).toLowerCase();
 
+    console.log({
+      tempFilePath,
+      originalName,
+      fileSize,
+      mimeType,
+      fileExtension,
+      fileExists: fs.existsSync(tempFilePath),
+      ...uploadFileDto,
+    })
+
+    // validate files locaiton:
+    if (!fs.existsSync(tempFilePath)) {
+      throw new BadRequestException('File not found');
+    }
+
     try {
       // Generate unique filename for cloud storage
       const uniqueFileName = this.generateUniqueFileName(userId, originalName);
 
       // Upload to cloud storage
-      const uploadResult = await this.storageService.uploadFile({
+      const uploadResult = await this.storageService.uploadFile(userId, {
         filePath: tempFilePath,
         fileName: uniqueFileName,
-        userId,
+        userId: String(userId),
         mimeType,
         fileSize,
       });
@@ -53,11 +68,11 @@ export class FilesService {
         fileSize,
         mimeType,
         fileExtension,
-        storageProvider: this.storageService.getActiveProvider().type,
+        storageProvider: uploadResult.provider,
         storageLocation: uploadResult.storageLocation,
         isPublic: uploadFileDto.isPublic || false,
         metadata: {
-          ...uploadFileDto.metadata,
+          ...uploadFileDto?.metadata,
           uploadedAt: new Date(),
           provider: uploadResult.provider,
         },
@@ -178,7 +193,7 @@ export class FilesService {
     const file = await this.getFileById(fileId, userId);
 
     try {
-      const downloadUrl = await this.storageService.getDownloadUrl({
+      const downloadUrl = await this.storageService.getDownloadUrl(userId, {
         fileName: file.fileName,
         expiresIn: 3600, // 1 hour
         userId,
@@ -194,11 +209,11 @@ export class FilesService {
     }
   }
 
-  async getPublicDownloadUrl(fileId: string): Promise<{ downloadUrl: string; fileName: string; expiresIn: number }> {
+  async getPublicDownloadUrl(userId: string, fileId: string): Promise<{ downloadUrl: string; fileName: string; expiresIn: number }> {
     const file = await this.getPublicFile(fileId);
 
     try {
-      const downloadUrl = await this.storageService.getDownloadUrl({
+      const downloadUrl = await this.storageService.getDownloadUrl(userId, {
         fileName: file.fileName,
         expiresIn: 3600, // 1 hour
         userId: file.userId.toString(),
@@ -214,11 +229,11 @@ export class FilesService {
     }
   }
 
-  async getSharedDownloadUrl(shareToken: string): Promise<{ downloadUrl: string; fileName: string; expiresIn: number }> {
+  async getSharedDownloadUrl(userId: string, shareToken: string): Promise<{ downloadUrl: string; fileName: string; expiresIn: number }> {
     const file = await this.getSharedFile(shareToken);
 
     try {
-      const downloadUrl = await this.storageService.getDownloadUrl({
+      const downloadUrl = await this.storageService.getDownloadUrl(userId, {
         fileName: file.fileName,
         expiresIn: 3600, // 1 hour
         userId: file.userId.toString(),
@@ -271,7 +286,7 @@ export class FilesService {
     const file = await this.getFileById(fileId, userId);
 
     file.isPublic = isPublic;
-    
+
     // Clear share token if making private
     if (!isPublic) {
       file.shareToken = null;

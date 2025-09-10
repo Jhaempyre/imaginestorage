@@ -8,6 +8,8 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { LocalStrategy } from './strategies/local.strategy';
 import { User, UserSchema } from '../../schemas/user.schema';
+import { UserStorageConfig, UserStorageConfigSchema } from '../../schemas/user-storage-config.schema';
+import { NavigationService } from '../../common/services/navigation.service';
 
 @Module({
   imports: [
@@ -21,10 +23,13 @@ import { User, UserSchema } from '../../schemas/user.schema';
       }),
       inject: [ConfigService],
     }),
-    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+    MongooseModule.forFeature([
+      { name: User.name, schema: UserSchema },
+      { name: UserStorageConfig.name, schema: UserStorageConfigSchema },
+    ]),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, LocalStrategy],
+  providers: [AuthService, JwtStrategy, LocalStrategy, NavigationService],
   exports: [AuthService],
 })
 export class AuthModule {}
