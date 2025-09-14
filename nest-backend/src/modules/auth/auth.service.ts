@@ -20,7 +20,7 @@ export class AuthService {
     private navigationService: NavigationService,
   ) { }
 
-  async register(registerDto: RegisterDto): Promise<{ user: any; tokens: any; navigation: any }> {
+  async register(registerDto: RegisterDto): Promise<{ user: any; navigation: any }> {
     const { email, username, password, firstName, lastName } = registerDto;
 
     // Check if user already exists
@@ -51,10 +51,10 @@ export class AuthService {
     await user.save();
 
     // Generate tokens
-    const tokens = await this.generateTokens(user._id);
+    // const tokens = await this.generateTokens(user._id);
 
     // Save refresh token
-    user.refreshToken = tokens.refreshToken;
+    // user.refreshToken = tokens.refreshToken;
     await user.save();
 
     // Remove sensitive data
@@ -64,7 +64,7 @@ export class AuthService {
 
     return {
       user: userResponse,
-      tokens,
+      // tokens,
       navigation: null
     };
   }

@@ -1,21 +1,21 @@
-import { 
-  Controller, 
-  Post, 
-  Body, 
-  UseGuards, 
-  Get, 
-  Req, 
-  Res, 
-  HttpCode, 
-  HttpStatus, 
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  Get,
+  Req,
+  Res,
+  HttpCode,
+  HttpStatus,
   Logger
 } from '@nestjs/common';
-import { 
-  ApiTags, 
-  ApiOperation, 
-  ApiResponse, 
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
   ApiBearerAuth,
-  ApiBody 
+  ApiBody
 } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
@@ -31,7 +31,7 @@ import { ResendEmailVerificationDto } from './dto/resend-verification-token.dto'
 @Controller('auth')
 export class AuthController {
   private logger = new Logger(AuthController.name);
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
 
   @Post('register')
   @ApiOperation({ summary: 'Register a new user' })
@@ -42,29 +42,29 @@ export class AuthController {
     @Res({ passthrough: true }) response: Response,
   ) {
     const result = await this.authService.register(registerDto);
-    
+
     // Set refresh token in httpOnly cookie
-    response.cookie('refreshToken', result.tokens.refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
+    // response.cookie('refreshToken', result.tokens.refreshToken, {
+    //   httpOnly: true,
+    //   secure: process.env.NODE_ENV === 'production',
+    //   sameSite: 'strict',
+    //   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    // });
 
     // Set access token in cookie (optional)
-    response.cookie('accessToken', result.tokens.accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 15 * 60 * 1000, // 15 minutes
-    });
+    // response.cookie('accessToken', result.tokens.accessToken, {
+    //   httpOnly: true,
+    //   secure: process.env.NODE_ENV === 'production',
+    //   sameSite: 'strict',
+    //   maxAge: 15 * 60 * 1000, // 15 minutes
+    // });
 
     return {
       success: true,
       message: 'User registered successfully. Please verify your email.',
       data: {
         user: result.user,
-        accessToken: result.tokens.accessToken,
+        // accessToken: result.tokens.accessToken,
       },
       navigation: result.navigation,
     };
@@ -84,7 +84,7 @@ export class AuthController {
   ) {
     this.logger.log({ loginDto });
     const result = await this.authService.login(loginDto);
-    
+
     // Set refresh token in httpOnly cookie
     response.cookie('refreshToken', result.tokens.refreshToken, {
       httpOnly: true,
@@ -93,7 +93,7 @@ export class AuthController {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       path: '/',
     });
-    
+
     // Set access token in cookie (optional)
     response.cookie('accessToken', result.tokens.accessToken, {
       httpOnly: true,
@@ -124,13 +124,13 @@ export class AuthController {
     @Res({ passthrough: true }) response: Response,
   ) {
     const refreshToken = request.cookies?.refreshToken;
-    
+
     if (!refreshToken) {
       throw new Error('Refresh token not found');
     }
 
     const result = await this.authService.refreshTokens(refreshToken);
-    
+
     // Set new refresh token in httpOnly cookie
     response.cookie('refreshToken', result.tokens.refreshToken, {
       httpOnly: true,
@@ -167,7 +167,7 @@ export class AuthController {
     @Res({ passthrough: true }) response: Response,
   ) {
     await this.authService.logout(request.user['_id']);
-    
+
     // Clear cookies
     response.clearCookie('refreshToken');
     response.clearCookie('accessToken');
@@ -206,7 +206,7 @@ export class AuthController {
     @Res({ passthrough: true }) response: Response,
   ) {
     await this.authService.changePassword(request.user['_id'], changePasswordDto);
-    
+
     // Clear cookies to force re-login
     response.clearCookie('refreshToken');
     response.clearCookie('accessToken');
@@ -224,7 +224,7 @@ export class AuthController {
   @ApiResponse({ status: 400, description: 'Invalid or expired verification token' })
   async verifyEmail(@Body() dto: VerifyEmailDto) {
     const result = await this.authService.verifyEmail(dto.token);
-    
+
     return {
       success: true,
       message: 'Email verified successfully',
@@ -239,7 +239,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Verification email sent successfully' })
   async resendEmailVerification(@Body() dto: ResendEmailVerificationDto) {
     await this.authService.resendEmailVerification(dto.email);
-    
+
     return {
       success: true,
       message: 'Verification email sent successfully',
@@ -252,7 +252,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Password reset email sent if email exists' })
   async forgotPassword(@Body('email') email: string) {
     await this.authService.forgotPassword(email);
-    
+
     return {
       success: true,
       message: 'If the email exists, a password reset link has been sent',
@@ -269,7 +269,7 @@ export class AuthController {
     @Body('newPassword') newPassword: string,
   ) {
     await this.authService.resetPassword(token, newPassword);
-    
+
     return {
       success: true,
       message: 'Password reset successfully',
