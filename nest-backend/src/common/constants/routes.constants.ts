@@ -6,11 +6,11 @@
 export const FRONTEND_ROUTES = {
   // Authentication Routes
   AUTH: {
-    LOGIN: '/login',
-    REGISTER: '/register',
-    VERIFY_EMAIL: '/verify-email',
-    FORGOT_PASSWORD: '/forgot-password',
-    RESET_PASSWORD: '/reset-password',
+    LOGIN: '/auth/login',
+    REGISTER: '/auth/register',
+    VERIFY_EMAIL: '/auth/verify-email',
+    FORGOT_PASSWORD: '/auth/forgot-password',
+    RESET_PASSWORD: '/auth/reset-password',
   },
 
   // Onboarding Routes

@@ -1,6 +1,7 @@
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
+import { useNavigate } from "react-router-dom"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
@@ -62,11 +63,13 @@ export function RegisterForm({
   onSwitchToLogin,
   ...props
 }: RegisterFormProps) {
+  const navigate = useNavigate()
   const {
     register,
     handleSubmit,
     formState: { errors },
     setError,
+    getValues,
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
   })
@@ -74,6 +77,12 @@ export function RegisterForm({
   const registerMutation = useRegister({
     onSuccess: (data) => {
       console.log("Registration successful:", data)
+      // Navigate to email verification status page with email in state
+      const email = getValues("email")
+      navigate(`/auth/verify-email/e/${email}`, { 
+        viewTransition: true,
+        replace: true 
+      })
       onSuccess?.()
     },
     onError: (error) => {

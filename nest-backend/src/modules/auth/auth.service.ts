@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, HttpStatus, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
@@ -11,9 +11,12 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { AppException } from '@/common/dto/app-exception';
 import { ERROR_CODES } from '@/common/constants/error-code.constansts';
+import { FRONTEND_ROUTES, NAVIGATION_TYPES } from '@/common/constants/routes.constants';
+import { NavigationControl } from '@/common/interfaces/navigation.interface';
 
 @Injectable()
 export class AuthService {
+  private logger: Logger = new Logger(AuthService.name);
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(UserStorageConfig.name) private storageConfigModel: Model<UserStorageConfigDocument>,
@@ -95,6 +98,11 @@ export class AuthService {
         code: ERROR_CODES.EMAIL_NOT_VERIFIED,
         message: 'Auth.login.emailNotVerified',
         userMessage: 'Email not verified',
+        navigation: {
+          route: `${FRONTEND_ROUTES.AUTH.VERIFY_EMAIL}/e/${user.email}`,
+          type: 'replace',
+          reason: 'email_verification_required'
+        },
       });
     }
 
@@ -112,7 +120,7 @@ export class AuthService {
     return {
       user: userResponse,
       tokens,
-      navigation: this.navigationService.getAuthNavigation('login')
+      navigation: this.navigationService.getAuthNavigation('login', user)
     };
   }
 
@@ -182,6 +190,55 @@ export class AuthService {
     await user.save();
   }
 
+  async getEmailVerificationStatus(email: string): Promise<{
+    isEmailVerified: boolean;
+    isTokenExpired: boolean,
+    expirationTime: string;
+    resendCooldown: number;
+    navigation: NavigationControl | null;
+  }> {
+    let user = await this.userModel.findOne({ email }).select('+isEmailVerified');
+    if (!user) {
+      throw new AppException({
+        statusCode: HttpStatus.NOT_FOUND,
+        code: ERROR_CODES.NOT_FOUND,
+        message: 'Auth.getEmailVerificationStatus.userNotFound',
+        userMessage: 'User not found',
+      });
+    }
+
+    if (user.isEmailVerified) {
+      return {
+        isEmailVerified: true,
+        isTokenExpired: false,
+        expirationTime: process.env.EMAIL_VERIFICATION_EXPIRY || '24h',
+        resendCooldown: 0,
+        navigation: null
+      };
+    }
+
+    if (!user.isEmailVerified && user.emailVerificationExpiry < new Date()) {
+      await this.resendEmailVerification(email);
+    }
+
+    user = await this.userModel.findOne({ email }).select('+isEmailVerified');
+
+    const tokenCreationTime = user.emailVerificationExpiry.getTime() - 24 * 60 * 60 * 1000;
+    const cooldownTimeMs = Math.max(tokenCreationTime - Date.now() + 60000, 0);
+    const cooldownTime = Math.floor(cooldownTimeMs / 1000);
+
+    return {
+      isEmailVerified: user.isEmailVerified,
+      isTokenExpired: user.emailVerificationExpiry < new Date(),
+      expirationTime: process.env.EMAIL_VERIFICATION_EXPIRY || '24h',
+      resendCooldown: cooldownTime,
+      navigation: user.isEmailVerified ? {
+        route: this.navigationService.getAuthNavigation('verify-email').route,
+        type: NAVIGATION_TYPES.PUSH
+      } : null
+    };
+  }
+
   async verifyEmail(token: string): Promise<{ user: any; navigation: any }> {
     const user = await this.userModel.findOne({
       emailVerificationToken: token,
@@ -223,8 +280,10 @@ export class AuthService {
     user.generateEmailVerificationToken();
     await user.save();
 
+
     // TODO: Send email verification email
     // await this.emailService.sendVerificationEmail(user.email, user.emailVerificationToken);
+    this.logger.debug(`Mock email sent to ${user.email}, token: ${user.emailVerificationToken}`);
   }
 
   async forgotPassword(email: string): Promise<void> {
@@ -259,14 +318,17 @@ export class AuthService {
     await user.save();
   }
 
-  async getCurrentUser(userId: string): Promise<UserDocument> {
+  async getCurrentUser(userId: string): Promise<{ user: UserDocument, navigation: NavigationControl }> {
     const user = await this.userModel.findById(userId).select('-password -refreshToken');
 
     if (!user || !user.isActive || user.deletedAt) {
       throw new UnauthorizedException('User not found');
     }
 
-    return user;
+    return {
+      user: user,
+      navigation: this.navigationService.getAuthNavigation('login', user)
+    };
   }
 
   private async generateTokens(userId: string): Promise<{ accessToken: string; refreshToken: string }> {

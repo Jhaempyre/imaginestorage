@@ -52,8 +52,8 @@ export function useErrorHandler() {
  */
 export function useApiErrorHandler() {
   return {
-    handleError: (apiName: string, error: any) => {
-      ErrorHandler.handleApiError(apiName, error);
+    handleError: (_apiName: string, error: any) => {
+      ErrorHandler.handle(error);
     }
   };
 }

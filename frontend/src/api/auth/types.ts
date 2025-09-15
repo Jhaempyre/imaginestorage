@@ -17,6 +17,10 @@ export interface ChangePasswordDto {
   newPassword: string;
 }
 
+export interface GetVerificationStatusDto {
+  email: string;
+}
+
 export interface VerifyEmailDto {
   token: string;
 }
@@ -93,4 +97,16 @@ export interface VerifyEmailResponse {
   message: string;
   data: User;
   navigation?: Navigation;
+}
+
+export interface GetVerificationStatusResponse {
+  success: boolean;
+  message: string;
+  data: {
+    isEmailVerified: boolean;
+    isTokenExpired: boolean;
+    expirationTime: string;
+    navigation: Navigation;
+    resendCooldown: number;
+  };
 }

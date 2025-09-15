@@ -1,6 +1,6 @@
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
 import { authApi } from './api';
-import { type CurrentUserResponse } from './types';
+import { type CurrentUserResponse, type GetVerificationStatusDto, type GetVerificationStatusResponse } from './types';
 
 // Query keys
 export const authKeys = {
@@ -38,4 +38,13 @@ export const useIsAuthenticated = () => {
     isLoading,
     user: data?.data?.user,
   };
+};
+
+export const useGetEmailVerificationStatus = (data: GetVerificationStatusDto, options?: Omit<UseQueryOptions<GetVerificationStatusResponse, Error>, 'queryKey' | 'queryFn'>) => {
+  return useQuery({
+    queryKey: [...authKeys.all, 'emailVerificationStatus', data.email],
+    queryFn: () => authApi.getEmailVerificationStatus(data),
+    staleTime: 30 * 1000, // 30 seconds
+    ...options,
+  });
 };

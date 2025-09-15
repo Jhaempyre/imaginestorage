@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { NavigationControl, UserNavigationState, NavigationContext } from '../interfaces/navigation.interface';
 import { FRONTEND_ROUTES, NAVIGATION_TYPES, NAVIGATION_REASONS, FrontendRoute } from '../constants/routes.constants';
 import { ONBOARDING_STEPS } from '../constants/storage.constants';
+import { User } from '@/schemas/user.schema';
 
 /**
  * Navigation Service
@@ -9,7 +10,7 @@ import { ONBOARDING_STEPS } from '../constants/storage.constants';
  */
 @Injectable()
 export class NavigationService {
-  
+
   /**
    * Determine navigation based on user state after authentication
    */
@@ -25,7 +26,7 @@ export class NavigationService {
         reason: NAVIGATION_REASONS.EMAIL_VERIFICATION_REQUIRED,
       };
     }
-    
+
     // Onboarding required
     if (!userState.isOnboardingComplete) {
       return {
@@ -34,14 +35,14 @@ export class NavigationService {
         reason: NAVIGATION_REASONS.ONBOARDING_REQUIRED,
       };
     }
-    
+
     // User is fully set up - go to dashboard
     return {
       route: FRONTEND_ROUTES.DASHBOARD.HOME,
       type: NAVIGATION_TYPES.REPLACE,
     };
   }
-  
+
   /**
    * Get navigation for onboarding flow
    */
@@ -59,21 +60,21 @@ export class NavigationService {
         reason: NAVIGATION_REASONS.VALIDATION_FAILED,
       };
     }
-    
+
     switch (currentStep) {
       case ONBOARDING_STEPS.CHOOSE_PROVIDER:
         return {
           route: FRONTEND_ROUTES.ONBOARDING.STEP_2,
           type: NAVIGATION_TYPES.PUSH,
         };
-        
+
       case ONBOARDING_STEPS.CONFIGURE_CREDENTIALS:
         return {
           route: FRONTEND_ROUTES.DASHBOARD.HOME,
           type: NAVIGATION_TYPES.REPLACE,
           reason: NAVIGATION_REASONS.ONBOARDING_COMPLETED,
         };
-        
+
       default:
         return {
           route: FRONTEND_ROUTES.ONBOARDING.STEP_1,
@@ -81,34 +82,44 @@ export class NavigationService {
         };
     }
   }
-  
+
   /**
    * Get navigation for authentication flows
    */
-  getAuthNavigation(action: 'register' | 'verify-email' | 'login'): NavigationControl {
+  getAuthNavigation(action: 'register' | 'verify-email' | 'login', user?: User): NavigationControl {
     switch (action) {
       case 'register':
         return {
           route: FRONTEND_ROUTES.AUTH.VERIFY_EMAIL,
-          type: NAVIGATION_TYPES.REPLACE,
+          type: NAVIGATION_TYPES.PUSH,
           reason: NAVIGATION_REASONS.EMAIL_VERIFICATION_REQUIRED,
         };
-        
+
       case 'verify-email':
         return {
           route: FRONTEND_ROUTES.ONBOARDING.STEP_1,
-          type: NAVIGATION_TYPES.REPLACE,
+          type: NAVIGATION_TYPES.PUSH,
           reason: NAVIGATION_REASONS.ONBOARDING_REQUIRED,
         };
-        
-      default:
-        return {
-          route: FRONTEND_ROUTES.DASHBOARD.HOME,
-          type: NAVIGATION_TYPES.REPLACE,
-        };
+
+      case 'login':
+        if (user?.isOnboardingComplete) {
+          return {
+            route: FRONTEND_ROUTES.DASHBOARD.HOME,
+            type: NAVIGATION_TYPES.PUSH,
+          }
+        }
+
+        else {
+          return {
+            route: FRONTEND_ROUTES.ONBOARDING.STEP_1,
+            type: NAVIGATION_TYPES.REPLACE,
+            reason: NAVIGATION_REASONS.ONBOARDING_REQUIRED,
+          };
+        }
     }
   }
-  
+
   /**
    * Get navigation for error scenarios
    */
@@ -123,13 +134,13 @@ export class NavigationService {
           type: NAVIGATION_TYPES.REPLACE,
           reason: NAVIGATION_REASONS.SESSION_EXPIRED,
         };
-        
+
       case 'forbidden':
         return {
           route: FRONTEND_ROUTES.ERROR.FORBIDDEN,
           type: NAVIGATION_TYPES.REPLACE,
         };
-        
+
       default:
         return {
           route: FRONTEND_ROUTES.ERROR.GENERIC,
@@ -137,7 +148,7 @@ export class NavigationService {
         };
     }
   }
-  
+
   /**
    * Get navigation for storage configuration reset
    */
@@ -148,13 +159,13 @@ export class NavigationService {
       reason: NAVIGATION_REASONS.STORAGE_RESET,
     };
   }
-  
+
   /**
    * Get navigation for dashboard sections
    */
   getDashboardNavigation(section?: 'files' | 'settings' | 'storage'): NavigationControl {
     let route: string = FRONTEND_ROUTES.DASHBOARD.HOME;
-    
+
     switch (section) {
       case 'files':
         route = FRONTEND_ROUTES.DASHBOARD.FILES;
@@ -166,13 +177,13 @@ export class NavigationService {
         route = FRONTEND_ROUTES.DASHBOARD.STORAGE;
         break;
     }
-    
+
     return {
       route: route as FrontendRoute,
       type: NAVIGATION_TYPES.PUSH,
     };
   }
-  
+
   /**
    * Helper method to get route for onboarding step
    */
@@ -186,17 +197,17 @@ export class NavigationService {
         return FRONTEND_ROUTES.ONBOARDING.STEP_1;
     }
   }
-  
+
   /**
    * Validate if a route is a valid frontend route
    */
   isValidRoute(route: string): boolean {
-    const allRoutes = Object.values(FRONTEND_ROUTES).flatMap(category => 
+    const allRoutes = Object.values(FRONTEND_ROUTES).flatMap(category =>
       Object.values(category)
     );
     return allRoutes.includes(route as any);
   }
-  
+
   /**
    * Get navigation with custom parameters
    */
@@ -212,7 +223,7 @@ export class NavigationService {
     if (!this.isValidRoute(route)) {
       throw new Error(`Invalid route: ${route}`);
     }
-    
+
     return {
       route: route as any,
       type: type as any,

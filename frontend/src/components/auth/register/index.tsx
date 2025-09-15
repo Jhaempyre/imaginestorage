@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
 import { RegisterForm } from "./form";
 
 export function RegisterPage() {
@@ -6,9 +6,7 @@ export function RegisterPage() {
 
   return (
     <RegisterForm
-      onSwitchToLogin={() => {}}
-      // onSwitchToLogin={() => navigate("/auth/login", { replace: true })}
-      // onSuccess={() => navigate("/auth/login", { replace: true })}
+      onSwitchToLogin={() => navigate("/auth/login", { replace: true })}
       onSuccess={() => {}}
     />
   );

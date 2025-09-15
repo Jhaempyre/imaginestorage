@@ -8,7 +8,8 @@ import {
   Res,
   HttpCode,
   HttpStatus,
-  Logger
+  Logger,
+  Query
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -29,6 +30,7 @@ import { ResendEmailVerificationDto } from './dto/resend-verification-token.dto'
 import { ApiResponseDto } from '@/common/dto/api-response.dto';
 import { AppException } from '@/common/dto/app-exception';
 import { ERROR_CODES } from '@/common/constants/error-code.constansts';
+import { resourceLimits } from 'worker_threads';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -173,11 +175,11 @@ export class AuthController {
   @ApiOperation({ summary: 'Get current user' })
   @ApiResponse({ status: 200, description: 'Current user retrieved successfully' })
   async getCurrentUser(@Req() request: Request) {
-    const user = await this.authService.getCurrentUser(request.user['_id']);
-    this.logger.log({ user });
+    const result = await this.authService.getCurrentUser(request.user['_id']);
     return ApiResponseDto.success({
       message: 'Auth.getCurrentUser.success',
-      data: { user },
+      data: { user: result.user },
+      navigation: result?.navigation,
     });
   }
 
@@ -202,6 +204,20 @@ export class AuthController {
     return ApiResponseDto.success({
       message: 'Auth.changePassword.success',
       data: null,
+    });
+  }
+
+  @Get('verify-email/status')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get email verification status' })
+  @ApiResponse({ status: 200, description: 'Email verification status retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async getEmailVerificationStatus(@Query('email') email: string) {
+    const result = await this.authService.getEmailVerificationStatus(email);
+
+    return ApiResponseDto.success({
+      message: 'Auth.getEmailVerificationStatus.success',
+      data: result,
     });
   }
 

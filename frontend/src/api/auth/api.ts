@@ -12,6 +12,8 @@ import {
   type CurrentUserResponse,
   type BasicResponse,
   type VerifyEmailResponse,
+  type GetVerificationStatusDto,
+  type GetVerificationStatusResponse,
 } from './types';
 
 // Auth API functions
@@ -52,6 +54,14 @@ export const authApi = {
     return response.data;
   },
 
+  // Email verification status
+  getEmailVerificationStatus: async (data: GetVerificationStatusDto): Promise<GetVerificationStatusResponse> => {
+    const response = await axiosClient.get<GetVerificationStatusResponse>('/auth/verify-email/status', {
+      params: data,
+    });
+    return response.data;
+  },
+
   // Verify email
   verifyEmail: async (data: VerifyEmailDto): Promise<VerifyEmailResponse> => {
     const response = await axiosClient.post<VerifyEmailResponse>('/auth/verify-email', data);
@@ -75,4 +85,5 @@ export const authApi = {
     const response = await axiosClient.post<BasicResponse>('/auth/reset-password', data);
     return response.data;
   },
+
 };

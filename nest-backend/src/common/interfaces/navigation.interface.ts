@@ -6,7 +6,7 @@ import { FrontendRoute, NavigationType, NavigationReason } from '../constants/ro
  */
 export interface NavigationControl {
   /** Target route to navigate to */
-  route: FrontendRoute;
+  route: string;
   
   /** Navigation type - push adds to history, replace replaces current */
   type: NavigationType;
