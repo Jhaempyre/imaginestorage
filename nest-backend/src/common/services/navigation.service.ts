@@ -90,16 +90,15 @@ export class NavigationService {
     switch (action) {
       case 'register':
         return {
-          route: FRONTEND_ROUTES.AUTH.VERIFY_EMAIL,
+          route: user ? `${FRONTEND_ROUTES.AUTH.VERIFY_EMAIL_STATUS}${user.email}` : FRONTEND_ROUTES.AUTH.LOGIN,
           type: NAVIGATION_TYPES.PUSH,
           reason: NAVIGATION_REASONS.EMAIL_VERIFICATION_REQUIRED,
         };
 
       case 'verify-email':
         return {
-          route: FRONTEND_ROUTES.ONBOARDING.STEP_1,
+          route: FRONTEND_ROUTES.AUTH.LOGIN,
           type: NAVIGATION_TYPES.PUSH,
-          reason: NAVIGATION_REASONS.ONBOARDING_REQUIRED,
         };
 
       case 'login':

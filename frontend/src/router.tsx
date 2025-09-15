@@ -38,6 +38,17 @@ function RouterContent() {
           }
         />
         {/* Add more protected routes here */}
+        {/* Onboarding Routes */}
+        <Route path="/onboarding">
+          <Route
+            path="step-1"
+            element={<div>Onboarding Step 1 - Choose Provider</div>}
+          />
+          <Route
+            path="step-2"
+            element={<div>Onboarding Step 2 - Configure Credentials</div>}
+          />
+        </Route>
       </Route>
 
       {/* Public Auth Routes */}
@@ -46,13 +57,10 @@ function RouterContent() {
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegisterPage />} />
         <Route path="verify-email/:token" element={<VerifyEmail />} />
-        <Route path="verify-email/e/:email" element={<EmailVerificationStatus />} />
-      </Route>
-
-      {/* Onboarding Routes */}
-      <Route path="/onboarding">
-        <Route path="step-1" element={<div>Onboarding Step 1 - Choose Provider</div>} />
-        <Route path="step-2" element={<div>Onboarding Step 2 - Configure Credentials</div>} />
+        <Route
+          path="verify-email/e/:email"
+          element={<EmailVerificationStatus />}
+        />
       </Route>
 
       {/* 404 Page */}

@@ -67,7 +67,7 @@ export class AuthService {
     user.generateEmailVerificationToken();
     await user.save();
 
-    await user.save();
+    this.logger.debug(`Mock email sent to ${user.email}, token: ${user.emailVerificationToken}`);
 
     // Remove sensitive data
     const userResponse = user.toObject();
@@ -76,7 +76,7 @@ export class AuthService {
 
     return {
       user: userResponse,
-      navigation: this.navigationService.getAuthNavigation('register')
+      navigation: this.navigationService.getAuthNavigation('register', user)
     };
   }
 
@@ -246,7 +246,13 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new BadRequestException('Invalid or expired verification token');
+      throw new AppException({
+        code: ERROR_CODES.BAD_REQUEST,
+        message: 'Auth.verifyEmail.invalidOrExpiredToken',
+        userMessage: 'Invalid or expired verification token',
+        details: 'Please try requesting a new verification email.',
+        statusCode: HttpStatus.BAD_REQUEST,
+      });
     }
 
     user.isEmailVerified = true;

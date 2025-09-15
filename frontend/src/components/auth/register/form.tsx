@@ -1,60 +1,61 @@
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { z } from "zod"
-import { useNavigate } from "react-router-dom"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { isNormalizedError, useRegister } from "@/api";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { useRegister } from "@/api"
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 
 // Zod validation schema
-const registerSchema = z.object({
-  firstName: z
-    .string()
-    .min(1, "First name is required")
-    .max(50, "First name must be less than 50 characters"),
-  lastName: z
-    .string()
-    .min(1, "Last name is required")
-    .max(50, "Last name must be less than 50 characters"),
-  email: z
-    .string()
-    .min(1, "Email is required")
-    .email("Please enter a valid email address"),
-  username: z
-    .string()
-    .min(1, "Username is required")
-    .max(30, "Username must be less than 30 characters")
-    .regex(
-      /^[a-zA-Z0-9_]+$/,
-      "Username can only contain letters, numbers, and underscores"
-    ),
-  password: z
-    .string()
-    .min(8, "Password must be at least 8 characters")
-    .regex(
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-      "Password must contain at least one uppercase letter, one lowercase letter, and one number"
-    ),
-  confirmPassword: z.string().min(1, "Please confirm your password"),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-})
+const registerSchema = z
+  .object({
+    firstName: z
+      .string()
+      .min(1, "First name is required")
+      .max(50, "First name must be less than 50 characters"),
+    lastName: z
+      .string()
+      .min(1, "Last name is required")
+      .max(50, "Last name must be less than 50 characters"),
+    email: z
+      .string()
+      .min(1, "Email is required")
+      .email("Please enter a valid email address"),
+    username: z
+      .string()
+      .min(1, "Username is required")
+      .max(30, "Username must be less than 30 characters")
+      .regex(
+        /^[a-zA-Z0-9_]+$/,
+        "Username can only contain letters, numbers, and underscores"
+      ),
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .regex(
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+        "Password must contain at least one uppercase letter, one lowercase letter, and one number"
+      ),
+    confirmPassword: z.string().min(1, "Please confirm your password"),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  });
 
-type RegisterFormData = z.infer<typeof registerSchema>
+type RegisterFormData = z.infer<typeof registerSchema>;
 
 interface RegisterFormProps extends React.ComponentProps<"div"> {
-  onSuccess?: () => void
-  onSwitchToLogin?: () => void
+  onSuccess?: () => void;
+  onSwitchToLogin?: () => void;
 }
 
 export function RegisterForm({
@@ -63,43 +64,45 @@ export function RegisterForm({
   onSwitchToLogin,
   ...props
 }: RegisterFormProps) {
-  const navigate = useNavigate()
   const {
     register,
     handleSubmit,
     formState: { errors },
     setError,
-    getValues,
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
-  })
+  });
 
   const registerMutation = useRegister({
     onSuccess: (data) => {
-      console.log("Registration successful:", data)
-      // Navigate to email verification status page with email in state
-      const email = getValues("email")
-      navigate(`/auth/verify-email/e/${email}`, { 
-        viewTransition: true,
-        replace: true 
-      })
-      onSuccess?.()
+      console.log("Registration successful:", data);
+      onSuccess?.();
     },
     onError: (error) => {
-      console.error("Registration failed:", error)
-      // Set form-level error
-      setError("root", {
-        type: "manual",
-        message: error.message || "Registration failed. Please try again.",
-      })
+      console.error("Registration failed:", error);
+      if (isNormalizedError(error)) {
+        // Set form-level error
+        setError("root", {
+          type: "manual",
+          message:
+            error.userFriendlyMessage ??
+            "Registration failed. Please try again.",
+        });
+      } else {
+        // Set form-level error
+        setError("root", {
+          type: "manual",
+          message: error.message || "Registration failed. Please try again.",
+        });
+      }
     },
-  })
+  });
 
   const onSubmit = (data: RegisterFormData) => {
     // Remove confirmPassword from the data before sending to API
-    const { confirmPassword, ...registerData } = data
-    registerMutation.mutate(registerData)
-  }
+    const { confirmPassword, ...registerData } = data;
+    registerMutation.mutate(registerData);
+  };
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
@@ -165,9 +168,7 @@ export function RegisterForm({
                   aria-invalid={!!errors.email}
                 />
                 {errors.email && (
-                  <p className="text-sm text-red-600">
-                    {errors.email.message}
-                  </p>
+                  <p className="text-sm text-red-600">{errors.email.message}</p>
                 )}
               </div>
 
@@ -206,7 +207,8 @@ export function RegisterForm({
                   </p>
                 )}
                 <p className="text-xs text-gray-500">
-                  Must be at least 8 characters with uppercase, lowercase, and number
+                  Must be at least 8 characters with uppercase, lowercase, and
+                  number
                 </p>
               </div>
 
@@ -226,12 +228,14 @@ export function RegisterForm({
               </div>
 
               <div className="flex flex-col gap-3">
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   className="w-full"
                   disabled={registerMutation.isPending}
                 >
-                  {registerMutation.isPending ? "Creating account..." : "Create account"}
+                  {registerMutation.isPending
+                    ? "Creating account..."
+                    : "Create account"}
                 </Button>
                 <Button variant="outline" className="w-full" type="button">
                   Sign up with Google
@@ -252,5 +256,5 @@ export function RegisterForm({
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

@@ -9,6 +9,7 @@ export const FRONTEND_ROUTES = {
     LOGIN: '/auth/login',
     REGISTER: '/auth/register',
     VERIFY_EMAIL: '/auth/verify-email',
+    VERIFY_EMAIL_STATUS: '/auth/verify-email/e/',
     FORGOT_PASSWORD: '/auth/forgot-password',
     RESET_PASSWORD: '/auth/reset-password',
   },
