@@ -21,10 +21,10 @@ export const FRONTEND_ROUTES = {
 
   // Main Application Routes
   DASHBOARD: {
-    HOME: '/dashboard',
-    FILES: '/dashboard/files',
-    SETTINGS: '/dashboard/settings',
-    STORAGE: '/dashboard/storage',
+    HOME: '/',
+    FILES: '/files',
+    SETTINGS: '/settings',
+    STORAGE: '/storage',
   },
 
   // Error Routes

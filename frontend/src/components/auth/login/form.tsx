@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { isAxiosErrorWithMessage, useLogin } from "@/api";
+import { isNormalizedError, useLogin } from "@/api";
 
 // Zod validation schema
 const loginSchema = z.object({
@@ -50,14 +50,14 @@ export function LoginForm({
       console.log("Login successful:", data);
       onSuccess?.();
     },
-    onError: (error: unknown) => {
+    onError: (error) => {
       console.error("Login failed:", error);
       // Set form-level error
-      if (isAxiosErrorWithMessage(error)) {
+      if (isNormalizedError(error)) {
         setError("root", {
           type: "manual",
           message:
-            error.response?.data?.message ?? "Login failed. Please try again.",
+            error.userFriendlyMessage ?? "Login failed. Please try again.",
         });
       } else {
         setError("root", {

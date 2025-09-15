@@ -22,6 +22,7 @@ import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
+import { ApiResponseDto } from '../../common/dto/api-response.dto';
 
 @ApiTags('Users')
 @Controller('users')
@@ -38,11 +39,10 @@ export class UsersController {
     const userId = request.user['_id'];
     const user = await this.usersService.getUserProfile(userId);
 
-    return {
-      success: true,
-      message: 'User profile retrieved successfully',
+    return ApiResponseDto.success({
+      message: 'Users.getUserProfile.success',
       data: { user },
-    };
+    });
   }
 
   @Put('profile')
@@ -57,11 +57,10 @@ export class UsersController {
     const userId = request.user['_id'];
     const user = await this.usersService.updateUserProfile(userId, updateProfileDto);
 
-    return {
-      success: true,
-      message: 'User profile updated successfully',
+    return ApiResponseDto.success({
+      message: 'Users.updateUserProfile.success',
       data: { user },
-    };
+    });
   }
 
   @Put('avatar')
@@ -75,11 +74,10 @@ export class UsersController {
     const userId = request.user['_id'];
     const user = await this.usersService.updateUserAvatar(userId, avatarUrl);
 
-    return {
-      success: true,
-      message: 'User avatar updated successfully',
+    return ApiResponseDto.success({
+      message: 'Users.updateUserAvatar.success',
       data: { user },
-    };
+    });
   }
 
   @Delete('account')
@@ -91,10 +89,10 @@ export class UsersController {
     const userId = request.user['_id'];
     await this.usersService.deleteUserAccount(userId);
 
-    return {
-      success: true,
-      message: 'User account deleted successfully',
-    };
+    return ApiResponseDto.success({
+      message: 'Users.deleteUserAccount.success',
+      data: null,
+    });
   }
 
   @Get('stats')
@@ -105,11 +103,10 @@ export class UsersController {
     const userId = request.user['_id'];
     const stats = await this.usersService.getUserStats(userId);
 
-    return {
-      success: true,
-      message: 'User statistics retrieved successfully',
+    return ApiResponseDto.success({
+      message: 'Users.getUserStats.success',
       data: stats,
-    };
+    });
   }
 
   @Get('files')
@@ -125,14 +122,13 @@ export class UsersController {
     const { page = 1, limit = 10 } = paginationDto;
     const result = await this.usersService.getUserFiles(userId, page, limit);
 
-    return {
-      success: true,
-      message: 'User files retrieved successfully',
+    return ApiResponseDto.success({
+      message: 'Users.getUserFiles.success',
       data: {
         files: result.files,
         pagination: result.pagination,
       },
-    };
+    });
   }
 
   @Get('search')
@@ -148,13 +144,12 @@ export class UsersController {
     const { page = 1, limit = 10 } = paginationDto;
     const result = await this.usersService.searchUsers(searchTerm, page, limit);
 
-    return {
-      success: true,
-      message: 'Users search completed successfully',
+    return ApiResponseDto.success({
+      message: 'Users.searchUsers.success',
       data: {
         users: result.users,
         pagination: result.pagination,
       },
-    };
+    });
   }
 }

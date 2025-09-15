@@ -6,7 +6,8 @@ export function LoginPage() {
   return (
     <LoginForm
       onSwitchToRegister={() => navigate("/auth/register", { replace: true })}
-      onSuccess={() => navigate("/", { replace: true })}
+      onSuccess={() => {}}
+      // onSuccess={() => navigate("/", { replace: true })}
     />
   );
 }

@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagg
 import { Request } from 'express';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { StorageService } from './storage.service';
+import { ApiResponseDto } from '../../common/dto/api-response.dto';
 
 @ApiTags('Storage')
 @Controller('storage')
@@ -23,13 +24,12 @@ export class StorageController {
     const stats = await this.storageService.getUserStorageConfig(userId);
     const healthCheck = await this.storageService.healthCheck(userId);
 
-    return {
-      success: true,
-      message: 'Storage status retrieved successfully',
+    return ApiResponseDto.success({
+      message: 'Storage.getStorageStatus.success',
       data: {
         stats,
         healthCheck,
       },
-    };
+    });
   }
 }

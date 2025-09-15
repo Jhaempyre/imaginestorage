@@ -30,6 +30,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { UploadFileDto } from './dto/upload-file.dto';
 import { ShareFileDto } from './dto/share-file.dto';
 import { GetFilesDto } from './dto/get-files.dto';
+import { ApiResponseDto } from '../../common/dto/api-response.dto';
 
 @ApiTags('Files')
 @Controller('files')
@@ -74,9 +75,8 @@ export class FilesController {
     const userId = request.user['_id'];
     const uploadedFile = await this.filesService.uploadFile(file, userId, uploadFileDto);
 
-    return {
-      success: true,
-      message: 'File uploaded successfully',
+    return ApiResponseDto.success({
+      message: 'Files.uploadFile.success',
       data: {
         file: {
           id: uploadedFile._id,
@@ -89,7 +89,7 @@ export class FilesController {
           createdAt: uploadedFile.createdAt,
         },
       },
-    };
+    });
   }
 
   @Get()
@@ -104,14 +104,13 @@ export class FilesController {
     const userId = request.user['_id'];
     const result = await this.filesService.getFiles(userId, getFilesDto);
 
-    return {
-      success: true,
-      message: 'Files retrieved successfully',
+    return ApiResponseDto.success({
+      message: 'Files.getFiles.success',
       data: {
         files: result.files,
         pagination: result.pagination,
       },
-    };
+    });
   }
 
   @Get(':id')
@@ -128,11 +127,10 @@ export class FilesController {
     const userId = request.user['_id'];
     const file = await this.filesService.getFileById(fileId, userId);
 
-    return {
-      success: true,
-      message: 'File details retrieved successfully',
+    return ApiResponseDto.success({
+      message: 'Files.getFileById.success',
       data: { file },
-    };
+    });
   }
 
   @Get('public/:id')
@@ -143,11 +141,10 @@ export class FilesController {
   async getPublicFile(@Param('id') fileId: string) {
     const file = await this.filesService.getPublicFile(fileId);
 
-    return {
-      success: true,
-      message: 'Public file details retrieved successfully',
+    return ApiResponseDto.success({
+      message: 'Files.getPublicFile.success',
       data: { file },
-    };
+    });
   }
 
   @Get('shared/:token')
@@ -159,11 +156,10 @@ export class FilesController {
   async getSharedFile(@Param('token') shareToken: string) {
     const file = await this.filesService.getSharedFile(shareToken);
 
-    return {
-      success: true,
-      message: 'Shared file details retrieved successfully',
+    return ApiResponseDto.success({
+      message: 'Files.getSharedFile.success',
       data: { file },
-    };
+    });
   }
 
   @Get(':id/download')
@@ -180,11 +176,10 @@ export class FilesController {
     const userId = request.user['_id'];
     const result = await this.filesService.getDownloadUrl(fileId, userId);
 
-    return {
-      success: true,
-      message: 'Download URL generated successfully',
+    return ApiResponseDto.success({
+      message: 'Files.getDownloadUrl.success',
       data: result,
-    };
+    });
   }
 
   @Get('public/:id/download')
@@ -199,11 +194,10 @@ export class FilesController {
     const userId = request.user['_id'];
     const result = await this.filesService.getPublicDownloadUrl(userId, fileId);
 
-    return {
-      success: true,
-      message: 'Public download URL generated successfully',
+    return ApiResponseDto.success({
+      message: 'Files.getPublicDownloadUrl.success',
       data: result,
-    };
+    });
   }
 
   @Get('shared/:token/download')
@@ -218,11 +212,10 @@ export class FilesController {
     const userId = request.user['_id'];
     const result = await this.filesService.getSharedDownloadUrl(userId, shareToken);
 
-    return {
-      success: true,
-      message: 'Shared download URL generated successfully',
+    return ApiResponseDto.success({
+      message: 'Files.getSharedDownloadUrl.success',
       data: result,
-    };
+    });
   }
 
   @Post(':id/share')
@@ -240,11 +233,10 @@ export class FilesController {
     const userId = request.user['_id'];
     const result = await this.filesService.shareFile(fileId, userId, shareFileDto);
 
-    return {
-      success: true,
-      message: 'Share link generated successfully',
+    return ApiResponseDto.success({
+      message: 'Files.shareFile.success',
       data: result,
-    };
+    });
   }
 
   @Patch(':id/visibility')
@@ -274,11 +266,10 @@ export class FilesController {
     const userId = request.user['_id'];
     const file = await this.filesService.updateFileVisibility(fileId, userId, isPublic);
 
-    return {
-      success: true,
-      message: 'File visibility updated successfully',
+    return ApiResponseDto.success({
+      message: 'Files.updateFileVisibility.success',
       data: { file },
-    };
+    });
   }
 
   @Delete(':id')
@@ -296,9 +287,9 @@ export class FilesController {
     const userId = request.user['_id'];
     await this.filesService.deleteFile(fileId, userId);
 
-    return {
-      success: true,
-      message: 'File deleted successfully',
-    };
+    return ApiResponseDto.success({
+      message: 'Files.deleteFile.success',
+      data: null,
+    });
   }
 }

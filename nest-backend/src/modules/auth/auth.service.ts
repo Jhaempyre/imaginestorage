@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
@@ -9,6 +9,8 @@ import { User, UserDocument } from '../../schemas/user.schema';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { AppException } from '@/common/dto/app-exception';
+import { ERROR_CODES } from '@/common/constants/error-code.constansts';
 
 @Injectable()
 export class AuthService {
@@ -30,10 +32,22 @@ export class AuthService {
 
     if (existingUser) {
       if (existingUser.email === email) {
-        throw new ConflictException('Email already exists');
+        throw new AppException({
+          code: ERROR_CODES.EMAIL_ALREADY_EXISTS,
+          message: 'Auth.register.emailAlreadyExists',
+          userMessage: 'Email already exists',
+          details: 'Please use a different email address.',
+          statusCode: HttpStatus.CONFLICT,
+        });
       }
       if (existingUser.username === username) {
-        throw new ConflictException('Username already exists');
+        throw new AppException({
+          code: ERROR_CODES.USERNAME_ALREADY_EXISTS,
+          message: 'Auth.register.usernameAlreadyExists',
+          userMessage: 'Username already exists',
+          details: 'Please use a different username.',
+          statusCode: HttpStatus.CONFLICT,
+        });
       }
     }
 
@@ -50,11 +64,6 @@ export class AuthService {
     user.generateEmailVerificationToken();
     await user.save();
 
-    // Generate tokens
-    // const tokens = await this.generateTokens(user._id);
-
-    // Save refresh token
-    // user.refreshToken = tokens.refreshToken;
     await user.save();
 
     // Remove sensitive data
@@ -64,33 +73,38 @@ export class AuthService {
 
     return {
       user: userResponse,
-      // tokens,
-      navigation: null
+      navigation: this.navigationService.getAuthNavigation('register')
     };
   }
 
   async login(loginDto: LoginDto): Promise<{ user: any; tokens: any; navigation: any }> {
     const user = await this.validateUser(loginDto.emailOrUsername, loginDto.password);
-
+    console.log({ user, api: 'login' });
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new AppException({
+        statusCode: HttpStatus.UNAUTHORIZED,
+        code: ERROR_CODES.INVALID_CREDENTIALS,
+        message: 'Auth.login.invalidCredentials',
+        userMessage: 'Invalid credentials',
+      });
     }
 
     if (!user.isEmailVerified) {
-      throw new UnauthorizedException('Email not verified');
+      throw new AppException({
+        statusCode: HttpStatus.UNAUTHORIZED,
+        code: ERROR_CODES.EMAIL_NOT_VERIFIED,
+        message: 'Auth.login.emailNotVerified',
+        userMessage: 'Email not verified',
+      });
     }
 
-    // Update last login
     user.lastLoginAt = new Date();
 
-    // Generate tokens
     const tokens = await this.generateTokens(user._id);
 
-    // Save refresh token
     user.refreshToken = tokens.refreshToken;
     await user.save();
 
-    // Remove sensitive data
     const userResponse = user.toObject();
     delete userResponse.password;
     delete userResponse.refreshToken;
@@ -98,7 +112,7 @@ export class AuthService {
     return {
       user: userResponse,
       tokens,
-      navigation: null
+      navigation: this.navigationService.getAuthNavigation('login')
     };
   }
 
@@ -115,7 +129,6 @@ export class AuthService {
     if (user && await user.comparePassword(password)) {
       return user;
     }
-
     return null;
   }
 

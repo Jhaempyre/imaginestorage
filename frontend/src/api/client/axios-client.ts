@@ -1,4 +1,5 @@
 import axios from "axios";
+import { ErrorInterceptor } from '../error/interceptor';
 
 // Create a pre-configured Axios instance
 const axiosClient = axios.create({
@@ -10,27 +11,27 @@ const axiosClient = axios.create({
   withCredentials: true, // Include cookies for auth
 });
 
-// ✅ Request Interceptor
+// Add metadata property to axios config type
+declare module 'axios' {
+  interface InternalAxiosRequestConfig {
+    metadata?: {
+      startTime?: number;
+      requestId?: string;
+      [key: string]: any;
+    };
+  }
+}
+
+// ✅ Request Interceptors with Error Handling
 axiosClient.interceptors.request.use(
-  (config) => {
-    // Since we're using cookie-based auth, we don't need to manually add tokens
-    // The cookies will be automatically included due to withCredentials: true
-    return config;
-  },
-  (error) => Promise.reject(error)
+  ErrorInterceptor.onRequest,
+  ErrorInterceptor.onRequestError
 );
 
-// ✅ Response Interceptor
+// ✅ Response Interceptors with Error Handling
 axiosClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    // Handle errors globally
-    if (error.response?.status === 401) {
-      // Could trigger logout or token refresh here
-      console.warn('Unauthorized request - user may need to login');
-    }
-    return Promise.reject(error);
-  }
+  ErrorInterceptor.onResponse,
+  ErrorInterceptor.onResponseError
 );
 
 export default axiosClient;

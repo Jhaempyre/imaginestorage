@@ -1,12 +1,7 @@
-import type { AxiosError } from "axios";
+import type { NormalizedError } from "../error";
 
-export function isAxiosErrorWithMessage(
+export function isNormalizedError(
   error: unknown
-): error is AxiosError<{ message: string }> {
-  return (
-    !!error &&
-    typeof error === "object" &&
-    "isAxiosError" in error &&
-    (error as AxiosError).isAxiosError === true
-  );
+): error is NormalizedError {
+  return (!!error && typeof error === "object");
 }

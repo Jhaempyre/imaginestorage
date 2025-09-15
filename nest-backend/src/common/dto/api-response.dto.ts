@@ -1,5 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ErrorCodeType } from '../constants/error-code.constansts';
 import { NavigationControl } from '../interfaces/navigation.interface';
+import { AppException } from './app-exception';
 
 /**
  * Standard API Response DTO with Navigation
@@ -8,13 +10,16 @@ export class ApiResponseDto<T = any> {
   @ApiProperty({ description: 'Whether the request was successful' })
   success: boolean;
 
+  @ApiProperty({ description: 'HTTP status code' })
+  statusCode: number;
+
   @ApiProperty({ description: 'Response message' })
   message: string;
 
   @ApiProperty({ description: 'Response data' })
   data: T;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Navigation instructions for frontend',
     example: {
       route: '/dashboard',
@@ -24,7 +29,7 @@ export class ApiResponseDto<T = any> {
   })
   navigation?: NavigationControl;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Error details (if success is false)',
     example: {
       code: 'INVALID_CREDENTIALS',
@@ -33,57 +38,84 @@ export class ApiResponseDto<T = any> {
     }
   })
   error?: {
-    code: string;
-    details: string;
+    code: ErrorCodeType;
+    userMessage: string;
+    details?: string;
     suggestions?: string[];
   };
 
-  constructor(
-    success: boolean,
-    message: string,
-    data: T,
-    navigation?: NavigationControl,
-    error?: { code: string; details: string; suggestions?: string[] }
-  ) {
-    this.success = success;
-    this.message = message;
-    this.data = data;
-    this.navigation = navigation;
-    this.error = error;
+  constructor(init: Partial<ApiResponseDto<T>>) {
+    Object.assign(this, init);
   }
 
   /**
    * Create a successful response with navigation
    */
-  static success<T>(
-    message: string,
-    data: T,
-    navigation?: NavigationControl
-  ): ApiResponseDto<T> {
-    return new ApiResponseDto(true, message, data, navigation);
+  static success<T>({
+    message = 'Success',
+    data,
+    navigation,
+  }: {
+    message?: string;
+    data: T;
+    navigation?: NavigationControl;
+  }): ApiResponseDto<T> {
+    return new ApiResponseDto<T>({
+      success: true,
+      statusCode: 200,
+      message,
+      data,
+      navigation,
+    });
   }
 
   /**
    * Create an error response with navigation
    */
-  static error<T = null>(
-    message: string,
-    errorCode: string,
-    errorDetails: string,
-    suggestions?: string[],
-    navigation?: NavigationControl
-  ): ApiResponseDto<T> {
+  static error<T = null>({
+    message,
+    errorCode,
+    errorUserMessage,
+    errorDetails,
+    suggestions,
+    navigation,
+  }: {
+    message: string;
+    errorCode: ErrorCodeType;
+    errorUserMessage: string;
+    errorDetails?: string;
+    suggestions?: string[];
+    navigation?: NavigationControl;
+  }): ApiResponseDto<T> {
     return new ApiResponseDto(
-      false,
-      message,
-      null as T,
-      navigation,
       {
-        code: errorCode,
-        details: errorDetails,
-        suggestions,
+        success: false,
+        statusCode: 400,
+        message,
+        error: {
+          code: errorCode,
+          userMessage: errorUserMessage,
+          details: errorDetails,
+          suggestions,
+        },
+        navigation,
       }
     );
+  }
+
+  static fromException(exception: AppException) {
+    return new ApiResponseDto({
+      success: false,
+      statusCode: exception.statusCode,
+      message: exception.message,
+      error: {
+        code: exception.code,
+        userMessage: exception.userMessage,
+        details: exception.details,
+        suggestions: exception.suggestions,
+      },
+      navigation: exception.navigation,
+    });
   }
 }
 
@@ -127,32 +159,32 @@ export class PaginationDto {
  * Navigation Control DTO for Swagger documentation
  */
 export class NavigationControlDto {
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Target route to navigate to',
     example: '/dashboard'
   })
   route: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Navigation type',
     enum: ['push', 'replace'],
     example: 'replace'
   })
   type: 'push' | 'replace';
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Reason for navigation',
     example: 'onboarding_completed'
   })
   reason?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Route parameters',
     example: { id: '123' }
   })
   params?: Record<string, any>;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'State to pass with navigation',
     example: { from: 'onboarding' }
   })

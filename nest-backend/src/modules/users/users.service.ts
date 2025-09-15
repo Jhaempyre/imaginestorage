@@ -1,4 +1,6 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, HttpStatus } from '@nestjs/common';
+import { AppException } from '../../common/dto/app-exception';
+import { ERROR_CODES } from '../../common/constants/error-code.constansts';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { User, UserDocument } from '../../schemas/user.schema';
@@ -19,7 +21,13 @@ export class UsersService {
       .select('-password -refreshToken -emailVerificationToken -passwordResetToken');
 
     if (!user || !user.isActive || user.deletedAt) {
-      throw new NotFoundException('User not found');
+      throw new AppException({
+        statusCode: HttpStatus.NOT_FOUND,
+        code: ERROR_CODES.NOT_FOUND,
+        message: 'Users.getUserProfile.userNotFound',
+        userMessage: 'User not found',
+        details: 'The requested user profile could not be found.',
+      });
     }
 
     return user;
@@ -36,7 +44,14 @@ export class UsersService {
       });
 
       if (existingUser) {
-        throw new ConflictException('Username already exists');
+        throw new AppException({
+          statusCode: HttpStatus.CONFLICT,
+          code: ERROR_CODES.USERNAME_ALREADY_EXISTS,
+          message: 'Users.updateUserProfile.usernameExists',
+          userMessage: 'Username already exists',
+          details: 'Please choose a different username.',
+          suggestions: ['Try adding numbers or characters to make it unique'],
+        });
       }
     }
 
@@ -51,7 +66,12 @@ export class UsersService {
     ).select('-password -refreshToken -emailVerificationToken -passwordResetToken');
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new AppException({
+        statusCode: HttpStatus.NOT_FOUND,
+        code: ERROR_CODES.NOT_FOUND,
+        message: 'Users.updateUserProfile.userNotFound',
+        userMessage: 'User not found',
+      });
     }
 
     return user;
@@ -65,7 +85,13 @@ export class UsersService {
     ).select('-password -refreshToken -emailVerificationToken -passwordResetToken');
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new AppException({
+        statusCode: HttpStatus.NOT_FOUND,
+        code: ERROR_CODES.NOT_FOUND,
+        message: 'Users.updateUserProfile.userNotFound',
+        userMessage: 'User not found',
+        details: 'The requested user could not be found.',
+      });
     }
 
     return user;
@@ -75,7 +101,13 @@ export class UsersService {
     const user = await this.userModel.findById(userId);
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new AppException({
+        statusCode: HttpStatus.NOT_FOUND,
+        code: ERROR_CODES.NOT_FOUND,
+        message: 'Users.deleteUserAccount.userNotFound',
+        userMessage: 'User not found',
+        details: 'The requested user account could not be found.',
+      });
     }
 
     // Soft delete user
@@ -118,7 +150,13 @@ export class UsersService {
     ]);
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new AppException({
+        statusCode: HttpStatus.NOT_FOUND,
+        code: ERROR_CODES.NOT_FOUND,
+        message: 'Users.getUserStats.userNotFound',
+        userMessage: 'User not found',
+        details: 'The requested user could not be found.',
+      });
     }
 
     const stats = fileStats[0] || {

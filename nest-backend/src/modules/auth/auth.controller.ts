@@ -26,6 +26,9 @@ import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ResendEmailVerificationDto } from './dto/resend-verification-token.dto';
+import { ApiResponseDto } from '@/common/dto/api-response.dto';
+import { AppException } from '@/common/dto/app-exception';
+import { ERROR_CODES } from '@/common/constants/error-code.constansts';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -41,36 +44,18 @@ export class AuthController {
     @Body() registerDto: RegisterDto,
     @Res({ passthrough: true }) response: Response,
   ) {
+    console.log("Registering user", registerDto);
     const result = await this.authService.register(registerDto);
+    console.log("Registering user result", result);
 
-    // Set refresh token in httpOnly cookie
-    // response.cookie('refreshToken', result.tokens.refreshToken, {
-    //   httpOnly: true,
-    //   secure: process.env.NODE_ENV === 'production',
-    //   sameSite: 'strict',
-    //   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    // });
-
-    // Set access token in cookie (optional)
-    // response.cookie('accessToken', result.tokens.accessToken, {
-    //   httpOnly: true,
-    //   secure: process.env.NODE_ENV === 'production',
-    //   sameSite: 'strict',
-    //   maxAge: 15 * 60 * 1000, // 15 minutes
-    // });
-
-    return {
-      success: true,
-      message: 'User registered successfully. Please verify your email.',
-      data: {
-        user: result.user,
-        // accessToken: result.tokens.accessToken,
-      },
+    return ApiResponseDto.success({
+      message: 'Auth.register.success',
+      data: result,
       navigation: result.navigation,
-    };
+    });
   }
 
-  @UseGuards(LocalAuthGuard)
+  // @UseGuards(LocalAuthGuard)
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Login user' })
@@ -103,15 +88,14 @@ export class AuthController {
       path: '/',
     });
 
-    return {
-      success: true,
-      message: 'User logged in successfully',
+    return ApiResponseDto.success({
+      message: 'Auth.login.success',
       data: {
         user: result.user,
         accessToken: result.tokens.accessToken,
       },
       navigation: result.navigation,
-    };
+    });
   }
 
   @Post('refresh-token')
@@ -126,7 +110,13 @@ export class AuthController {
     const refreshToken = request.cookies?.refreshToken;
 
     if (!refreshToken) {
-      throw new Error('Refresh token not found');
+      throw new AppException({
+        statusCode: HttpStatus.UNAUTHORIZED,
+        code: ERROR_CODES.UNAUTHORIZED,
+        message: 'Auth.refreshToken.tokenNotFound',
+        userMessage: 'Refresh token not found',
+        details: 'Please log in again to continue.',
+      });
     }
 
     const result = await this.authService.refreshTokens(refreshToken);
@@ -147,13 +137,12 @@ export class AuthController {
       maxAge: 15 * 60 * 1000, // 15 minutes
     });
 
-    return {
-      success: true,
-      message: 'Token refreshed successfully',
+    return ApiResponseDto.success({
+      message: 'Auth.refreshToken.success',
       data: {
         accessToken: result.tokens.accessToken,
       },
-    };
+    });
   }
 
   @UseGuards(JwtAuthGuard)
@@ -172,10 +161,10 @@ export class AuthController {
     response.clearCookie('refreshToken');
     response.clearCookie('accessToken');
 
-    return {
-      success: true,
-      message: 'User logged out successfully',
-    };
+    return ApiResponseDto.success({
+      message: 'Auth.logout.success',
+      data: null,
+    });
   }
 
   @UseGuards(JwtAuthGuard)
@@ -186,11 +175,10 @@ export class AuthController {
   async getCurrentUser(@Req() request: Request) {
     const user = await this.authService.getCurrentUser(request.user['_id']);
     this.logger.log({ user });
-    return {
-      success: true,
-      message: 'Current user retrieved successfully',
+    return ApiResponseDto.success({
+      message: 'Auth.getCurrentUser.success',
       data: { user },
-    };
+    });
   }
 
   @UseGuards(JwtAuthGuard)
@@ -211,10 +199,10 @@ export class AuthController {
     response.clearCookie('refreshToken');
     response.clearCookie('accessToken');
 
-    return {
-      success: true,
-      message: 'Password changed successfully. Please login again.',
-    };
+    return ApiResponseDto.success({
+      message: 'Auth.changePassword.success',
+      data: null,
+    });
   }
 
   @Post('verify-email')
@@ -225,12 +213,11 @@ export class AuthController {
   async verifyEmail(@Body() dto: VerifyEmailDto) {
     const result = await this.authService.verifyEmail(dto.token);
 
-    return {
-      success: true,
-      message: 'Email verified successfully',
+    return ApiResponseDto.success({
+      message: 'Auth.verifyEmail.success',
       data: result.user,
       navigation: result.navigation,
-    };
+    });
   }
 
   @Post('resend-verification')
@@ -240,10 +227,10 @@ export class AuthController {
   async resendEmailVerification(@Body() dto: ResendEmailVerificationDto) {
     await this.authService.resendEmailVerification(dto.email);
 
-    return {
-      success: true,
-      message: 'Verification email sent successfully',
-    };
+    return ApiResponseDto.success({
+      message: 'Auth.resendVerification.success',
+      data: null,
+    });
   }
 
   @Post('forgot-password')
@@ -253,10 +240,10 @@ export class AuthController {
   async forgotPassword(@Body('email') email: string) {
     await this.authService.forgotPassword(email);
 
-    return {
-      success: true,
-      message: 'If the email exists, a password reset link has been sent',
-    };
+    return ApiResponseDto.success({
+      message: 'Auth.forgotPassword.success',
+      data: null,
+    });
   }
 
   @Post('reset-password')
@@ -270,9 +257,9 @@ export class AuthController {
   ) {
     await this.authService.resetPassword(token, newPassword);
 
-    return {
-      success: true,
-      message: 'Password reset successfully',
-    };
+    return ApiResponseDto.success({
+      message: 'Auth.resetPassword.success',
+      data: null,
+    });
   }
 }

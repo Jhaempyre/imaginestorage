@@ -1,4 +1,6 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Injectable, HttpStatus } from '@nestjs/common';
+import { AppException } from '../../common/dto/app-exception';
+import { ERROR_CODES } from '../../common/constants/error-code.constansts';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import * as fs from 'fs';
@@ -23,7 +25,13 @@ export class FilesService {
     uploadFileDto: UploadFileDto,
   ): Promise<FileDocument> {
     if (!file) {
-      throw new BadRequestException('No file uploaded');
+      throw new AppException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        code: ERROR_CODES.NO_FILE_UPLOADED,
+        message: 'Files.uploadFile.noFile',
+        userMessage: 'No file uploaded',
+        details: 'Please select a file to upload.',
+      });
     }
 
     const tempFilePath = file.path;
@@ -44,7 +52,13 @@ export class FilesService {
 
     // validate files locaiton:
     if (!fs.existsSync(tempFilePath)) {
-      throw new BadRequestException('File not found');
+      throw new AppException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        code: ERROR_CODES.FILE_NOT_FOUND,
+        message: 'Files.uploadFile.fileNotFound',
+        userMessage: 'File not found',
+        details: 'The uploaded file could not be found on the server.',
+      });
     }
 
     try {
@@ -152,7 +166,12 @@ export class FilesService {
     });
 
     if (!file) {
-      throw new NotFoundException('File not found');
+      throw new AppException({
+        statusCode: HttpStatus.NOT_FOUND,
+        code: ERROR_CODES.FILE_NOT_FOUND,
+        message: 'Files.getFileById.fileNotFound',
+        userMessage: 'File not found',
+      });
     }
 
     return file;
@@ -166,7 +185,12 @@ export class FilesService {
     });
 
     if (!file) {
-      throw new NotFoundException('Public file not found');
+      throw new AppException({
+        statusCode: HttpStatus.NOT_FOUND,
+        code: ERROR_CODES.FILE_NOT_FOUND,
+        message: 'Files.getPublicFile.fileNotFound',
+        userMessage: 'Public file not found',
+      });
     }
 
     return file;
@@ -179,11 +203,21 @@ export class FilesService {
     });
 
     if (!file) {
-      throw new NotFoundException('Shared file not found');
+      throw new AppException({  
+        statusCode: HttpStatus.NOT_FOUND,
+        code: ERROR_CODES.FILE_NOT_FOUND,
+        message: 'Files.getSharedFile.fileNotFound',
+        userMessage: 'Shared file not found',
+      });
     }
 
     if (!file.isShareTokenValid()) {
-      throw new BadRequestException('Share link has expired');
+      throw new AppException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        code: ERROR_CODES.SHARE_LINK_EXPIRED,
+        message: 'Files.getSharedFile.shareLinkExpired',
+        userMessage: 'Share link has expired',
+      });
     }
 
     return file;
@@ -205,7 +239,12 @@ export class FilesService {
         expiresIn: 3600,
       };
     } catch (error) {
-      throw new BadRequestException('Failed to generate download URL');
+      throw new AppException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        code: ERROR_CODES.BAD_REQUEST,
+        message: 'Files.getDownloadUrl.failedToGenerateDownloadUrl',
+        userMessage: 'Failed to generate download URL',
+      });
     }
   }
 
@@ -225,7 +264,12 @@ export class FilesService {
         expiresIn: 3600,
       };
     } catch (error) {
-      throw new BadRequestException('Failed to generate download URL');
+      throw new AppException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        code: ERROR_CODES.BAD_REQUEST,
+        message: 'Files.getPublicDownloadUrl.failedToGenerateDownloadUrl',
+        userMessage: 'Failed to generate download URL',
+      });
     }
   }
 
@@ -245,7 +289,12 @@ export class FilesService {
         expiresIn: 3600,
       };
     } catch (error) {
-      throw new BadRequestException('Failed to generate download URL');
+      throw new AppException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        code: ERROR_CODES.BAD_REQUEST,
+        message: 'Files.getSharedDownloadUrl.failedToGenerateDownloadUrl',
+        userMessage: 'Failed to generate download URL',
+      });
     }
   }
 

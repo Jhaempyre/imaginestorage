@@ -14,6 +14,7 @@ import {
   type BasicResponse,
   type VerifyEmailResponse,
 } from './types';
+import { ErrorHandler, type NormalizedError } from '../error';
 
 // Register mutation
 export const useRegister = (
@@ -33,6 +34,10 @@ export const useRegister = (
         });
       }
     },
+    // onError: (error) => {
+    //   // Handle register-specific errors - error will be normalized by interceptor
+    //   console.error('Register error:', error);
+    // },
     ...options,
   });
 };
@@ -55,6 +60,11 @@ export const useLogin = (
         });
       }
     },
+    onError: (error: unknown) => {
+      // Handle login-specific errors - error will be normalized by interceptor
+      // console.error('Login error:', error);
+      ErrorHandler.handle(error as NormalizedError);
+    },
     ...options,
   });
 };
@@ -73,6 +83,7 @@ export const useLogout = (
       // Optionally clear all cache
       queryClient.clear();
     },
+    onError: (error: unknown) => ErrorHandler.handle(error as NormalizedError),
     ...options,
   });
 };
@@ -83,6 +94,7 @@ export const useRefreshToken = (
 ) => {
   return useMutation({
     mutationFn: authApi.refreshToken,
+    onError: (error: unknown) => ErrorHandler.handle(error as NormalizedError),
     ...options,
   });
 };
@@ -99,6 +111,7 @@ export const useChangePassword = (
       // Clear auth cache since user needs to login again
       queryClient.removeQueries({ queryKey: authKeys.all });
     },
+    onError: (error: unknown) => ErrorHandler.handle(error as NormalizedError),
     ...options,
   });
 };
@@ -119,6 +132,7 @@ export const useVerifyEmail = (
         data: { user: data.data },
       });
     },
+    onError: (error: unknown) => ErrorHandler.handle(error as NormalizedError),
     ...options,
   });
 };
@@ -129,6 +143,7 @@ export const useResendEmailVerification = (
 ) => {
   return useMutation({
     mutationFn: authApi.resendEmailVerification,
+    onError: (error: unknown) => ErrorHandler.handle(error as NormalizedError),
     ...options,
   });
 };
@@ -139,6 +154,7 @@ export const useForgotPassword = (
 ) => {
   return useMutation({
     mutationFn: authApi.forgotPassword,
+    onError: (error: unknown) => ErrorHandler.handle(error as NormalizedError),
     ...options,
   });
 };
@@ -155,6 +171,7 @@ export const useResetPassword = (
       // Clear auth cache since user needs to login again
       queryClient.removeQueries({ queryKey: authKeys.all });
     },
+    onError: (error: unknown) => ErrorHandler.handle(error as NormalizedError),
     ...options,
   });
 };

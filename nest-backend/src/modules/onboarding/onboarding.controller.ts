@@ -22,6 +22,8 @@ import { ChooseProviderDto } from './dto/choose-provider.dto';
 import { ConfigureCredentialsDto } from './dto/configure-credentials.dto';
 import { ApiResponseDto } from '../../common/dto/api-response.dto';
 import { EmailVerifiedGuard } from '@/common/guards/email-verified.guard';
+import { ERROR_CODES } from '@/common/constants/error-code.constansts';
+import { AppException } from '@/common/dto/app-exception';
 
 @ApiTags('Onboarding')
 @Controller('onboarding')
@@ -44,10 +46,10 @@ export class OnboardingController {
     const userId = request.user['_id'];
     const data = await this.onboardingService.getOnboardingStatus(userId);
 
-    return ApiResponseDto.success(
-      'Onboarding status retrieved successfully',
+    return ApiResponseDto.success({
       data,
-    );
+      message: 'Onboarding.getOnboardingStatus.success',
+    });
   }
 
   @Post('choose-provider')
@@ -73,11 +75,11 @@ export class OnboardingController {
     const userId = request.user['_id'];
     const data = await this.onboardingService.chooseProvider(userId, chooseProviderDto);
 
-    return ApiResponseDto.success(
-      'Storage provider selected successfully',
+    return ApiResponseDto.success({
       data,
-      data.navigation
-    );
+      message: 'Onboarding.chooseProvider.success',
+      navigation: data.navigation,
+    });
   }
 
   @Post('configure-credentials')
@@ -104,19 +106,21 @@ export class OnboardingController {
     const result = await this.onboardingService.configureCredentials(userId, configureCredentialsDto);
 
     if (result.success) {
-      return ApiResponseDto.success(
-        'Storage credentials configured and validated successfully',
-        result,
-        result.navigation
-      );
+      return ApiResponseDto.success({
+        data: result,
+        navigation: result.navigation,
+        message: 'Onboarding.configureCredentials.success',
+      });
     } else {
-      return ApiResponseDto.error(
-        'Storage credentials validation failed',
-        result.error?.code || 'VALIDATION_ERROR',
-        result.error?.details || 'Validation failed',
-        result.error?.suggestions,
-        result.navigation
-      );
+      throw new AppException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        code: ERROR_CODES.INVALID_CREDENTIALS,
+        message: 'Onboarding.configureCredentials.invalidCredentials',
+        userMessage: 'Invalid credentials',
+        details: result.error?.details,
+        suggestions: result.error?.suggestions,
+        navigation: result.navigation,
+      });
     }
   }
 }
