@@ -31,6 +31,7 @@ import { ApiResponseDto } from '@/common/dto/api-response.dto';
 import { AppException } from '@/common/dto/app-exception';
 import { ERROR_CODES } from '@/common/constants/error-code.constansts';
 import { resourceLimits } from 'worker_threads';
+import { VerificationStatusResponseDto } from './dto/verification-status-response.dto';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -213,11 +214,14 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Email verification status retrieved successfully' })
   @ApiResponse({ status: 404, description: 'User not found' })
   async getEmailVerificationStatus(@Query('email') email: string) {
-    const result = await this.authService.getEmailVerificationStatus(email);
+    const { navigation, ...rest } = await this.authService.getEmailVerificationStatus(email);
 
     return ApiResponseDto.success({
       message: 'Auth.getEmailVerificationStatus.success',
-      data: result,
+      data: new VerificationStatusResponseDto({
+        ...rest
+      }),
+      navigation,
     });
   }
 

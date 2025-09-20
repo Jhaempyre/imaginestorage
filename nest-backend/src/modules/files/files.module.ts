@@ -56,5 +56,6 @@ import * as fs from 'fs';
   ],
   controllers: [FilesController],
   providers: [FilesService],
+  exports: [FilesService],
 })
 export class FilesModule {}

@@ -1,17 +1,23 @@
-import { UserStorageConfig, UserStorageConfigDocument } from '@/schemas/user-storage-config.schema';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { DeleteParams, DownloadUrlParams, IStorageProvider, UploadParams, UploadResult } from './interfaces/storage-provider.interface';
+import {
+  DeleteParams,
+  DownloadUrlParams,
+  IStorageProviderService,
+  UploadParams,
+  UploadResult
+} from 'src/common/interfaces/storage.interface';
 import { AWSStorageProvider } from './providers/aws-storage.provider';
+import { UserStorageConfig, UserStorageConfigDocument } from '@/schemas/user-storage-config.schema';
 
 export type SupportedProviders = 'aws' | 'gcp' | 'azure' | 'local';
 
 @Injectable()
 export class StorageService {
-  private providers: Map<SupportedProviders, IStorageProvider> = new Map();
-  // private activeProvider?: IStorageProvider;
+  private providers: Map<SupportedProviders, IStorageProviderService> = new Map();
+  // private activeProvider?: IStorageProviderService;
 
   constructor(
     private configService: ConfigService,
@@ -25,7 +31,7 @@ export class StorageService {
     // await this.initializeFromEnv();
   }
 
-  registerProvider(type: SupportedProviders, provider: IStorageProvider): void {
+  registerProvider(type: SupportedProviders, provider: IStorageProviderService): void {
     this.providers.set(type, provider);
   }
 
@@ -34,7 +40,7 @@ export class StorageService {
    * @param userId 
    * @returns provider info with credentials for internal use only
    */
-  private async _getActiveProviderForUser(userId: string): Promise<IStorageProvider> {
+  private async _getActiveProviderForUser(userId: string): Promise<IStorageProviderService> {
     const userConfig = await this.userStorageConfigModel.findOne({ userId, isActive: true }).select('provider credentials');
 
     if (!userConfig) {
@@ -54,13 +60,6 @@ export class StorageService {
   async getUserStorageConfig(userId: string) {
     return this.userStorageConfigModel.findOne({ userId, isActive: true }).select('provider isValidated lastValidatedAt validationError isActive createdAt');
   }
-
-  // async getActiveProviderForUser(userId: string) {
-  //   const userConfig = await this.userStorageConfigModel.findOne({ userId, isActive: true }).select('provider');
-  //   const provider = this.providers.get(userConfig.provider);
-  //   await provider.initialize(userConfig.credentials);
-  //   return provider;
-  // }
 
   async uploadFile(userId: string, params: UploadParams): Promise<UploadResult & { provider: string }> {
     const provider = await this._getActiveProviderForUser(userId);

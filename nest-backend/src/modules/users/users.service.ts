@@ -15,6 +15,10 @@ export class UsersService {
     @InjectModel(File.name) private fileModel: Model<FileDocument>,
   ) {}
 
+  async getAllUsers(): Promise<UserDocument[]> {
+    return this.userModel.find().select('-password -refreshToken -emailVerificationToken -passwordResetToken');
+  }
+
   async getUserProfile(userId: string): Promise<UserDocument> {
     const user = await this.userModel
       .findById(userId)

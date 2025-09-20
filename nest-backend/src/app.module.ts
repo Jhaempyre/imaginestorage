@@ -8,6 +8,7 @@ import { UsersModule } from './modules/users/users.module';
 import { FilesModule } from './modules/files/files.module';
 import { StorageModule } from './modules/storage/storage.module';
 import { OnboardingModule } from './modules/onboarding/onboarding.module';
+import { ShellModule } from './modules/shell/shell.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { OnboardingModule } from './modules/onboarding/onboarding.module';
     FilesModule,
     StorageModule,
     OnboardingModule,
+    ShellModule,
   ],
   controllers: [AppController],
   providers: [AppService],

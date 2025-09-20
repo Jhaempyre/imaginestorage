@@ -1,6 +1,4 @@
-import {
-  useVerifyEmail
-} from "@/api/auth/mutations";
+import { useVerifyEmail } from "@/api/auth/mutations";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,14 +21,14 @@ export default function VerifyEmail() {
 
   // Mutations
   const verifyEmailMutation = useVerifyEmail({
-    onSuccess: (data) => {
+    onSuccess: () => {
       setVerificationStatus("success");
       // Navigate based on backend response
-      if (data.navigation?.redirectTo) {
-        setTimeout(() => {
-          navigate(data.navigation!.redirectTo!, { replace: true });
-        }, 2000);
-      }
+      // if (data.navigation?.redirectTo) {
+      //   setTimeout(() => {
+      //     navigate(data.navigation!.redirectTo!, { replace: true });
+      //   }, 2000);
+      // }
     },
     onError: () => {
       setVerificationStatus("error");
