@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import {
@@ -15,6 +15,9 @@ import { UserStorageConfig, UserStorageConfigDocument } from '../../schemas/user
 import { User, UserDocument } from '../../schemas/user.schema';
 import { ChooseProviderDto } from './dto/choose-provider.dto';
 import { ConfigureCredentialsDto } from './dto/configure-credentials.dto';
+import { AppException } from '@/common/dto/app-exception';
+import { ERROR_CODES } from '@/common/constants/error-code.constansts';
+import { FRONTEND_ROUTES, NAVIGATION_TYPES } from '@/common/constants/routes.constants';
 
 @Injectable()
 export class OnboardingService {
@@ -28,94 +31,140 @@ export class OnboardingService {
    * Get onboarding status for a user
    */
   async getOnboardingStatus(userId: string) {
-    const user = await this.userModel.findById(userId);
-    if (!user) {
-      throw new BadRequestException('User not found');
-    }
+    try {
+      const user = await this.userModel.findById(userId);
+      if (!user) {
+        throw new AppException({
+          code: ERROR_CODES.NOT_FOUND,
+          message: 'Onboarding.getOnboardingStatus.userNotFound',
+          userMessage: 'User not found',
+          details: 'Please check your credentials and try again.',
+          statusCode: HttpStatus.NOT_FOUND,
+        });
+      }
 
-    // If onboarding is already complete
-    if (user.isOnboardingComplete) {
-      const storageConfig = await this.storageConfigModel.findOne({
+      // If onboarding is already complete
+      if (user.isOnboardingComplete) {
+        const storageConfig = await this.storageConfigModel.findOne({
+          userId: new Types.ObjectId(userId),
+          isActive: true
+        });
+
+        return {
+          isOnboardingComplete: true,
+          currentStep: ONBOARDING_STEPS.COMPLETED,
+          hasStorageConfig: !!storageConfig,
+          storageProvider: storageConfig?.provider,
+        };
+      }
+
+      // Check if user has started onboarding (has storage config but not completed)
+      const existingConfig = await this.storageConfigModel.findOne({
         userId: new Types.ObjectId(userId),
         isActive: true
       });
 
-      return {
-        isOnboardingComplete: true,
-        currentStep: ONBOARDING_STEPS.COMPLETED,
-        hasStorageConfig: !!storageConfig,
-        storageProvider: storageConfig?.provider,
-      };
+      if (!existingConfig) {
+        return ({
+          isOnboardingComplete: false,
+          currentStep: ONBOARDING_STEPS.CHOOSE_PROVIDER,
+          hasStorageConfig: false,
+          availableProviders: Object.values(STORAGE_PROVIDER_METADATA),
+        });
+      }
+
+      if (existingConfig && !existingConfig.provider) {
+        return ({
+          isOnboardingComplete: false,
+          currentStep: ONBOARDING_STEPS.CHOOSE_PROVIDER,
+          hasStorageConfig: false,
+          availableProviders: Object.values(STORAGE_PROVIDER_METADATA),
+        });
+      }
+
+      // else (existingConfig && existingConfig.provider && !existingConfig.credentials) {
+      else {
+        return {
+          isOnboardingComplete: false,
+          currentStep: ONBOARDING_STEPS.CONFIGURE_CREDENTIALS,
+          hasStorageConfig: true,
+          selectedProvider: existingConfig.provider,
+          requiredFields: STORAGE_PROVIDER_METADATA[existingConfig.provider].fieldDefinitions,
+        };
+      }
+
+    } catch (error) {
+      console.log({ "error": error });
+      throw new AppException({
+        code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+        message: 'Onboarding.getOnboardingStatus.unknownError',
+        userMessage: 'An unknown error occurred',
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+      });
     }
-
-    // Check if user has started onboarding (has storage config but not completed)
-    const existingConfig = await this.storageConfigModel.findOne({
-      userId: new Types.ObjectId(userId),
-      isActive: true
-    });
-
-    if (existingConfig && !existingConfig.isValidated) {
-      // User has chosen provider but not configured credentials
-      return {
-        isOnboardingComplete: false,
-        currentStep: ONBOARDING_STEPS.CONFIGURE_CREDENTIALS,
-        hasStorageConfig: true,
-        selectedProvider: existingConfig.provider,
-        requiredFields: STORAGE_PROVIDER_METADATA[existingConfig.provider].fieldDefinitions,
-      };
-    }
-
-    // User needs to start onboarding
-    return {
-      isOnboardingComplete: false,
-      currentStep: ONBOARDING_STEPS.CHOOSE_PROVIDER,
-      hasStorageConfig: false,
-      availableProviders: Object.values(STORAGE_PROVIDER_METADATA),
-    };
   }
 
   /**
    * Handle provider selection (Step 1)
    */
   async chooseProvider(userId: string, chooseProviderDto: ChooseProviderDto) {
-    const { provider } = chooseProviderDto;
+    try {
+      console.log({ "chooseProviderDto": chooseProviderDto });
+      const { provider } = chooseProviderDto;
 
-    // Validate provider exists
-    if (!STORAGE_PROVIDER_METADATA[provider]) {
-      throw new BadRequestException(`Unsupported storage provider: ${provider}`);
-    }
+      // Validate provider exists
+      if (!STORAGE_PROVIDER_METADATA[provider]) {
+        throw new AppException({
+          code: ERROR_CODES.BAD_REQUEST,
+          message: 'Onboarding.chooseProvider.unsupportedProvider',
+          userMessage: 'Unsupported storage provider',
+          details: `Provider: ${provider}`,
+          statusCode: HttpStatus.BAD_REQUEST,
+        });
+      }
 
-    // Check if user already has a storage config
-    const existingConfig = await this.storageConfigModel.findOne({
-      userId: new Types.ObjectId(userId),
-      isActive: true
-    });
-
-    if (existingConfig) {
-      // Update existing config with new provider
-      existingConfig.provider = provider;
-      existingConfig.credentials = {}; // Reset credentials
-      existingConfig.isValidated = false;
-      existingConfig.validationError = null;
-      await existingConfig.save();
-    } else {
-      // Create new storage config
-      await this.storageConfigModel.create({
+      // Check if user already has a storage config
+      const existingConfig = await this.storageConfigModel.findOne({
         userId: new Types.ObjectId(userId),
+        isActive: true
+      });
+
+      if (existingConfig) {
+        // Update existing config with new provider
+        existingConfig.provider = provider;
+        existingConfig.credentials = {}; // Reset credentials
+        existingConfig.isValidated = false;
+        existingConfig.validationError = null;
+        await existingConfig.save();
+      } else {
+        // Create new storage config
+        await this.storageConfigModel.create({
+          userId: new Types.ObjectId(userId),
+          provider,
+          credentials: {},
+          isValidated: false,
+        });
+      }
+
+      const providerMetadata = STORAGE_PROVIDER_METADATA[provider];
+
+      return {
         provider,
-        credentials: {},
-        isValidated: false,
+        requiredFields: Object.values(providerMetadata.fieldDefinitions),
+        navigation: {
+          route: FRONTEND_ROUTES.ONBOARDING.STEP_2,
+          type: NAVIGATION_TYPES.PUSH,
+        },
+      };
+    } catch (error) {
+      console.log({ "error": error });
+      throw new AppException({
+        code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+        message: 'Onboarding.chooseProvider.unknownError',
+        userMessage: 'An unknown error occurred',
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
       });
     }
-
-    const providerMetadata = STORAGE_PROVIDER_METADATA[provider];
-    const navigation = this.navigationService.getOnboardingNavigation(ONBOARDING_STEPS.CHOOSE_PROVIDER);
-
-    return {
-      provider,
-      requiredFields: Object.values(providerMetadata.fieldDefinitions),
-      navigation,
-    };
   }
 
   /**
@@ -131,7 +180,13 @@ export class OnboardingService {
     });
 
     if (!storageConfig) {
-      throw new BadRequestException('No storage provider selected. Please choose a provider first.');
+      throw new AppException({
+        code: ERROR_CODES.BAD_REQUEST,
+        message: 'Onboarding.configureCredentials.noStorageProviderSelected',
+        userMessage: 'No storage provider selected',
+        details: 'Please select a storage provider first.',
+        statusCode: HttpStatus.BAD_REQUEST,
+      });
     }
 
     // Validate credentials format based on provider
@@ -153,16 +208,13 @@ export class OnboardingService {
         storageConfig.validationError = validationResult.error?.message || 'Validation failed';
         await storageConfig.save();
 
-        const navigation = this.navigationService.getOnboardingNavigation(
-          ONBOARDING_STEPS.CONFIGURE_CREDENTIALS,
-          false
-        );
-
-        return {
-          success: false,
-          error: validationResult.error,
-          navigation,
-        };
+        throw new AppException({
+          statusCode: HttpStatus.BAD_REQUEST,
+          code: ERROR_CODES.INVALID_CREDENTIALS,
+          message: 'Onboarding.configureCredentials.invalidCredentials',
+          userMessage: 'Invalid credentials',
+          details: validationResult.error?.message || 'Validation failed',
+        });
       }
 
       // Mark as validated and complete onboarding
@@ -310,7 +362,7 @@ export class OnboardingService {
 
     // For demo purposes, assume validation passes
     return {
-      isValid: true,
+      isValid: false,
       storageInfo: {
         bucketName: credentials.bucketName || credentials.containerName || 'storage',
         region: credentials.region || 'default',

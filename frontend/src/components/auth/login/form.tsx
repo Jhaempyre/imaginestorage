@@ -1,3 +1,5 @@
+import { isNormalizedError, useLogin } from "@/api";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -5,15 +7,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { z } from "zod";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { isNormalizedError, useLogin } from "@/api";
+import { z } from "zod";
 
 // Zod validation schema
 const loginSchema = z.object({
@@ -24,7 +24,7 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 
 interface LoginFormProps extends React.ComponentProps<"div"> {
-  onSuccess?: () => void;
+  onSuccess?: (data: any) => void;
   onSwitchToRegister?: () => void;
 }
 
@@ -48,7 +48,7 @@ export function LoginForm({
   const loginMutation = useLogin({
     onSuccess: (data) => {
       console.log("Login successful:", data);
-      onSuccess?.();
+      onSuccess?.(data);
     },
     onError: (error) => {
       console.error("Login failed:", error);

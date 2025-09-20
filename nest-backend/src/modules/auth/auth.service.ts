@@ -2,7 +2,7 @@ import { BadRequestException, ConflictException, HttpStatus, Injectable, Logger,
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { NavigationService } from '../../common/services/navigation.service';
 import { UserStorageConfig, UserStorageConfigDocument } from '../../schemas/user-storage-config.schema';
 import { User, UserDocument } from '../../schemas/user.schema';
@@ -117,10 +117,15 @@ export class AuthService {
     delete userResponse.password;
     delete userResponse.refreshToken;
 
+    const existingConfig = await this.storageConfigModel.findOne({
+      userId: new Types.ObjectId(userResponse._id),
+      isActive: true
+    });
+
     return {
       user: userResponse,
       tokens,
-      navigation: this.navigationService.getAuthNavigation('login', user)
+      navigation: this.navigationService.getAuthNavigation('login', user, existingConfig)
     };
   }
 
@@ -261,14 +266,14 @@ export class AuthService {
     await user.save();
 
     // Get navigation after email verification
-    const navigation = this.navigationService.getAuthNavigation('verify-email');
+    // const navigation = this.navigationService.getAuthNavigation('verify-email');
 
     return {
       user: {
         isEmailVerified: true,
         isOnboardingComplete: user.isOnboardingComplete,
       },
-      navigation,
+      navigation: null,
     };
   }
 
@@ -330,6 +335,11 @@ export class AuthService {
     if (!user || !user.isActive || user.deletedAt) {
       throw new UnauthorizedException('User not found');
     }
+
+    // const existingConfig = await this.storageConfigModel.findOne({
+    //   userId: new Types.ObjectId(userId),
+    //   isActive: true
+    // });
 
     return {
       user: user,

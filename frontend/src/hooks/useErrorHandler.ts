@@ -1,9 +1,9 @@
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import type { NormalizedError } from '../api/error';
 import { ErrorHandler, ErrorInterceptor } from '../api/error';
 import { ErrorNotificationSystem } from '../api/error/notifications';
-import type { NormalizedError } from '../api/error';
+import { useNavigate } from 'react-router';
 
 /**
  * Hook to initialize global error handling
@@ -11,6 +11,7 @@ import type { NormalizedError } from '../api/error';
  */
 export function useErrorHandler() {
   const navigate = useNavigate();
+  // const navigate = () => {}
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -20,6 +21,7 @@ export function useErrorHandler() {
     // Initialize error handler with dependencies
     ErrorHandler.initialize(
       navigate,
+      // () => {},
       queryClient,
       (error: NormalizedError) => {
         ErrorNotificationSystem.showNotification(error);

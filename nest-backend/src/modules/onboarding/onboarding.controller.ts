@@ -117,8 +117,6 @@ export class OnboardingController {
         code: ERROR_CODES.INVALID_CREDENTIALS,
         message: 'Onboarding.configureCredentials.invalidCredentials',
         userMessage: 'Invalid credentials',
-        details: result.error?.details,
-        suggestions: result.error?.suggestions,
         navigation: result.navigation,
       });
     }

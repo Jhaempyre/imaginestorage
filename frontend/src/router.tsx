@@ -4,6 +4,8 @@ import { PrivateLayout } from "./components/private";
 import { useErrorHandler } from "./hooks/useErrorHandler";
 import VerifyEmail from "./components/auth/verify-email";
 import EmailVerificationStatus from "./components/auth/email-verification-status";
+import ChooseProviderPage from "./components/onboarding/choose-provider";
+import ConfigureCredentialsPage from "./components/onboarding/configure-credentials";
 
 function RouterContent() {
   // Initialize global error handling
@@ -40,14 +42,8 @@ function RouterContent() {
         {/* Add more protected routes here */}
         {/* Onboarding Routes */}
         <Route path="/onboarding">
-          <Route
-            path="step-1"
-            element={<div>Onboarding Step 1 - Choose Provider</div>}
-          />
-          <Route
-            path="step-2"
-            element={<div>Onboarding Step 2 - Configure Credentials</div>}
-          />
+          <Route path="step-1" element={<ChooseProviderPage />} />
+          <Route path="step-2" element={<ConfigureCredentialsPage />} />
         </Route>
       </Route>
 

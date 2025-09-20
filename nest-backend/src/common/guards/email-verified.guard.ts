@@ -12,7 +12,7 @@ export class EmailVerifiedGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const user: User = request.user;
 
-    console.log({ user });
+    console.log("Email verified gurad: ", { user });
 
     if (!user) {
       throw new ForbiddenException('User not authenticated');

@@ -3,6 +3,7 @@ import { NavigationControl, UserNavigationState, NavigationContext } from '../in
 import { FRONTEND_ROUTES, NAVIGATION_TYPES, NAVIGATION_REASONS, FrontendRoute } from '../constants/routes.constants';
 import { ONBOARDING_STEPS } from '../constants/storage.constants';
 import { User } from '@/schemas/user.schema';
+import { UserStorageConfigDocument } from '@/schemas/user-storage-config.schema';
 
 /**
  * Navigation Service
@@ -86,7 +87,7 @@ export class NavigationService {
   /**
    * Get navigation for authentication flows
    */
-  getAuthNavigation(action: 'register' | 'verify-email' | 'login', user?: User): NavigationControl {
+  getAuthNavigation(action: 'register' | 'verify-email' | 'login', user?: User, config?: UserStorageConfigDocument): NavigationControl {
     switch (action) {
       case 'register':
         return {
@@ -107,13 +108,16 @@ export class NavigationService {
             route: FRONTEND_ROUTES.DASHBOARD.HOME,
             type: NAVIGATION_TYPES.PUSH,
           }
-        }
-
-        else {
+        } else if (!config?.provider) {
           return {
             route: FRONTEND_ROUTES.ONBOARDING.STEP_1,
             type: NAVIGATION_TYPES.REPLACE,
             reason: NAVIGATION_REASONS.ONBOARDING_REQUIRED,
+          };
+        } else if (!config?.credentials || config.isValidated) {
+          return {
+            route: FRONTEND_ROUTES.ONBOARDING.STEP_2,
+            type: NAVIGATION_TYPES.PUSH,
           };
         }
     }
