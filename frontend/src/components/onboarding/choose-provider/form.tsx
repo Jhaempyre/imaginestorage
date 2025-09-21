@@ -1,4 +1,7 @@
-import { useOnboardingStatus } from "@/api/onboarding/queires";
+import {
+  useGetStorageProviders,
+  useOnboardingStatus,
+} from "@/api/onboarding/queires";
 import {
   Card,
   CardContent,
@@ -6,12 +9,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { CheckIcon, Loader2 } from "lucide-react";
-import React from "react";
+import React, { useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { useSubmitProviderSelection } from "@/api/onboarding/mutation";
 
@@ -24,20 +26,29 @@ function ChooseProviderForm({
   onSuccess,
   ...props
 }: ChooseProviderFormProps) {
-  const { data: statusData, isLoading: isStatusLoading } =
-    useOnboardingStatus();
-  // console.log(statusData);
+  const { data: storageProvidersData, isLoading: isStorageProvidersLoading } =
+    useGetStorageProviders();
 
   const {
     control,
     handleSubmit,
     formState: { errors, isSubmitting },
     setError,
+    setValue,
   } = useForm({
     defaultValues: {
       provider: "",
     },
   });
+
+  const { data: statusData, isLoading: isStatusLoading } =
+    useOnboardingStatus();
+
+  useEffect(() => {
+    if (statusData?.data?.hasStorageConfig) {
+      setValue("provider", statusData.data.selectedProvider);
+    }
+  }, [statusData]);
 
   const submitProviderSelection = useSubmitProviderSelection({
     onSuccess: console.log,
@@ -58,7 +69,7 @@ function ChooseProviderForm({
         onSuccess();
       }
     } catch (error) {
-      console.log({error})
+      console.log({ error });
       setError("root", {
         type: "manual",
         message: "Failed to save provider selection. Please try again.",
@@ -66,7 +77,10 @@ function ChooseProviderForm({
     }
   };
 
-  if (isStatusLoading && !statusData) {
+  if (
+    (isStatusLoading && !statusData) ||
+    (isStorageProvidersLoading && !storageProvidersData)
+  ) {
     return (
       <div className="mx-auto max-w-md space-y-6 py-12 px-4 sm:px-6 lg:px-8">
         <Card>
@@ -115,63 +129,61 @@ function ChooseProviderForm({
                 rules={{ required: "Please select a storage provider" }}
                 render={({ field }) => (
                   <div className="grid gap-3">
-                    {statusData?.data?.availableProviders?.map(
-                      (provider: any) => (
-                        <div
-                          key={provider.id}
-                          className={cn(
-                            "flex items-center gap-3 rounded-md border px-4 py-3 cursor-pointer transition-all duration-200",
-                            field.value === provider.id
-                              ? "border-blue-500 bg-blue-50 shadow-sm"
-                              : "border-gray-200 hover:bg-gray-50 hover:border-gray-300"
-                          )}
-                          onClick={() => field.onChange(provider.id)}
-                        >
-                          <div className="flex-1">
-                            <div className="font-medium text-gray-900">
-                              {provider.name}
-                            </div>
-                            <div className="text-sm text-gray-500 mt-1">
-                              {provider.description}
-                            </div>
-                            {provider.features &&
-                              provider.features.length > 0 && (
-                                <div className="flex flex-wrap gap-1 mt-2">
-                                  {provider.features
-                                    .slice(0, 2)
-                                    .map((feature: string, index: number) => (
-                                      <span
-                                        key={index}
-                                        className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-700"
-                                      >
-                                        {feature}
-                                      </span>
-                                    ))}
-                                  {provider.features.length > 2 && (
-                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-700">
-                                      +{provider.features.length - 2} more
-                                    </span>
-                                  )}
-                                </div>
-                              )}
+                    {storageProvidersData?.data?.map((provider: any) => (
+                      <div
+                        key={provider.id}
+                        className={cn(
+                          "flex items-center gap-3 rounded-md border px-4 py-3 cursor-pointer transition-all duration-200",
+                          field.value === provider.id
+                            ? "border-blue-500 bg-blue-50 shadow-sm"
+                            : "border-gray-200 hover:bg-gray-50 hover:border-gray-300"
+                        )}
+                        onClick={() => field.onChange(provider.id)}
+                      >
+                        <div className="flex-1">
+                          <div className="font-medium text-gray-900">
+                            {provider.name}
                           </div>
-                          <div className="flex-shrink-0">
-                            <div
-                              className={cn(
-                                "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors",
-                                field.value === provider.id
-                                  ? "border-blue-500 bg-blue-500"
-                                  : "border-gray-300"
-                              )}
-                            >
-                              {field.value === provider.id && (
-                                <CheckIcon className="h-3 w-3 text-white" />
-                              )}
-                            </div>
+                          <div className="text-sm text-gray-500 mt-1">
+                            {provider.description}
+                          </div>
+                          {provider.features &&
+                            provider.features.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-2">
+                                {provider.features
+                                  .slice(0, 2)
+                                  .map((feature: string, index: number) => (
+                                    <span
+                                      key={index}
+                                      className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-700"
+                                    >
+                                      {feature}
+                                    </span>
+                                  ))}
+                                {provider.features.length > 2 && (
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-700">
+                                    +{provider.features.length - 2} more
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                        </div>
+                        <div className="flex-shrink-0">
+                          <div
+                            className={cn(
+                              "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors",
+                              field.value === provider.id
+                                ? "border-blue-500 bg-blue-500"
+                                : "border-gray-300"
+                            )}
+                          >
+                            {field.value === provider.id && (
+                              <CheckIcon className="h-3 w-3 text-white" />
+                            )}
                           </div>
                         </div>
-                      )
-                    )}
+                      </div>
+                    ))}
                   </div>
                 )}
               />

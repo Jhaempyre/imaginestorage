@@ -1,5 +1,10 @@
-import { useSubmitProviderSelection } from "@/api/onboarding/mutation";
-import { useOnboardingStatus } from "@/api/onboarding/queires";
+import type { NormalizedError } from "@/api/error";
+import { useSubmitConfigureCredentials } from "@/api/onboarding/mutation";
+import {
+  useGetStorageProviderFields,
+  useOnboardingStatus,
+} from "@/api/onboarding/queires";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -7,7 +12,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -19,9 +23,9 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { Loader2, Shield, Database } from "lucide-react";
+import { Database, Loader2, Shield } from "lucide-react";
 import React from "react";
-import { useForm, Controller } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 
 interface ConfigureCredentialsProps extends React.ComponentProps<"div"> {
   onSuccess?: () => void;
@@ -42,6 +46,11 @@ function ConfigureCredentials({
   onSuccess,
   ...props
 }: ConfigureCredentialsProps) {
+  const {
+    data: storageProviderFields,
+    isLoading: isStorageProviderFieldsLoading,
+  } = useGetStorageProviderFields();
+
   const { data: statusData, isLoading: isStatusLoading } =
     useOnboardingStatus();
 
@@ -50,11 +59,11 @@ function ConfigureCredentials({
     handleSubmit,
     formState: { errors, isSubmitting },
     setError,
-  } = useForm({
+  } = useForm<Record<string, any>>({
     defaultValues: {},
   });
 
-  const submitCredentials = useSubmitProviderSelection({
+  const submitCredentials = useSubmitConfigureCredentials({
     onSuccess: (data) => {
       console.log("Credentials saved successfully:", data);
       if (onSuccess) {
@@ -65,15 +74,26 @@ function ConfigureCredentials({
       console.error("Failed to save credentials:", error);
       setError("root", {
         type: "manual",
-        message: "Failed to save credentials. Please check your information and try again.",
+        message:
+          (error as unknown as NormalizedError).userFriendlyMessage ??
+          "Failed to save credentials. Please check your information and try again.",
       });
+      setTimeout(() => {
+        const rootErrorBox = document.getElementById("root-error-box");
+        const bounds = rootErrorBox?.getBoundingClientRect();
+        if (bounds) {
+          var elementPosition = bounds?.top;
+          var offsetPosition = elementPosition + window.pageYOffset - 100;
+          window.scrollTo({ top: offsetPosition, behavior: "smooth" });
+        }
+      }, 100);
     },
   });
 
   const onSubmit = async (data: Record<string, any>) => {
     try {
       console.log("Submitting credentials:", data);
-      submitCredentials.mutate(data);
+      submitCredentials.mutate({ credentials: data });
     } catch (error) {
       console.log({ error });
       setError("root", {
@@ -99,15 +119,14 @@ function ConfigureCredentials({
           <div className="space-y-2">
             <Label htmlFor={fieldName} className="text-sm font-medium">
               {fieldDef.label}
-              {fieldDef.required && <span className="text-red-500 ml-1">*</span>}
+              {fieldDef.required && (
+                <span className="text-red-500 ml-1">*</span>
+              )}
             </Label>
             <Controller
               {...commonProps}
               render={({ field }) => (
-                <Select
-                  value={field.value}
-                  onValueChange={field.onChange}
-                >
+                <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger>
                     <SelectValue placeholder={fieldDef.placeholder} />
                   </SelectTrigger>
@@ -126,7 +145,7 @@ function ConfigureCredentials({
             )}
             {errors[fieldName] && (
               <p className="text-sm text-red-600">
-                {errors[fieldName]?.message}
+                {(errors as any)[fieldName]?.message}
               </p>
             )}
           </div>
@@ -137,7 +156,9 @@ function ConfigureCredentials({
           <div className="space-y-2">
             <Label htmlFor={fieldName} className="text-sm font-medium">
               {fieldDef.label}
-              {fieldDef.required && <span className="text-red-500 ml-1">*</span>}
+              {fieldDef.required && (
+                <span className="text-red-500 ml-1">*</span>
+              )}
             </Label>
             <Controller
               {...commonProps}
@@ -156,7 +177,7 @@ function ConfigureCredentials({
             )}
             {errors[fieldName] && (
               <p className="text-sm text-red-600">
-                {errors[fieldName]?.message}
+                {(errors as any)[fieldName]?.message}
               </p>
             )}
           </div>
@@ -167,7 +188,9 @@ function ConfigureCredentials({
           <div className="space-y-2">
             <Label htmlFor={fieldName} className="text-sm font-medium">
               {fieldDef.label}
-              {fieldDef.required && <span className="text-red-500 ml-1">*</span>}
+              {fieldDef.required && (
+                <span className="text-red-500 ml-1">*</span>
+              )}
             </Label>
             <Controller
               {...commonProps}
@@ -185,7 +208,7 @@ function ConfigureCredentials({
             )}
             {errors[fieldName] && (
               <p className="text-sm text-red-600">
-                {errors[fieldName]?.message}
+                {(errors as any)[fieldName]?.message}
               </p>
             )}
           </div>
@@ -223,7 +246,10 @@ function ConfigureCredentials({
     }
   };
 
-  if (isStatusLoading && !statusData) {
+  if (
+    (isStatusLoading && !statusData) ||
+    (isStorageProviderFieldsLoading && !storageProviderFields)
+  ) {
     return (
       <div className="mx-auto max-w-md space-y-6 py-12 px-4 sm:px-6 lg:px-8">
         <Card>
@@ -243,10 +269,10 @@ function ConfigureCredentials({
     );
   }
 
-  const requiredFields = statusData?.data?.requiredFields;
-  const selectedProvider = statusData?.data?.selectedProvider;
+  const requiredFields = storageProviderFields?.data?.requiredFields;
+  const selectedProvider = storageProviderFields?.data?.provider;
 
-  if (!requiredFields || !selectedProvider) {
+  if (!requiredFields && !selectedProvider) {
     return (
       <div className="mx-auto max-w-md space-y-6 py-12 px-4 sm:px-6 lg:px-8">
         <Card>
@@ -255,7 +281,8 @@ function ConfigureCredentials({
               Configuration Error
             </CardTitle>
             <CardDescription>
-              Unable to load provider configuration. Please go back and select a provider.
+              Unable to load provider configuration. Please go back and select a
+              provider.
             </CardDescription>
           </CardHeader>
         </Card>
@@ -264,7 +291,10 @@ function ConfigureCredentials({
   }
 
   return (
-    <div className={cn("flex flex-col gap-6 max-w-2xl mx-auto", className)} {...props}>
+    <div
+      className={cn("flex flex-col gap-6 max-w-2xl mx-auto", className)}
+      {...props}
+    >
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
@@ -274,7 +304,8 @@ function ConfigureCredentials({
                 Configure {getProviderName(selectedProvider)} Credentials
               </CardTitle>
               <CardDescription>
-                Enter your {getProviderName(selectedProvider)} credentials to complete the setup
+                Enter your {getProviderName(selectedProvider)} credentials to
+                complete the setup
               </CardDescription>
             </div>
           </div>
@@ -283,7 +314,10 @@ function ConfigureCredentials({
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {/* Root error display */}
             {errors.root && (
-              <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md border border-red-200">
+              <div
+                className="text-sm text-red-600 bg-red-50 p-3 rounded-md border border-red-200"
+                id="root-error-box"
+              >
                 <div className="flex items-center gap-2">
                   <Shield className="h-4 w-4" />
                   {errors.root.message}
@@ -327,14 +361,15 @@ function ConfigureCredentials({
 
       {/* Security Notice */}
       <Card className="bg-blue-50 border-blue-200">
-        <CardContent className="pt-6">
+        <CardContent>
           <div className="flex items-start gap-3">
             <Shield className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
             <div className="text-sm text-blue-800">
               <div className="font-medium mb-1">Security Notice</div>
               <p className="text-blue-700">
-                Your credentials are encrypted and stored securely. We recommend using
-                dedicated service accounts with minimal required permissions for enhanced security.
+                Your credentials are encrypted and stored securely. We recommend
+                using dedicated service accounts with minimal required
+                permissions for enhanced security.
               </p>
             </div>
           </div>

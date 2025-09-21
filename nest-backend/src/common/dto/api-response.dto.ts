@@ -79,18 +79,20 @@ export class ApiResponseDto<T = any> {
     errorDetails,
     suggestions,
     navigation,
+    statusCode,
   }: {
     message: string;
     errorCode: ErrorCodeType;
     errorUserMessage: string;
     errorDetails?: string;
     suggestions?: string[];
+    statusCode?: number;
     navigation?: NavigationControl;
   }): ApiResponseDto<T> {
     return new ApiResponseDto(
       {
         success: false,
-        statusCode: 400,
+        statusCode: statusCode ?? 400,
         message,
         error: {
           code: errorCode,

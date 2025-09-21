@@ -27,6 +27,44 @@ export class OnboardingService {
     private navigationService: NavigationService,
   ) { }
 
+  getStorageProviders() {
+    return Object.values(STORAGE_PROVIDER_METADATA);
+  }
+
+  async getStorageProviderFields(userId: string) {
+    const storageConfig = await this.storageConfigModel.findOne({
+      userId: new Types.ObjectId(userId),
+      isActive: true
+    });
+
+    if (!storageConfig || !storageConfig.provider) {
+      throw new AppException({
+        code: ERROR_CODES.BAD_REQUEST,
+        message: 'Onboarding.getStorageProviderFields.noStorageProviderSelected',
+        userMessage: 'No storage provider selected',
+        details: 'Please select a storage provider first.',
+        statusCode: HttpStatus.BAD_REQUEST,
+      });
+    }
+
+    if (!STORAGE_PROVIDER_METADATA[storageConfig.provider]) {
+      throw new AppException({
+        code: ERROR_CODES.BAD_REQUEST,
+        message: 'Onboarding.getStorageProviderFields.unknownProvider',
+        userMessage: 'Unknown storage provider',
+        details: `Provider: ${storageConfig.provider}`,
+        statusCode: HttpStatus.BAD_REQUEST,
+      });
+    }
+
+    const fieldDefinitions = STORAGE_PROVIDER_METADATA[storageConfig.provider].fieldDefinitions;
+
+    return {
+      provider: storageConfig.provider,
+      requiredFields: fieldDefinitions,
+    };
+  }
+
   /**
    * Get onboarding status for a user
    */
@@ -42,6 +80,8 @@ export class OnboardingService {
           statusCode: HttpStatus.NOT_FOUND,
         });
       }
+
+
 
       // If onboarding is already complete
       if (user.isOnboardingComplete) {
@@ -64,21 +104,11 @@ export class OnboardingService {
         isActive: true
       });
 
-      if (!existingConfig) {
+      if (!existingConfig || existingConfig && !existingConfig.provider) {
         return ({
           isOnboardingComplete: false,
           currentStep: ONBOARDING_STEPS.CHOOSE_PROVIDER,
           hasStorageConfig: false,
-          availableProviders: Object.values(STORAGE_PROVIDER_METADATA),
-        });
-      }
-
-      if (existingConfig && !existingConfig.provider) {
-        return ({
-          isOnboardingComplete: false,
-          currentStep: ONBOARDING_STEPS.CHOOSE_PROVIDER,
-          hasStorageConfig: false,
-          availableProviders: Object.values(STORAGE_PROVIDER_METADATA),
         });
       }
 
@@ -89,7 +119,6 @@ export class OnboardingService {
           currentStep: ONBOARDING_STEPS.CONFIGURE_CREDENTIALS,
           hasStorageConfig: true,
           selectedProvider: existingConfig.provider,
-          requiredFields: STORAGE_PROVIDER_METADATA[existingConfig.provider].fieldDefinitions,
         };
       }
 
@@ -362,7 +391,7 @@ export class OnboardingService {
 
     // For demo purposes, assume validation passes
     return {
-      isValid: false,
+      isValid: true,
       storageInfo: {
         bucketName: credentials.bucketName || credentials.containerName || 'storage',
         region: credentials.region || 'default',

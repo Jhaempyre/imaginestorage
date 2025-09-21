@@ -1,4 +1,4 @@
-import { ArgumentsHost, Catch, ExceptionFilter, UnauthorizedException } from '@nestjs/common';
+import { ArgumentsHost, BadRequestException, Catch, ExceptionFilter, HttpStatus } from '@nestjs/common';
 import { Response } from 'express';
 import { ERROR_CODES } from '../constants/error-code.constansts';
 import { ApiResponseDto } from '../dto/api-response.dto';
@@ -15,18 +15,39 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       return response.status(exception.statusCode).json(apiResponse);
     }
 
-    // if (exception instanceof UnauthorizedException) {
-    //   const apiResponse = ApiResponseDto.error({
-    //     message: 'Unauthorized',
-    //     errorCode: ERROR_CODES.UNAUTHORIZED,
-    //     errorUserMessage: 'You don\'t have permission to perform this action',
-    //     errorDetails: 'Please log in to continue.',
-    //   });
-    //   return response.status(exception.getStatus()).json(apiResponse);
-    // }
+    console.log({ exception });
+
+    if (exception instanceof BadRequestException) {
+      type ValidationErrorResponseBody = string | { message?: any; error?: any; statusCode?: number };
+      const responseBody = exception.getResponse() as ValidationErrorResponseBody;
+
+      console.log(responseBody, exception);
+
+      const validationErrors = typeof responseBody === 'string'
+        ? responseBody
+        : typeof responseBody.message === 'string'
+          ? responseBody.message
+          : Array.isArray(responseBody.message)
+            ? responseBody.message.join(', ')
+            : typeof responseBody.error === 'string'
+              ? Array.isArray(responseBody.error)
+                ? responseBody.error.join(', ')
+                : responseBody.error
+              : '';
+
+      const apiResponse = ApiResponseDto.error({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'Validation error',
+        errorCode: ERROR_CODES.BAD_REQUEST,
+        errorUserMessage: `Invalid input: ${validationErrors}` as any,
+      });
+
+      return response.status(HttpStatus.BAD_REQUEST).json(apiResponse);
+    }
+
 
     // TODO: support more error types:
-    
+
 
     // Handle unknown errors safely
     const apiResponse = ApiResponseDto.fromException(

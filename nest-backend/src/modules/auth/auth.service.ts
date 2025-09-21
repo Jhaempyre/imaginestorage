@@ -117,15 +117,15 @@ export class AuthService {
     delete userResponse.password;
     delete userResponse.refreshToken;
 
-    const existingConfig = await this.storageConfigModel.findOne({
-      userId: new Types.ObjectId(userResponse._id),
-      isActive: true
-    });
+    // const existingConfig = await this.storageConfigModel.findOne({
+    //   userId: new Types.ObjectId(userResponse._id),
+    //   isActive: true
+    // });
 
     return {
       user: userResponse,
       tokens,
-      navigation: this.navigationService.getAuthNavigation('login', user, existingConfig)
+      navigation: this.navigationService.getAuthNavigation('login', user)
     };
   }
 

@@ -6,14 +6,16 @@ import {
   UseGuards,
   Req,
   HttpCode,
-  HttpStatus
+  HttpStatus,
+  Param
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
-  ApiBody
+  ApiBody,
+  ApiParam
 } from '@nestjs/swagger';
 import { Request } from 'express';
 import { OnboardingService } from './onboarding.service';
@@ -24,6 +26,7 @@ import { ApiResponseDto } from '../../common/dto/api-response.dto';
 import { EmailVerifiedGuard } from '@/common/guards/email-verified.guard';
 import { ERROR_CODES } from '@/common/constants/error-code.constansts';
 import { AppException } from '@/common/dto/app-exception';
+import { STORAGE_PROVIDER_METADATA, StorageProvider } from '@/common/constants/storage.constants';
 
 @ApiTags('Onboarding')
 @Controller('onboarding')
@@ -49,6 +52,46 @@ export class OnboardingController {
     return ApiResponseDto.success({
       data,
       message: 'Onboarding.getOnboardingStatus.success',
+    });
+  }
+
+  @Get('get-storage-providers')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get storage providers (Step 1)',
+    description: 'Get the list of available storage providers'
+  })
+  getStorageProviders() {
+    const data = this.onboardingService.getStorageProviders();
+
+    return ApiResponseDto.success({
+      data,
+      message: 'Onboarding.getStorageProviders.success',
+    });
+  }
+
+  @Get('get-storage-provider-fields')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get storage provider fields (Step 1)',
+    description: 'Get the list of fields for a storage provider'
+  })
+  // @ApiParam({
+  //   name: 'provider',
+  //   description: 'Storage provider',
+  //   type: 'string',
+  //   enum: Object.keys(STORAGE_PROVIDER_METADATA),
+  //   required: true,
+  // })
+  async getStorageProviderFields(
+    @Req() request: Request,
+  ) {
+    const userId = request.user['_id'];
+    const data = await this.onboardingService.getStorageProviderFields(userId);
+
+    return ApiResponseDto.success({
+      data,
+      message: 'Onboarding.getStorageProviderFields.success',
     });
   }
 
