@@ -5,14 +5,14 @@ import {
   ONBOARDING_STEPS,
   STORAGE_PROVIDER_METADATA,
   StorageProvider
-} from '../../common/constants/storage.constants';
+} from '@/common/constants/storage.constants';
 import {
   StorageCredentials,
   StorageValidationResult
-} from '../../common/interfaces/storage.interface';
-import { NavigationService } from '../../common/services/navigation.service';
-import { UserStorageConfig, UserStorageConfigDocument } from '../../schemas/user-storage-config.schema';
-import { User, UserDocument } from '../../schemas/user.schema';
+} from '@/common/interfaces/storage.interface';
+import { NavigationService } from '@/common/services/navigation.service';
+import { UserStorageConfig, UserStorageConfigDocument } from '@/schemas/user-storage-config.schema';
+import { User, UserDocument } from '@/schemas/user.schema';
 import { ChooseProviderDto } from './dto/choose-provider.dto';
 import { ConfigureCredentialsDto } from './dto/configure-credentials.dto';
 import { AppException } from '@/common/dto/app-exception';

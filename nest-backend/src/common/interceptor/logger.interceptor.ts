@@ -3,9 +3,9 @@ import {
   ExecutionContext,
   Injectable,
   NestInterceptor,
-} from '@nestjs/common';
-import { Observable, tap } from 'rxjs';
-import { AppLogger } from '../utils/logger';
+} from "@nestjs/common";
+import { catchError, Observable, tap, throwError } from "rxjs";
+import { AppLogger } from "@/common/utils/logger";
 
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
@@ -13,27 +13,45 @@ export class LoggingInterceptor implements NestInterceptor {
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const ctx = context.switchToHttp();
-    const request = ctx.getRequest<Request>();
-    const { method, originalUrl, params, query, body } = request as any;
+    const request = ctx.getRequest<any>();
+    const response = ctx.getResponse<any>();
+    const { method, originalUrl, params, query, body } = request;
 
     const start = Date.now();
 
+    // Log incoming request
     this.logger.log(
       `Incoming Request: ${method} ${originalUrl} | Params: ${JSON.stringify(
         params,
       )} | Query: ${JSON.stringify(query)} | Body: ${JSON.stringify(body)}`,
-      'HTTP',
+      "HTTP",
     );
 
     return next.handle().pipe(
-      tap((response) => {
-        const time = Date.now() - start;
-        this.logger.log(
-          `Outgoing Response: ${method} ${originalUrl} | ${time}ms | Response: ${JSON.stringify(
-            response,
-          )}`,
-          'HTTP',
-        );
+      tap(() => {
+        const duration = Date.now() - start;
+        const status = response.statusCode;
+
+        const message = `Outgoing Response: ${method} ${originalUrl} | ${status} | ${duration}ms`;
+
+        // Status-aware logging
+        if (status >= 500) {
+          this.logger.error(message, JSON.stringify(response), "HTTP");
+        } else if (status >= 400) {
+          this.logger.warn(message, JSON.stringify(response), "HTTP");
+        } else {
+          this.logger.log(message, "HTTP");
+        }
+      }),
+      catchError((err) => {
+        const duration = Date.now() - start;
+        const status = err.status || 500; // or err.getStatus() if HttpException
+        const msg = `Exception Response: ${method} ${originalUrl} | ${status} | ${duration}ms | ${err.message}`;
+
+        if (status >= 500) this.logger.error(msg, err.stack, "HTTP");
+        else if (status >= 400) this.logger.warn(msg, err.stack, "HTTP");
+
+        return throwError(() => err); // rethrow so Nest can handle it
       }),
     );
   }

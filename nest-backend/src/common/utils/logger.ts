@@ -11,16 +11,14 @@ export class AppLogger extends ConsoleLogger {
     super.error(`[APP] ${message}`, trace, context);
   }
 
-  warn(message: string, context?: string) {
-    super.warn(`[APP] ${message}`, context);
+  warn(message: string, trace?: string, context?: string) {
+    super.warn(`[APP] ${message}`, trace, context);
   }
-  
+
   debug(message: string, context?: string) {
     super.debug(`[APP] ${message}`, context);
   }
-
 }
-
 
 @Global()
 @Module({
