@@ -1,14 +1,19 @@
-import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { ConfigService } from '@nestjs/config';
-import * as cookieParser from 'cookie-parser';
-import { AppModule } from './app.module';
-import { GlobalExceptionFilter } from './common/exception-filters/global';
+import { NestFactory } from "@nestjs/core";
+import { ValidationPipe } from "@nestjs/common";
+import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
+import { ConfigService } from "@nestjs/config";
+import * as cookieParser from "cookie-parser";
+import { AppModule } from "./app.module";
+import { GlobalExceptionFilter } from "./common/exception-filters/global";
+import { AppLogger } from "./common/utils/logger";
+import { LoggingInterceptor } from "./common/interceptor/logger.interceptor";
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
   const configService = app.get(ConfigService);
+
+  // Global logger
+  app.useLogger(app.get(AppLogger));
 
   // Global validation pipe
   app.useGlobalPipes(
@@ -23,57 +28,58 @@ async function bootstrap() {
   );
 
   app.useGlobalFilters(new GlobalExceptionFilter());
+  app.useGlobalInterceptors(new LoggingInterceptor(app.get(AppLogger)));
 
   // Cookie parser
   app.use(cookieParser());
 
   // CORS configuration
   app.enableCors({
-    origin: configService.get('CORS_ORIGIN') || 'http://localhost:3000',
+    origin: configService.get("CORS_ORIGIN") || "http://localhost:3000",
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   });
 
   // Global prefix
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix("api");
 
   // Swagger documentation
   const config = new DocumentBuilder()
-    .setTitle('ImaginaryStorage API')
-    .setDescription('File storage and management API built with NestJS')
-    .setVersion('1.0')
+    .setTitle("ImaginaryStorage API")
+    .setDescription("File storage and management API built with NestJS")
+    .setVersion("1.0")
     .addBearerAuth(
       {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-        name: 'JWT',
-        description: 'Enter JWT token',
-        in: 'header',
+        type: "http",
+        scheme: "bearer",
+        bearerFormat: "JWT",
+        name: "JWT",
+        description: "Enter JWT token",
+        in: "header",
       },
-      'JWT-auth',
+      "JWT-auth",
     )
-    .addCookieAuth('accessToken', {
-      type: 'apiKey',
-      in: 'cookie',
-      name: 'accessToken',
-      description: 'JWT token in cookie',
+    .addCookieAuth("accessToken", {
+      type: "apiKey",
+      in: "cookie",
+      name: "accessToken",
+      description: "JWT token in cookie",
     })
-    .addTag('Authentication', 'User authentication and authorization')
-    .addTag('Users', 'User management operations')
-    .addTag('Files', 'File upload, download, and management')
-    .addTag('Storage', 'Storage provider management')
+    .addTag("Authentication", "User authentication and authorization")
+    .addTag("Users", "User management operations")
+    .addTag("Files", "File upload, download, and management")
+    .addTag("Storage", "Storage provider management")
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document, {
+  SwaggerModule.setup("api/docs", app, document, {
     swaggerOptions: {
       persistAuthorization: true,
     },
   });
 
-  const port = configService.get('PORT') || 3000;
+  const port = configService.get("PORT") || 3000;
   await app.listen(port);
 
   console.log(`🚀 Server is running on: http://localhost:${port}`);

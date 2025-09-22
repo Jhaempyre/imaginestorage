@@ -29,7 +29,7 @@ import { NavigationService } from '../../common/services/navigation.service';
     ]),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, LocalStrategy, NavigationService],
+  providers: [AuthService, JwtStrategy, LocalStrategy, NavigationService, ConfigService],
   exports: [AuthService],
 })
 export class AuthModule {}
