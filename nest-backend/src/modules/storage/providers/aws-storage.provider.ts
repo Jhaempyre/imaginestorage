@@ -1,16 +1,30 @@
-import { Injectable } from '@nestjs/common';
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, HeadBucketCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import * as fs from 'fs';
-import * as path from 'path';
+import { Injectable } from "@nestjs/common";
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+  HeadBucketCommand,
+  ListObjectsV2Command,
+} from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import * as fs from "fs";
+import * as path from "path";
 import {
   IStorageProvider,
   UploadParams,
   UploadResult,
   DownloadUrlParams,
   DeleteParams,
-  StorageConfig
-} from '../interfaces/storage-provider.interface';
+  StorageConfig,
+  GetFilesParams,
+  StorageProviderMetadata,
+  StorageValidationResult,
+} from "@/common/interfaces/storage.interface";
+import {
+  STORAGE_PROVIDER_METADATA,
+  STORAGE_PROVIDERS,
+} from "@/common/constants/storage.constants";
 
 export interface AWSConfig extends StorageConfig {
   accessKeyId: string;
@@ -22,8 +36,8 @@ export interface AWSConfig extends StorageConfig {
 
 @Injectable()
 export class AWSStorageProvider implements IStorageProvider {
-  readonly name = 'AWS S3';
-  readonly type = 'aws' as const;
+  readonly name = "AWS S3";
+  readonly type = "aws" as const;
 
   private s3Client?: S3Client;
   private config?: AWSConfig;
@@ -38,28 +52,52 @@ export class AWSStorageProvider implements IStorageProvider {
         accessKeyId: config.accessKeyId,
         secretAccessKey: config.secretAccessKey,
       },
-      ...(config.endpoint && { endpoint: config.endpoint })
+      ...(config.endpoint && { endpoint: config.endpoint }),
     });
 
     try {
-      await this.s3Client.send(new HeadBucketCommand({ Bucket: config.bucketName }));
+      await this.s3Client.send(
+        new HeadBucketCommand({ Bucket: config.bucketName }),
+      );
       this.isInitialized = true;
     } catch (error) {
       throw new Error(`Failed to initialize AWS S3: ${error}`);
     }
   }
 
-  async uploadFile(params: UploadParams): Promise<UploadResult> {
+  async getFiles(params: GetFilesParams): Promise<any> {
     if (!this.isConfigured()) {
-      throw new Error('AWS S3 provider not configured');
+      throw new Error("AWS S3 provider not configured");
     }
 
-    const { filePath, fileName, userId, mimeType } = params;
-    const key = `${userId}/${fileName}`;
+    const { prefix, maxKeys } = params;
 
     try {
-      const fileStream = fs.createReadStream(filePath);
-      const fileStats = fs.statSync(filePath);
+      const command = new ListObjectsV2Command({
+        Bucket: this.config!.bucketName,
+        Prefix: prefix,
+        MaxKeys: maxKeys,
+      });
+
+      const result = await this.s3Client!.send(command);
+      return result;
+    } catch (error) {
+      throw new Error(`Failed to get files from AWS S3: ${error}`);
+    }
+  }
+
+  async uploadFile(params: UploadParams): Promise<UploadResult> {
+    if (!this.isConfigured()) {
+      throw new Error("AWS S3 provider not configured");
+    }
+
+    const { tmpLocation, originalName, userId, mimeType, subfolderPath } =
+      params;
+    const key = `${userId}${subfolderPath ?? "/"}${originalName}`;
+
+    try {
+      const fileStream = fs.createReadStream(tmpLocation);
+      const fileStats = fs.statSync(tmpLocation);
 
       console.log({
         Bucket: this.config!.bucketName,
@@ -68,10 +106,10 @@ export class AWSStorageProvider implements IStorageProvider {
         ContentLength: fileStats.size,
         Metadata: {
           userId,
-          originalName: path.basename(filePath),
-          uploadedAt: new Date().toISOString()
-        }
-      })
+          originalName: path.basename(tmpLocation),
+          uploadedAt: new Date().toISOString(),
+        },
+      });
       const uploadCommand = new PutObjectCommand({
         Bucket: this.config!.bucketName,
         Key: key,
@@ -80,9 +118,9 @@ export class AWSStorageProvider implements IStorageProvider {
         ContentLength: fileStats.size,
         Metadata: {
           userId,
-          originalName: path.basename(filePath),
-          uploadedAt: new Date().toISOString()
-        }
+          originalName: path.basename(tmpLocation),
+          uploadedAt: new Date().toISOString(),
+        },
       });
 
       await this.s3Client!.send(uploadCommand);
@@ -95,8 +133,8 @@ export class AWSStorageProvider implements IStorageProvider {
         metadata: {
           bucket: this.config!.bucketName,
           region: this.config!.region,
-          key
-        }
+          key,
+        },
       };
     } catch (error) {
       throw new Error(`Failed to upload file to AWS S3: ${error}`);
@@ -105,7 +143,7 @@ export class AWSStorageProvider implements IStorageProvider {
 
   async getDownloadUrl(params: DownloadUrlParams): Promise<string> {
     if (!this.isConfigured()) {
-      throw new Error('AWS S3 provider not configured');
+      throw new Error("AWS S3 provider not configured");
     }
 
     const { fileName, expiresIn = 3600 } = params;
@@ -116,7 +154,9 @@ export class AWSStorageProvider implements IStorageProvider {
         Key: fileName,
       });
 
-      const signedUrl = await getSignedUrl(this.s3Client!, command, { expiresIn });
+      const signedUrl = await getSignedUrl(this.s3Client!, command, {
+        expiresIn,
+      });
       return signedUrl;
     } catch (error) {
       throw new Error(`Failed to generate download URL: ${error}`);
@@ -125,7 +165,7 @@ export class AWSStorageProvider implements IStorageProvider {
 
   async deleteFile(params: DeleteParams): Promise<void> {
     if (!this.isConfigured()) {
-      throw new Error('AWS S3 provider not configured');
+      throw new Error("AWS S3 provider not configured");
     }
 
     const { fileName } = params;
@@ -142,31 +182,15 @@ export class AWSStorageProvider implements IStorageProvider {
     }
   }
 
-  isConfigured(): boolean {
-    return this.isInitialized &&
-      !!this.s3Client &&
-      !!this.config?.bucketName &&
-      !!this.config?.accessKeyId &&
-      !!this.config?.secretAccessKey;
-  }
-
-  getProviderInfo() {
-    return {
-      name: this.name,
-      type: this.type,
-      features: [
-        'Signed URLs',
-        'Server-side encryption',
-        'Versioning support',
-        'Cross-region replication',
-        'Lifecycle policies'
-      ],
-      limitations: {
-        maxFileSize: '5TB',
-        maxObjectsPerBucket: 'Unlimited',
-        maxBuckets: 100
-      }
-    };
+  async validateCredentials() {
+    // mock implementation
+    return new Promise<StorageValidationResult>((resolve, reject) => {
+      setTimeout(() => {
+        resolve({
+          isValid: false,
+        });
+      });
+    });
   }
 
   async healthCheck(): Promise<boolean> {
@@ -175,13 +199,30 @@ export class AWSStorageProvider implements IStorageProvider {
     }
 
     try {
-      await this.s3Client!.send(new HeadBucketCommand({
-        Bucket: this.config!.bucketName
-      }));
+      await this.s3Client!.send(
+        new HeadBucketCommand({
+          Bucket: this.config!.bucketName,
+        }),
+      );
       return true;
     } catch (error) {
-      console.error('AWS S3 health check failed:', error);
+      console.error("AWS S3 health check failed:", error);
       return false;
     }
+  }
+
+  isConfigured(): boolean {
+    return (
+      this.isInitialized &&
+      !!this.s3Client &&
+      !!this.config?.bucketName &&
+      !!this.config?.accessKeyId &&
+      !!this.config?.secretAccessKey
+    );
+  }
+
+  getProviderInfo() {
+    const f = STORAGE_PROVIDER_METADATA[STORAGE_PROVIDERS.AWS];
+    return f satisfies StorageProviderMetadata;
   }
 }

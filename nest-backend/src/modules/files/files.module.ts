@@ -39,6 +39,7 @@ import * as fs from 'fs';
             'application/pdf',
             'text/plain',
             'video/mp4',
+            'application/x-zip-compressed',
           ];
           
           if (allowedTypes.includes(file.mimetype)) {

@@ -63,7 +63,7 @@ export interface StorageValidationResult {
 export interface StorageFieldDefinition {
   name: string;
   label: string;
-  type: 'text' | 'password' | 'select' | 'textarea';
+  type: 'text' | 'password' | 'select' | 'textarea' | string;
   required: boolean;
   description: string;
   placeholder?: string;
@@ -91,11 +91,11 @@ export interface StorageProviderMetadata {
  * Upload Parameters for Storage Providers
  */
 export interface UploadParams {
-  filePath: string;
-  fileName: string;
+  tmpLocation: string;
+  originalName: string;
+  subfolderPath?: string;
   userId: string;
   mimeType: string;
-  fileSize: number;
 }
 
 /**
@@ -106,6 +106,13 @@ export interface UploadResult {
   fileName: string;
   publicUrl?: string;
   metadata?: Record<string, any>;
+}
+/**
+ * Get Files Parameters
+ */
+export interface GetFilesParams {
+  prefix?: string;
+  maxKeys?: number;
 }
 
 /**
@@ -134,11 +141,12 @@ export interface IStorageProvider {
   readonly type: StorageProvider;
   
   initialize(credentials: StorageCredentials): Promise<void>;
+  getFiles(params: GetFilesParams): Promise<any>;
   uploadFile(params: UploadParams): Promise<UploadResult>;
   getDownloadUrl(params: DownloadUrlParams): Promise<string>;
   deleteFile(params: DeleteParams): Promise<void>;
-  isConfigured(): boolean;
   validateCredentials(): Promise<StorageValidationResult>;
-  getProviderInfo(): StorageProviderMetadata;
   healthCheck(): Promise<boolean>;
+  isConfigured(): boolean;
+  getProviderInfo(): StorageProviderMetadata;
 }

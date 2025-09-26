@@ -188,7 +188,7 @@ export const STORAGE_PROVIDER_METADATA = {
       },
     },
   },
-} as const;
+};
 
 /**
  * Onboarding Steps

@@ -1,31 +1,31 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
-import { IsBoolean, IsObject, IsOptional } from 'class-validator';
+import { ApiPropertyOptional } from "@nestjs/swagger";
+import { Transform } from "class-transformer";
+import { IsOptional, IsString } from "class-validator";
 
 export class UploadFileDto {
-  @ApiPropertyOptional({
-    description: 'Whether the file should be public',
-    default: false,
-  })
-  @IsOptional()
-  @IsBoolean()
-  isPublic?: boolean = false;
 
   @ApiPropertyOptional({
-    description: 'Additional metadata for the file',
-    example: { description: 'My important document', tags: ['work', 'document'] },
+    description:
+      "Folder path (will be auto-normalized to start and end with /)",
+    example: "/home/images/",
+    default: "/",
   })
   @IsOptional()
-  @IsObject()
+  @IsString()
   @Transform(({ value }) => {
-    if (typeof value === 'string') {
-      try {
-        return JSON.parse(value);
-      } catch {
-        return {}; // fallback to empty object
-      }
+    if (typeof value !== "string") return "/";
+    let normalized = value.trim();
+
+    if (!normalized.startsWith("/")) {
+      normalized = "/" + normalized;
     }
-    return value;
+
+    // Ensure it ends with /
+    if (!normalized.endsWith("/")) {
+      normalized += "/";
+    }
+
+    return normalized;
   })
-  metadata?: Record<string, any>;
+  folderPath?: string = "/";
 }
