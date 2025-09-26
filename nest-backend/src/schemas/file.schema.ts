@@ -9,13 +9,16 @@ export type FileDocument = File & Document & {
 @Schema({ timestamps: true })
 export class File {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
-  userId: Types.ObjectId;
+  ownerId: Types.ObjectId;
 
   @Prop({ required: true, trim: true, maxlength: 255 })
   originalName: string;
 
   @Prop({ required: true, unique: true, trim: true, maxlength: 255 })
   fileName: string;
+
+  @Prop({ required: true, unique: true, trim: true, maxlength: 511 })
+  fullPath: string;
 
   @Prop({ required: true, min: 0 })
   fileSize: number;
@@ -32,12 +35,6 @@ export class File {
   @Prop({ default: false, index: true })
   isPublic: boolean;
 
-  @Prop({ unique: true, sparse: true, index: true })
-  shareToken: string;
-
-  @Prop({ default: null })
-  shareExpiry: Date;
-
   @Prop({ type: Object, default: {} })
   metadata: Record<string, any>;
 
@@ -49,10 +46,16 @@ export class File {
   storageProvider: string;
 
   @Prop({ required: true, trim: true })
-  storageLocation: string;
+  fileUrl: string;
 
-  @Prop({ default: false })
-  isEncrypted: boolean;
+  // @Prop({ unique: true, sparse: true, index: true })
+  // shareToken: string;
+
+  // @Prop({ default: null })
+  // shareExpiry: Date;
+
+  // @Prop({ default: false })
+  // isEncrypted: boolean;
 
   @Prop({ default: null })
   deletedAt: Date;

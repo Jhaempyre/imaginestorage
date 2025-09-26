@@ -92,18 +92,17 @@ export interface StorageProviderMetadata {
  */
 export interface UploadParams {
   tmpLocation: string;
-  originalName: string;
-  subfolderPath?: string;
-  userId: string;
+  fullPath: string;
   mimeType: string;
+  metadata?: Record<string, string>;
 }
 
 /**
  * Upload Result from Storage Providers
  */
 export interface UploadResult {
-  storageLocation: string;
-  fileName: string;
+  fileUrl: string;
+  fullPath: string;
   publicUrl?: string;
   metadata?: Record<string, any>;
 }

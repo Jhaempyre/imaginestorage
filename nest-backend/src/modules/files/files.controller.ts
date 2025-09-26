@@ -54,7 +54,8 @@ export class FilesController {
         },
         folderPath: {
           type: "string",
-          description: "Folder path (will be auto-normalized to start and end with /)",
+          description:
+            "Folder path (will be auto-normalized to start and end with /)",
           default: "/",
         },
       },
@@ -78,17 +79,7 @@ export class FilesController {
     return ApiResponseDto.success({
       message: "Files.uploadFile.success",
       data: {
-        file: {
-          ...uploadedFile,
-          // id: uploadedFile._id,
-          // originalName: uploadedFile.originalName,
-          // fileName: uploadedFile.fileName,
-          // fileSize: uploadedFile.fileSize,
-          // mimeType: uploadedFile.mimeType,
-          // storageProvider: uploadedFile.storageProvider,
-          // isPublic: uploadedFile.isPublic,
-          // createdAt: uploadedFile.createdAt,
-        },
+        file: uploadedFile,
       },
     });
   }
@@ -104,33 +95,29 @@ export class FilesController {
 
     return ApiResponseDto.success({
       message: "Files.getFiles.success",
-      data: {
-        // files: result.files,
-        // pagination: result.pagination,
-        files: result,
-      },
+      data: result,
     });
   }
 
-  // @Get(':id')
-  // @UseGuards(JwtAuthGuard)
-  // @ApiBearerAuth('JWT-auth')
-  // @ApiOperation({ summary: 'Get file details by ID' })
-  // @ApiParam({ name: 'id', description: 'File ID' })
-  // @ApiResponse({ status: 200, description: 'File details retrieved successfully' })
-  // @ApiResponse({ status: 404, description: 'File not found' })
-  // async getFileById(
-  //   @Param('id') fileId: string,
-  //   @Req() request: Request,
-  // ) {
-  //   const userId = request.user['_id'];
-  //   const file = await this.filesService.getFileById(fileId, userId);
+  @Get(":id")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth("JWT-auth")
+  @ApiOperation({ summary: "Get file details by ID" })
+  @ApiParam({ name: "id", description: "File ID" })
+  @ApiResponse({
+    status: 200,
+    description: "File details retrieved successfully",
+  })
+  @ApiResponse({ status: 404, description: "File not found" })
+  async getFileById(@Param("id") fileId: string, @Req() request: Request) {
+    const userId = request.user["_id"];
+    const file = await this.filesService.getFileById(fileId, userId);
 
-  //   return ApiResponseDto.success({
-  //     message: 'Files.getFileById.success',
-  //     data: { file },
-  //   });
-  // }
+    return ApiResponseDto.success({
+      message: "Files.getFileById.success",
+      data: { file },
+    });
+  }
 
   // @Get('public/:id')
   // @ApiOperation({ summary: 'Get public file details' })

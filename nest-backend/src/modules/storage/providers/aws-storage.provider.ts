@@ -91,49 +91,48 @@ export class AWSStorageProvider implements IStorageProvider {
       throw new Error("AWS S3 provider not configured");
     }
 
-    const { tmpLocation, originalName, userId, mimeType, subfolderPath } =
+    const { tmpLocation, metadata, mimeType, fullPath } =
       params;
-    const key = `${userId}${subfolderPath ?? "/"}${originalName}`;
+    // const key = `${subfolderPath ?? "/"}${originalName}`;
 
     try {
       const fileStream = fs.createReadStream(tmpLocation);
       const fileStats = fs.statSync(tmpLocation);
 
-      console.log({
-        Bucket: this.config!.bucketName,
-        Key: key,
-        ContentType: mimeType,
-        ContentLength: fileStats.size,
-        Metadata: {
-          userId,
-          originalName: path.basename(tmpLocation),
-          uploadedAt: new Date().toISOString(),
-        },
-      });
+      // console.log({
+      //   Bucket: this.config!.bucketName,
+      //   Key: key,
+      //   ContentType: mimeType,
+      //   ContentLength: fileStats.size,
+      //   Metadata: {
+      //     userId,
+      //     originalName: path.basename(tmpLocation),
+      //     uploadedAt: new Date().toISOString(),
+      //   },
+      // });
       const uploadCommand = new PutObjectCommand({
         Bucket: this.config!.bucketName,
-        Key: key,
+        Key: fullPath,
         Body: fileStream,
         ContentType: mimeType,
         ContentLength: fileStats.size,
         Metadata: {
-          userId,
-          originalName: path.basename(tmpLocation),
+          ...metadata,
           uploadedAt: new Date().toISOString(),
         },
       });
 
       await this.s3Client!.send(uploadCommand);
 
-      const storageLocation = `s3://${this.config!.bucketName}/${key}`;
+      const fileUrl = `https://s3.${this.config!.region}.amazonaws.com/${this.config!.bucketName}/${fullPath}`;
 
       return {
-        storageLocation,
-        fileName: key,
+        fileUrl,
+        fullPath: fullPath,
         metadata: {
           bucket: this.config!.bucketName,
           region: this.config!.region,
-          key,
+          key: fullPath,
         },
       };
     } catch (error) {
