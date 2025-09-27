@@ -3,6 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import {
+  CreateFolderParams,
   DeleteParams,
   DownloadUrlParams,
   UploadResult,
@@ -18,7 +19,8 @@ import {
 } from "@/common/interfaces/storage.interface";
 import { STORAGE_PROVIDERS } from "@/common/constants/storage.constants";
 
-export type SupportedProviders = typeof STORAGE_PROVIDERS[keyof typeof STORAGE_PROVIDERS];
+export type SupportedProviders =
+  (typeof STORAGE_PROVIDERS)[keyof typeof STORAGE_PROVIDERS];
 
 @Injectable()
 export class StorageService {
@@ -98,6 +100,14 @@ export class StorageService {
       ...result,
       provider: provider.type,
     };
+  }
+
+  async createFolder(createFolderDto: CreateFolderParams & { userId: string }) {
+    const provider = await this._getActiveProviderForUser(
+      createFolderDto.userId,
+    );
+    const result = await provider.createFolder(createFolderDto);
+    return { ...result, provider: provider.type };
   }
 
   async getDownloadUrl(

@@ -1,6 +1,7 @@
 import { ApiPropertyOptional } from "@nestjs/swagger";
 import { Transform } from "class-transformer";
 import { IsIn, IsOptional, IsString } from "class-validator";
+import { sanitizePath } from "../utils/santize-path";
 
 export class GetFilesDto {
   @ApiPropertyOptional({
@@ -45,24 +46,6 @@ export class GetFilesDto {
   })
   @IsOptional()
   @IsString()
-  @Transform(({ value }) => {
-    console.log(">>>>>>>> value", value, typeof value);
-    if (!value || typeof value !== "string") return "";
-    let normalized = value.trim();
-
-    if (normalized === "/") return "";
-
-    // Ensure it only starts with / if its /
-    if (normalized.startsWith("/") && normalized !== "/") {
-      normalized = normalized.slice(1);
-    }
-
-    // Ensure it ends with /
-    if (!normalized.endsWith("/")) {
-      normalized += "/";
-    }
-
-    return normalized;
-  })
+  @Transform(({ value }) => sanitizePath(value))
   prefix?: string;
 }

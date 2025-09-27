@@ -131,6 +131,14 @@ export interface DeleteParams {
   userId: string;
 }
 
+export interface CreateFolderParams {
+  fullPath: string;
+}
+
+export interface CreateFolderResults {
+  fullPath: string;
+}
+
 /**
  * Storage Provider Interface
  * All storage providers must implement this interface
@@ -142,6 +150,7 @@ export interface IStorageProvider {
   initialize(credentials: StorageCredentials): Promise<void>;
   getFiles(params: GetFilesParams): Promise<any>;
   uploadFile(params: UploadParams): Promise<UploadResult>;
+  createFolder(params: CreateFolderParams): Promise<CreateFolderResults>;
   getDownloadUrl(params: DownloadUrlParams): Promise<string>;
   deleteFile(params: DeleteParams): Promise<void>;
   validateCredentials(): Promise<StorageValidationResult>;

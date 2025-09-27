@@ -10,6 +10,7 @@ import { File, FileDocument } from "../../schemas/file.schema";
 import { StorageService } from "../storage/storage.service";
 import { GetFilesDto } from "./dto/get-files.dto";
 import { UploadFileDto } from "./dto/upload-file.dto";
+import { CreateFolderDto } from "./dto/create-folder.dto";
 
 @Injectable()
 export class FilesService {
@@ -178,6 +179,46 @@ export class FilesService {
     }
 
     return file;
+  }
+
+  async createFolder(
+    userId: string,
+    createFolderDto: CreateFolderDto,
+  ): Promise<{ fullPath: string }> {
+    try {
+      const { fullPath } = createFolderDto;
+      const result = await this.storageService.createFolder({
+        userId,
+        fullPath,
+      });
+
+      const fileObject = new this.fileModel({
+        ownerId: new Types.ObjectId(userId),
+        originalName: this.generateUniqueFileName(userId, `.folder`),
+        fileName: `.folder`,
+        fullPath: `${fullPath}/.folder`,
+        fileSize: 0,
+        mimeType: "application/octet-stream",
+        fileExtension: "folder",
+        storageProvider: result.provider,
+        fileUrl: `__invalid__`,
+        metadata: {
+          uploadedAt: new Date(),
+          provider: result.provider,
+        },
+      });
+      await fileObject.save();
+
+      return result;
+    } catch (error) {
+      throw new AppException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        code: ERROR_CODES.BAD_REQUEST,
+        message: "Files.createFolder.failed",
+        userMessage: "Failed to create folder",
+        details: error.message,
+      });
+    }
   }
 
   // async getPublicFile(fileId: string): Promise<FileDocument> {
@@ -367,7 +408,7 @@ export class FilesService {
   // }
 
   // utility funcitons:
-  
+
   private generateUniqueFileName(userId: string, originalName: string): string {
     const fileExtension = path.extname(originalName).toLowerCase();
     const timestamp = Date.now();

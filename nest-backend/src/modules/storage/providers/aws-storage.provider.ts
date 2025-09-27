@@ -6,6 +6,7 @@ import {
   DeleteObjectCommand,
   HeadBucketCommand,
   ListObjectsV2Command,
+  CreateBucketCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import * as fs from "fs";
@@ -20,6 +21,8 @@ import {
   GetFilesParams,
   StorageProviderMetadata,
   StorageValidationResult,
+  CreateFolderParams,
+  CreateFolderResults,
 } from "@/common/interfaces/storage.interface";
 import {
   STORAGE_PROVIDER_METADATA,
@@ -91,8 +94,7 @@ export class AWSStorageProvider implements IStorageProvider {
       throw new Error("AWS S3 provider not configured");
     }
 
-    const { tmpLocation, metadata, mimeType, fullPath } =
-      params;
+    const { tmpLocation, metadata, mimeType, fullPath } = params;
     // const key = `${subfolderPath ?? "/"}${originalName}`;
 
     try {
@@ -137,6 +139,32 @@ export class AWSStorageProvider implements IStorageProvider {
       };
     } catch (error) {
       throw new Error(`Failed to upload file to AWS S3: ${error}`);
+    }
+  }
+
+  async createFolder(params: CreateFolderParams): Promise<CreateFolderResults> {
+    if (!this.isConfigured()) {
+      throw new Error("AWS S3 provider not configured");
+    }
+
+    const { bucketName } = this.config!;
+    const { fullPath } = params;
+
+    // Ensure fullPath ends with /
+    const key = fullPath.endsWith("/") ? fullPath : `${fullPath}/`;
+
+    try {
+      const command = new PutObjectCommand({
+        Bucket: bucketName,
+        Key: key,
+        Body: "", // empty body for "folder"
+      });
+
+      await this.s3Client!.send(command);
+
+      return { fullPath: key };
+    } catch (error) {
+      throw new Error(`Failed to create folder in AWS S3: ${error}`);
     }
   }
 

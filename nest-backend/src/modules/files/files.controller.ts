@@ -31,6 +31,7 @@ import { UploadFileDto } from "./dto/upload-file.dto";
 import { ShareFileDto } from "./dto/share-file.dto";
 import { GetFilesDto } from "./dto/get-files.dto";
 import { ApiResponseDto } from "../../common/dto/api-response.dto";
+import { CreateFolderDto } from "./dto/create-folder.dto";
 
 @ApiTags("Files")
 @Controller("files")
@@ -116,6 +117,26 @@ export class FilesController {
     return ApiResponseDto.success({
       message: "Files.getFileById.success",
       data: { file },
+    });
+  }
+
+  @Post('/create-folder')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Create folder' })
+  @ApiBody({ type: CreateFolderDto })
+  @ApiResponse({ status: 200, description: 'Folder created successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid folder path' })
+  async createFolder(
+    @Body() createFolderDto: CreateFolderDto,
+    @Req() request: Request,
+  ) {
+    const userId = request.user['_id'];
+    const result = await this.filesService.createFolder(userId, createFolderDto);
+
+    return ApiResponseDto.success({
+      message: 'Files.createFolder.success',
+      data: result,
     });
   }
 
