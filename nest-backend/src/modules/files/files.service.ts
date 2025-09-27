@@ -6,7 +6,6 @@ import { FilterQuery, Model, Types } from "mongoose";
 import * as path from "path";
 import { ERROR_CODES } from "../../common/constants/error-code.constansts";
 import { AppException } from "../../common/dto/app-exception";
-import { PaginationResponseDto } from "../../common/dto/pagination.dto";
 import { File, FileDocument } from "../../schemas/file.schema";
 import { StorageService } from "../storage/storage.service";
 import { GetFilesDto } from "./dto/get-files.dto";
@@ -157,43 +156,9 @@ export class FilesService {
     const files = await this.fileModel.find(query).sort(sort).select("-__v");
     this.logger.debug(`files => ${JSON.stringify(files)}`);
 
-    // ✅ Build folders & files from paths
-    const folders = new Set<string>();
-    const items: Array<{
-      type: "file" | "folder";
-      name: string;
-      fullPath: string;
-      originalName: string;
-    }> = [];
-
-    for (const file of files) {
-      const relativePath = file.fullPath.replace(prefix, "");
-      const parts = relativePath.split("/").filter(Boolean);
-
-      if (parts.length === 1) {
-        // direct file
-        items.push({
-          type: "file",
-          name: parts[0],
-          originalName: file.originalName,
-          fullPath: file.fullPath,
-        });
-      } else if (parts.length > 1) {
-        // folder at this level
-        const folderName = parts[0];
-        if (!folders.has(folderName)) {
-          folders.add(folderName);
-          items.push({
-            type: "folder",
-            name: folderName,
-            fullPath: prefix + folderName + "/", // for navigation
-            originalName: file.originalName,
-          });
-        }
-      }
-    }
-
-    return { items };
+    return {
+      items: this.classifyFilesAndFolders(files, prefix),
+    };
   }
 
   async getFileById(fileId: string, userId: string): Promise<FileDocument> {
@@ -401,10 +366,59 @@ export class FilesService {
   //   return file;
   // }
 
+  // utility funcitons:
+  
   private generateUniqueFileName(userId: string, originalName: string): string {
     const fileExtension = path.extname(originalName).toLowerCase();
     const timestamp = Date.now();
     const randomSuffix = Math.round(Math.random() * 1e9);
     return `${timestamp}-${randomSuffix}${fileExtension}`;
+  }
+
+  private classifyFilesAndFolders(files: FileDocument[], prefix: string) {
+    const prefixDepth = prefix ? prefix.split("/").filter(Boolean).length : 0;
+    const folderSet = new Set<string>();
+    const items: Array<
+      | {
+          _id: string;
+          type: "file";
+          name: string;
+          fullPath: string;
+          originalName: string;
+        }
+      | {
+          type: "folder";
+          name: string;
+          fullPath: string;
+        }
+    > = [];
+
+    for (const file of files) {
+      const segments = file.fullPath.split("/").filter(Boolean);
+
+      if (segments.length > prefixDepth + 1) {
+        // There is at least one deeper folder
+        const folderName = segments[prefixDepth];
+        if (!folderSet.has(folderName)) {
+          folderSet.add(folderName);
+          items.push({
+            type: "folder",
+            name: folderName,
+            fullPath: `${prefix}${folderName}/`,
+          });
+        }
+      } else if (segments.length === prefixDepth + 1) {
+        // This is a file at this level
+        items.push({
+          _id: file._id,
+          type: "file",
+          name: file.fileName,
+          fullPath: file.fullPath,
+          originalName: file.originalName,
+        });
+      }
+    }
+
+    return items;
   }
 }

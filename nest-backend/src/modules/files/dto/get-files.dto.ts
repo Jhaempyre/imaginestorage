@@ -46,7 +46,8 @@ export class GetFilesDto {
   @IsOptional()
   @IsString()
   @Transform(({ value }) => {
-    if (typeof value !== "string") return "";
+    console.log(">>>>>>>> value", value, typeof value);
+    if (!value || typeof value !== "string") return "";
     let normalized = value.trim();
 
     if (normalized === "/") return "";
