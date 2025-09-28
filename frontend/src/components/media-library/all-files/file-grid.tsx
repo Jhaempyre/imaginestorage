@@ -1,69 +1,77 @@
-import { FolderIcon, FileIcon, ImageIcon, VideoIcon, FileTextIcon } from 'lucide-react';
-import { useMediaLibraryStore, type MediaItem } from '@/stores/media-library.store';
+import {
+  FolderIcon,
+  FileIcon,
+  ImageIcon,
+  VideoIcon,
+  FileTextIcon,
+} from "lucide-react";
+import {
+  useMediaLibraryStore,
+  type MediaItem,
+} from "@/stores/media-library.store";
 
 interface FileGridProps {
   items: MediaItem[];
 }
 
+const getFileIcon = (item: MediaItem) => {
+  if (item.type === "folder") {
+    return <FolderIcon className="w-8 h-8 text-blue-500" />;
+  }
+
+  // Determine file type by extension or mime type
+  const fileName = item.originalName || item.name;
+  const extension = fileName.split(".").pop()?.toLowerCase();
+
+  if (["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(extension || "")) {
+    return <ImageIcon className="w-8 h-8 text-green-500" />;
+  }
+
+  if (["mp4", "avi", "mov", "wmv", "flv"].includes(extension || "")) {
+    return <VideoIcon className="w-8 h-8 text-purple-500" />;
+  }
+
+  if (["pdf", "doc", "docx", "txt", "rtf"].includes(extension || "")) {
+    return <FileTextIcon className="w-8 h-8 text-red-500" />;
+  }
+
+  return <FileIcon className="w-8 h-8 text-gray-500" />;
+};
+
 export function FileGrid({ items }: FileGridProps) {
-  const { 
-    viewMode, 
-    selectedItems, 
-    toggleItemSelection, 
-    navigateToFolder 
-  } = useMediaLibraryStore();
-
-  const getFileIcon = (item: MediaItem) => {
-    if (item.type === 'folder') {
-      return <FolderIcon className="w-8 h-8 text-blue-500" />;
-    }
-
-    // Determine file type by extension or mime type
-    const fileName = item.originalName || item.name;
-    const extension = fileName.split('.').pop()?.toLowerCase();
-
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(extension || '')) {
-      return <ImageIcon className="w-8 h-8 text-green-500" />;
-    }
-    
-    if (['mp4', 'avi', 'mov', 'wmv', 'flv'].includes(extension || '')) {
-      return <VideoIcon className="w-8 h-8 text-purple-500" />;
-    }
-    
-    if (['pdf', 'doc', 'docx', 'txt', 'rtf'].includes(extension || '')) {
-      return <FileTextIcon className="w-8 h-8 text-red-500" />;
-    }
-
-    return <FileIcon className="w-8 h-8 text-gray-500" />;
-  };
+  const { viewMode, selectedItems, toggleItemSelection, navigateToFolder } =
+    useMediaLibraryStore();
 
   const handleItemClick = (item: MediaItem) => {
-    if (item.type === 'folder') {
+    if (item.type === "folder") {
       navigateToFolder(item.fullPath);
     } else {
       // TODO: Handle file preview/download
-      console.log('File clicked:', item);
+      console.log("File clicked:", item);
     }
   };
 
-  const handleItemSelect = (e: React.MouseEvent, item: MediaItem) => {
+  const handleItemSelect = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    item: MediaItem
+  ) => {
     e.stopPropagation();
     toggleItemSelection(item.fullPath);
   };
 
-  if (viewMode === 'grid') {
+  if (viewMode === "grid") {
     return (
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4 p-4">
         {items.map((item) => {
           const isSelected = selectedItems.includes(item.fullPath);
-          
+
           return (
             <div
               key={item.fullPath}
               className={`relative group cursor-pointer rounded-lg border-2 transition-all duration-200 ${
                 isSelected
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-transparent hover:border-gray-300 hover:bg-gray-50'
+                  ? "border-blue-500 bg-blue-50"
+                  : "border-transparent hover:border-gray-300 hover:bg-gray-50"
               }`}
               onClick={() => handleItemClick(item)}
             >
@@ -79,13 +87,22 @@ export function FileGrid({ items }: FileGridProps) {
               </div>
 
               {/* Item Content */}
-              <div className="flex flex-col items-center p-4 space-y-2">
-                {getFileIcon(item)}
+              <div className="flex flex-col items-center p-0 space-y-2">
+                {item?.previewUrl ? (
+                  <img
+                    src={item.previewUrl}
+                    alt={item.originalName}
+                    loading="lazy"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  getFileIcon(item)
+                )}
                 <span className="text-sm text-center text-gray-900 truncate w-full">
                   {item.originalName || item.name}
                 </span>
                 <span className="text-xs text-gray-500">
-                  {item.type === 'folder' ? 'Folder' : 'File'}
+                  {item.type === "folder" ? "Folder" : "File"}
                 </span>
               </div>
             </div>
@@ -100,12 +117,12 @@ export function FileGrid({ items }: FileGridProps) {
     <div className="divide-y divide-gray-200">
       {items.map((item) => {
         const isSelected = selectedItems.includes(item.fullPath);
-        
+
         return (
           <div
             key={item.fullPath}
             className={`flex items-center px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors ${
-              isSelected ? 'bg-blue-50' : ''
+              isSelected ? "bg-blue-50" : ""
             }`}
             onClick={() => handleItemClick(item)}
           >
@@ -120,7 +137,16 @@ export function FileGrid({ items }: FileGridProps) {
 
             {/* Icon */}
             <div className="mr-3">
-              {getFileIcon(item)}
+              {item?.previewUrl ? (
+                <img
+                  src={item.previewUrl}
+                  alt={item.originalName}
+                  loading="lazy"
+                  className="size-10 object-cover"
+                />
+              ) : (
+                getFileIcon(item)
+              )}
             </div>
 
             {/* Name */}
@@ -132,14 +158,24 @@ export function FileGrid({ items }: FileGridProps) {
 
             {/* Type */}
             <div className="px-3 text-sm text-gray-500">
-              {item.type === 'folder' ? 'Folder' : 'File'}
+              {item.type === "folder" ? "Folder" : "File"}
             </div>
 
             {/* Actions */}
             <div className="flex items-center space-x-2">
               <button className="text-gray-400 hover:text-gray-600">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
+                  />
                 </svg>
               </button>
             </div>

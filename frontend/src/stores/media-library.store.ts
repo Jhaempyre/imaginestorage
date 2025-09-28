@@ -6,6 +6,7 @@ export interface MediaItem {
   name: string;
   fullPath: string;
   originalName?: string;
+  previewUrl?: string;
 }
 
 export interface MediaLibraryState {
@@ -117,7 +118,7 @@ export const useMediaLibraryStore = create<MediaLibraryState & MediaLibraryActio
     const breadcrumbs = [{ name: 'Root', path: '' }];
 
     let accumulatedPath = '';
-    segments.forEach((segment, index) => {
+    segments.forEach((segment) => {
       accumulatedPath += segment + '/';
       breadcrumbs.push({
         name: segment,

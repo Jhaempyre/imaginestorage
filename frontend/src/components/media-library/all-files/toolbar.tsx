@@ -1,26 +1,27 @@
-import { useState, useRef } from 'react';
-import { 
-  UploadIcon, 
-  FolderPlusIcon, 
-  RefreshCwIcon, 
-  GridIcon, 
+import { useState, useRef } from "react";
+import {
+  UploadIcon,
+  FolderPlusIcon,
+  RefreshCwIcon,
+  GridIcon,
   ListIcon,
   SortAscIcon,
   SortDescIcon,
-  MoreHorizontalIcon
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { useMediaLibraryStore } from '@/stores/media-library.store';
-import { useUploadFile } from '@/api/files/mutations';
-import { useQueryClient } from '@tanstack/react-query';
-import { FILES_QUERY_KEYS } from '@/api/files/queries';
+  MoreHorizontalIcon,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useMediaLibraryStore } from "@/stores/media-library.store";
+import { useCreateFolder, useUploadFile } from "@/api/files/mutations";
+import { useQueryClient } from "@tanstack/react-query";
+import { FILES_QUERY_KEYS } from "@/api/files/queries";
+import { toast } from "sonner";
 
 export function MediaLibraryToolbar() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
-  const [newFolderName, setNewFolderName] = useState('');
-  
+  const [newFolderName, setNewFolderName] = useState("");
+
   const {
     viewMode,
     setViewMode,
@@ -30,26 +31,27 @@ export function MediaLibraryToolbar() {
     setSortOrder,
     currentPath,
     isUploading,
-    uploadProgress
+    uploadProgress,
   } = useMediaLibraryStore();
 
   const queryClient = useQueryClient();
   const uploadFileMutation = useUploadFile();
+  const createFolderMutation = useCreateFolder();
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
-    Array.from(files).forEach(file => {
+    Array.from(files).forEach((file) => {
       uploadFileMutation.mutate({
         file,
-        folderPath: currentPath
+        folderPath: currentPath,
       });
     });
 
     // Reset the input
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
@@ -59,16 +61,24 @@ export function MediaLibraryToolbar() {
 
   const handleCreateFolder = () => {
     if (!newFolderName.trim()) return;
-    
+
     // TODO: Implement folder creation API call
-    console.log('Creating folder:', newFolderName, 'in path:', currentPath);
-    
-    setNewFolderName('');
-    setIsCreatingFolder(false);
+    console.log("Creating folder:", newFolderName, "in path:", currentPath);
+
+    try {
+      createFolderMutation.mutate({
+        fullPath: currentPath + newFolderName + "/",
+      });
+      setNewFolderName("");
+      setIsCreatingFolder(false);
+    } catch (error) {
+      console.error("Failed to create folder:", error);
+      toast.error("Failed to create folder");
+    }
   };
 
   const toggleSortOrder = () => {
-    setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    setSortOrder(sortOrder === "asc" ? "desc" : "asc");
   };
 
   return (
@@ -81,9 +91,11 @@ export function MediaLibraryToolbar() {
           className="flex items-center space-x-2"
         >
           <UploadIcon className="w-4 h-4" />
-          <span>{isUploading ? `Uploading... ${uploadProgress}%` : 'Upload'}</span>
+          <span>
+            {isUploading ? `Uploading... ${uploadProgress}%` : "Upload"}
+          </span>
         </Button>
-        
+
         <input
           ref={fileInputRef}
           type="file"
@@ -101,10 +113,10 @@ export function MediaLibraryToolbar() {
               placeholder="Folder name"
               className="w-32"
               onKeyDown={(e) => {
-                if (e.key === 'Enter') handleCreateFolder();
-                if (e.key === 'Escape') {
+                if (e.key === "Enter") handleCreateFolder();
+                if (e.key === "Escape") {
                   setIsCreatingFolder(false);
-                  setNewFolderName('');
+                  setNewFolderName("");
                 }
               }}
               autoFocus
@@ -112,12 +124,12 @@ export function MediaLibraryToolbar() {
             <Button size="sm" onClick={handleCreateFolder}>
               Create
             </Button>
-            <Button 
-              size="sm" 
-              variant="outline" 
+            <Button
+              size="sm"
+              variant="outline"
               onClick={() => {
                 setIsCreatingFolder(false);
-                setNewFolderName('');
+                setNewFolderName("");
               }}
             >
               Cancel
@@ -157,14 +169,14 @@ export function MediaLibraryToolbar() {
             <option value="createdAt">Date</option>
             <option value="fileSize">Size</option>
           </select>
-          
+
           <Button
             variant="outline"
             size="sm"
             onClick={toggleSortOrder}
             className="p-2"
           >
-            {sortOrder === 'asc' ? (
+            {sortOrder === "asc" ? (
               <SortAscIcon className="w-4 h-4" />
             ) : (
               <SortDescIcon className="w-4 h-4" />
@@ -175,17 +187,17 @@ export function MediaLibraryToolbar() {
         {/* View Mode Toggle */}
         <div className="flex items-center border border-gray-300 rounded">
           <Button
-            variant={viewMode === 'grid' ? 'default' : 'ghost'}
+            variant={viewMode === "grid" ? "default" : "ghost"}
             size="sm"
-            onClick={() => setViewMode('grid')}
+            onClick={() => setViewMode("grid")}
             className="rounded-r-none border-0"
           >
             <GridIcon className="w-4 h-4" />
           </Button>
           <Button
-            variant={viewMode === 'list' ? 'default' : 'ghost'}
+            variant={viewMode === "list" ? "default" : "ghost"}
             size="sm"
-            onClick={() => setViewMode('list')}
+            onClick={() => setViewMode("list")}
             className="rounded-l-none border-0"
           >
             <ListIcon className="w-4 h-4" />

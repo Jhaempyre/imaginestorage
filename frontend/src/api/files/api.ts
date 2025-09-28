@@ -25,6 +25,14 @@ export interface UploadFileResponse {
   };
 }
 
+export interface CreateFolderResponse {
+  success: boolean;
+  message: string;
+  data: {
+    fullPath: string;
+  };
+}
+
 export const filesApi = {
   async getFiles(params: GetFilesParams): Promise<GetFilesResponse> {
     const response = await axiosClient.get<GetFilesResponse>('/files', { params });
@@ -43,6 +51,11 @@ export const filesApi = {
         'Content-Type': 'multipart/form-data',
       },
     });
+    return response.data;
+  },
+
+  async createFolder(fullPath: string) {
+    const response = await axiosClient.post<CreateFolderResponse>('/files/create-folder', { fullPath });
     return response.data;
   },
 

@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useMediaLibraryStore } from "@/stores/media-library.store";
 import { useGetFiles } from "@/api/files/queries";
 import { MediaLibraryBreadcrumbs } from "./breadcrumbs.tsx";
-import { MediaLibraryToolbar } from "../toolbar.tsx";
+import { MediaLibraryToolbar } from "./toolbar.tsx";
 import { FileGrid } from "./file-grid.tsx";
 import { CardContent } from "@/components/ui/card";
 import { PageLayout } from "./page-layout.tsx";
