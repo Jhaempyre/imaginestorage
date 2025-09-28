@@ -8,54 +8,63 @@ export type FileDocument = File & Document & {
 
 @Schema({ timestamps: true })
 export class File {
+  // 🔑 Who owns this node (file or folder)
   @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
   ownerId: Types.ObjectId;
 
+  // 🔑 Whether this is a file or folder
+  @Prop({ required: true, enum: ['file', 'folder'], default: 'file', index: true })
+  type: 'file' | 'folder';
+
+  // Human-readable name (for files: name without path)
   @Prop({ required: true, trim: true, maxlength: 255 })
   originalName: string;
 
-  @Prop({ required: true, unique: true, trim: true, maxlength: 255 })
+  // Unique file name within the system (used internally)
+  @Prop({ required: true, trim: true, maxlength: 255 })
   fileName: string;
 
+  // Full path (e.g. "root/images/cat.jpg" or "root/images/")
   @Prop({ required: true, unique: true, trim: true, maxlength: 511 })
   fullPath: string;
 
-  @Prop({ required: true, min: 0 })
+  // Parent path for fast lookups (e.g. "root/images/")
+  @Prop({ required: true, trim: true, maxlength: 511, index: true })
+  parentPath: string;
+
+  // === File-specific props ===
+  @Prop({ min: 0, default: 0 })
   fileSize: number;
 
-  @Prop({ required: true, trim: true, lowercase: true })
-  mimeType: string;
+  @Prop({ trim: true, lowercase: true, default: null })
+  mimeType: string | null;
 
-  @Prop({ required: true, trim: true, lowercase: true, maxlength: 10 })
-  fileExtension: string;
+  @Prop({ trim: true, lowercase: true, maxlength: 10, default: null })
+  fileExtension: string | null;
 
   @Prop({ default: null })
   thumbnailPath: string;
 
+  @Prop({ required: false, trim: true, default: null })
+  fileUrl: string | null;
+
+  // === Common props for file/folder ===
   @Prop({ default: false, index: true })
   isPublic: boolean;
 
   @Prop({ type: Object, default: {} })
   metadata: Record<string, any>;
 
-  @Prop({ 
+  @Prop({
     required: true,
     enum: ['aws', 'gcp', 'azure', 'local'],
-    default: 'aws'
+    default: 'aws',
+    index: true
   })
   storageProvider: string;
 
-  @Prop({ required: true, trim: true })
-  fileUrl: string;
-
-  // @Prop({ unique: true, sparse: true, index: true })
-  // shareToken: string;
-
-  // @Prop({ default: null })
-  // shareExpiry: Date;
-
-  // @Prop({ default: false })
-  // isEncrypted: boolean;
+  @Prop({ type: Object, default: {} })
+  providerMetadata: Record<string, any>; // e.g., ETag, versionId, etc.
 
   @Prop({ default: null })
   deletedAt: Date;
@@ -66,19 +75,19 @@ export class File {
 
 export const FileSchema = SchemaFactory.createForClass(File);
 
-// Compound indexes for better query performance
-FileSchema.index({ userId: 1, deletedAt: 1 });
-FileSchema.index({ userId: 1, mimeType: 1 });
+// === Indexes for performance ===
+FileSchema.index({ ownerId: 1, deletedAt: 1 }); // fast folder listings
+FileSchema.index({ ownerId: 1, type: 1, deletedAt: 1 });
 FileSchema.index({ createdAt: -1 });
 
-// Text index for search functionality
+// Full-text search
 FileSchema.index({
   originalName: 'text',
   'metadata.description': 'text',
-  'metadata.tags': 'text'
+  'metadata.tags': 'text',
 });
 
-// Instance method to generate share token
+// Instance methods
 FileSchema.methods.generateShareToken = function (expiryHours: number = 24): string {
   const crypto = require('crypto');
   this.shareToken = crypto.randomBytes(32).toString('hex');
@@ -86,20 +95,18 @@ FileSchema.methods.generateShareToken = function (expiryHours: number = 24): str
   return this.shareToken;
 };
 
-// Instance method to check if share token is valid
 FileSchema.methods.isShareTokenValid = function (): boolean {
   if (!this.shareToken) return false;
   if (this.shareExpiry && new Date() > this.shareExpiry) return false;
   return true;
 };
 
-// Static method to find files by user
+// Static helpers
 FileSchema.statics.findByUser = function (userId: Types.ObjectId, options: any = {}) {
-  const query = { userId, deletedAt: null };
+  const query = { ownerId: userId, deletedAt: null };
   return this.find(query, null, options);
 };
 
-// Static method to find public files
 FileSchema.statics.findPublicFiles = function (options: any = {}) {
   const query = { isPublic: true, deletedAt: null };
   return this.find(query, null, options);

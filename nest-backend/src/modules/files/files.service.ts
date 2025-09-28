@@ -79,13 +79,23 @@ export class FilesService {
 
       this.logger.debug(`uploadResult => ${JSON.stringify(uploadResult)}`);
 
+      // Ensure folder path exists
+      const folderPath = await this.ensureFolderPath(
+        userId,
+        uploadFileDto.folderPath,
+      );
+      this.logger.debug(`folderPath => ${JSON.stringify(folderPath)}`);
+      const parentPath = this.extractParentPath(uploadResult.fullPath);
+      this.logger.debug(`parentPath => ${JSON.stringify(parentPath)}`);
+
       // Save file metadata to database
       const fileDoc = new this.fileModel({
         ownerId: new Types.ObjectId(userId),
+        type: "file",
         originalName: originalName,
         fileName: uniqueFileName,
-        fullPath: uploadResult.fullPath,
-        fileSize,
+        fullPath: `_rt/${uploadResult.fullPath}`,
+        parentPath,
         mimeType,
         fileExtension,
         storageProvider: uploadResult.provider,
@@ -134,31 +144,48 @@ export class FilesService {
     const query: FilterQuery<FileDocument> = {
       ownerId: new Types.ObjectId(userId),
       deletedAt: null,
+      parentPath: prefix ? `_rt/${prefix}` : "_rt/",
     };
-
-    this.logger.debug(`query => ${JSON.stringify(query)}`);
-
-    if (prefix) {
-      query.fullPath = { $regex: `^${prefix}`, $options: "i" };
-    }
-
+    
+    // ✅ Text search on file/folder names
     if (search) {
-      query.$or = [{ originalName: { $regex: search, $options: "i" } }];
+      query.$or = [
+        { originalName: { $regex: search, $options: "i" } },
+        { "metadata.tags": { $regex: search, $options: "i" } },
+      ];
     }
-
+    
+    // ✅ Filter by mimeType (only affects files)
     if (mimeType) {
       query.mimeType = mimeType;
     }
 
-    // Build sort object
-    const sort: any = {};
+    this.logger.debug(`query => ${JSON.stringify(query)}`);
+    
+    // === Build Sort Object ===
+    const sort: Record<string, 1 | -1> = {};
     sort[sortBy] = sortOrder === "asc" ? 1 : -1;
 
-    const files = await this.fileModel.find(query).sort(sort).select("-__v");
-    this.logger.debug(`files => ${JSON.stringify(files)}`);
+    // === Fetch Files/Folders ===
+    const files = await this.fileModel
+      .find(query)
+      .sort(sort)
+      .select(
+        "type originalName fullPath fileSize mimeType fileUrl providerMetadata createdAt",
+      )
+      .lean();
+    this.logger.debug(`files.length => ${JSON.stringify(files.length)}`);
 
     return {
-      items: this.classifyFilesAndFolders(files, prefix),
+      items: files.map((f) => ({
+        type: f.type,
+        name: f.originalName,
+        fullPath: f.fullPath?.slice?.(4), // remove "_rt/" prefix
+        fileSize: f.fileSize,
+        mimeType: f.mimeType,
+        providerMetadata: f.providerMetadata,
+        previewUrl: f.mimeType?.startsWith?.("image") ? f.fileUrl : null,
+      })),
     };
   }
 
@@ -187,29 +214,7 @@ export class FilesService {
   ): Promise<{ fullPath: string }> {
     try {
       const { fullPath } = createFolderDto;
-      const result = await this.storageService.createFolder({
-        userId,
-        fullPath,
-      });
-
-      const fileObject = new this.fileModel({
-        ownerId: new Types.ObjectId(userId),
-        originalName: this.generateUniqueFileName(userId, `.folder`),
-        fileName: `.folder`,
-        fullPath: `${fullPath}/.folder`,
-        fileSize: 0,
-        mimeType: "application/octet-stream",
-        fileExtension: "folder",
-        storageProvider: result.provider,
-        fileUrl: `__invalid__`,
-        metadata: {
-          uploadedAt: new Date(),
-          provider: result.provider,
-        },
-      });
-      await fileObject.save();
-
-      return result;
+      return { fullPath: await this.ensureFolderPath(userId, fullPath) };
     } catch (error) {
       throw new AppException({
         statusCode: HttpStatus.BAD_REQUEST,
@@ -219,6 +224,48 @@ export class FilesService {
         details: error.message,
       });
     }
+  }
+
+  /**
+   * Ensures all folders in a path exist for the given user.
+   * Creates missing folders in the database.
+   */
+  private async ensureFolderPath(userId: string, folderPath: string) {
+    if (!folderPath) return "_rt/"; // root-level
+
+    const segments = folderPath.split("/").filter(Boolean);
+    let currentPath = "";
+
+    for (const segment of segments) {
+      const fullPath = currentPath + segment + "/";
+      const parentPath = currentPath; // parent of this folder
+
+      // Check if folder exists
+      const existing = await this.fileModel.findOne({
+        ownerId: userId,
+        type: "folder",
+        fullPath: `_rt/${fullPath}`,
+        deletedAt: null,
+      });
+
+      if (!existing) {
+        await this.fileModel.create({
+          ownerId: userId,
+          type: "folder",
+          originalName: segment,
+          fileName: segment, // folder name can be same as originalName
+          fullPath: `_rt/${fullPath}`,
+          parentPath: `_rt/${parentPath}`,
+          storageProvider: "aws", // or your default provider
+          metadata: { createdAt: new Date() },
+        });
+        ``;
+      }
+
+      currentPath = fullPath;
+    }
+
+    return currentPath; // return last folder fullPath
   }
 
   // async getPublicFile(fileId: string): Promise<FileDocument> {
@@ -416,50 +463,27 @@ export class FilesService {
     return `${timestamp}-${randomSuffix}${fileExtension}`;
   }
 
-  private classifyFilesAndFolders(files: FileDocument[], prefix: string) {
-    const prefixDepth = prefix ? prefix.split("/").filter(Boolean).length : 0;
-    const folderSet = new Set<string>();
-    const items: Array<
-      | {
-          _id: string;
-          type: "file";
-          name: string;
-          fullPath: string;
-          originalName: string;
-        }
-      | {
-          type: "folder";
-          name: string;
-          fullPath: string;
-        }
-    > = [];
+  /**
+   * Extracts the parent path from a fullPath.
+   *
+   * Examples:
+   *  fullPath: "images/cat.jpg" => "_rt/images/"
+   *  fullPath: "images/"       => "_rt/images/"
+   *  fullPath: ""             => "_rt/"
+   */
+  private extractParentPath(fullPath: string): string {
+    if (!fullPath) return "_rt/";
 
-    for (const file of files) {
-      const segments = file.fullPath.split("/").filter(Boolean);
+    const normalized = fullPath.replace(/\\/g, "/"); // normalize slashes
+    const parts = normalized.split("/").filter(Boolean);
 
-      if (segments.length > prefixDepth + 1) {
-        // There is at least one deeper folder
-        const folderName = segments[prefixDepth];
-        if (!folderSet.has(folderName)) {
-          folderSet.add(folderName);
-          items.push({
-            type: "folder",
-            name: folderName,
-            fullPath: `${prefix}${folderName}/`,
-          });
-        }
-      } else if (segments.length === prefixDepth + 1) {
-        // This is a file at this level
-        items.push({
-          _id: file._id,
-          type: "file",
-          name: file.fileName,
-          fullPath: file.fullPath,
-          originalName: file.originalName,
-        });
-      }
+    if (parts.length <= 1) {
+      return "_rt/"; // means it's at root
     }
 
-    return items;
+    // Remove last segment (file or folder name)
+    parts.pop();
+
+    return parts.length > 0 ? "_rt/" + parts.join("/") + "/" : "_rt/";
   }
 }
