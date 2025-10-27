@@ -1,11 +1,15 @@
-import { useEffect } from "react";
-import { useMediaLibraryStore } from "@/stores/media-library.store";
 import { useGetFiles } from "@/api/files/queries";
-import { MediaLibraryBreadcrumbs } from "./breadcrumbs.tsx";
-import { MediaLibraryToolbar } from "./toolbar.tsx";
-import { FileGrid } from "./file-grid.tsx";
+import {
+  UploadProvider,
+  UploadStatus,
+} from "@/components/reusables/uploader/index.tsx";
 import { CardContent } from "@/components/ui/card";
+import { useMediaLibraryStore } from "@/stores/media-library.store";
+import { useEffect } from "react";
+import { MediaLibraryBreadcrumbs } from "./breadcrumbs.tsx";
+import { FileGrid } from "./file-grid.tsx";
 import { PageLayout } from "./page-layout.tsx";
+import { MediaLibraryToolbar } from "./toolbar.tsx";
 
 function AllFilesPageContent() {
   const { currentPath, searchQuery, sortBy, sortOrder, setUploadStatus } =
@@ -65,65 +69,74 @@ function AllFilesPageContent() {
   }
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Breadcrumbs */}
-      <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
-        <MediaLibraryBreadcrumbs />
-      </div>
+    <UploadProvider
+      uploadUrl="http://localhost:8001/api/files/upload"
+      formFieldName="file"
+      currentPath={currentPath}
+    >
+      <div className="flex flex-col h-full overflow-y-auto">
+        {/* Breadcrumbs */}
+        <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
+          <MediaLibraryBreadcrumbs />
+        </div>
+        <MediaLibraryToolbar />
+        <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
+          <UploadStatus />
+        </div>
 
-      {/* Toolbar */}
-      <MediaLibraryToolbar />
+        {/* Toolbar */}
 
-      {/* Content Area */}
-      <div className="flex-1 overflow-auto">
-        {isLoading ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading files...</p>
-            </div>
-          </div>
-        ) : filesData?.data?.items?.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <div className="text-gray-400 mb-4">
-                <svg
-                  className="w-16 h-16 mx-auto"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1}
-                    d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1}
-                    d="M8 5a2 2 0 012-2h2a2 2 0 012 2v0H8v0z"
-                  />
-                </svg>
+        {/* Content Area */}
+        <div className="flex-1 overflow-auto">
+          {isLoading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading files...</p>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-1">
-                No files found
-              </h3>
-              <p className="text-gray-500 mb-4">
-                {searchQuery
-                  ? `No files match "${searchQuery}"`
-                  : currentPath
-                  ? "This folder is empty"
-                  : "Upload your first file to get started"}
-              </p>
             </div>
-          </div>
-        ) : (
-          <FileGrid items={filesData?.data?.items || []} />
-        )}
-      </div>
-    </div>
+          ) : filesData?.data?.items?.length === 0 ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <div className="text-gray-400 mb-4">
+                  <svg
+                    className="w-16 h-16 mx-auto"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1}
+                      d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1}
+                      d="M8 5a2 2 0 012-2h2a2 2 0 012 2v0H8v0z"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-1">
+                  No files found
+                </h3>
+                <p className="text-gray-500 mb-4">
+                  {searchQuery
+                    ? `No files match "${searchQuery}"`
+                    : currentPath
+                    ? "This folder is empty"
+                    : "Upload your first file to get started"}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <FileGrid items={filesData?.data?.items || []} />
+          )}
+        </div>
+      </div>{" "}
+    </UploadProvider>
   );
 }
 

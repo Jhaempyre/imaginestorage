@@ -61,7 +61,7 @@ export function FileGrid({ items }: FileGridProps) {
 
   if (viewMode === "grid") {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4 p-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4 p-4 min-h-10">
         {items.map((item) => {
           const isSelected = selectedItems.includes(item.fullPath);
 
@@ -114,7 +114,7 @@ export function FileGrid({ items }: FileGridProps) {
 
   // List view
   return (
-    <div className="divide-y divide-gray-200">
+    <div className="divide-y divide-gray-200 min-h-10">
       {items.map((item) => {
         const isSelected = selectedItems.includes(item.fullPath);
 

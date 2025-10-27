@@ -16,8 +16,8 @@ function RouterContent() {
     <Routes>
       {/* Protected Routes */}
       <Route path="/" element={<PrivateLayout />}>
-        <Route index element={<Navigate to="/dashbaord" replace />} />
-        <Route path="dashbaord" element={<MediaLibraryLayout />}>
+        <Route index element={<Navigate to="/all-files" replace />} />
+        <Route path="all-files/*" element={<MediaLibraryLayout />}>
           <Route index element={<AllFilesPage />} />
         </Route>
 

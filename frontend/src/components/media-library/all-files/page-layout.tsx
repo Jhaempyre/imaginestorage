@@ -39,7 +39,11 @@ export function PageLayout(props: PageLayoutProps) {
 
       {/* Content */}
       <div className="flex-1 overflow-hidden">
-        <Card className="h-full border-0 shadow-sm p-0">{props.children}</Card>
+        
+          <Card className="h-full border-0 shadow-sm p-0">
+            {props.children}
+          </Card>
+        
       </div>
     </div>
   );

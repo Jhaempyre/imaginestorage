@@ -1,24 +1,24 @@
-import { useState, useRef } from "react";
-import {
-  UploadIcon,
-  FolderPlusIcon,
-  RefreshCwIcon,
-  GridIcon,
-  ListIcon,
-  SortAscIcon,
-  SortDescIcon,
-  MoreHorizontalIcon,
-} from "lucide-react";
+import { useCreateFolder, useUploadFile } from "@/api/files/mutations";
+import { FILES_QUERY_KEYS } from "@/api/files/queries";
+import { GlobalUploader } from "@/components/reusables/uploader/global-uploader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useMediaLibraryStore } from "@/stores/media-library.store";
-import { useCreateFolder, useUploadFile } from "@/api/files/mutations";
 import { useQueryClient } from "@tanstack/react-query";
-import { FILES_QUERY_KEYS } from "@/api/files/queries";
+import {
+  FolderPlusIcon,
+  GridIcon,
+  ListIcon,
+  MoreHorizontalIcon,
+  RefreshCwIcon,
+  SortAscIcon,
+  SortDescIcon
+} from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 export function MediaLibraryToolbar() {
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  // const fileInputRef = useRef<HTMLInputElement>(null);
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
 
@@ -49,10 +49,10 @@ export function MediaLibraryToolbar() {
       });
     });
 
-    // Reset the input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+    // // Reset the input
+    // if (fileInputRef.current) {
+    //   fileInputRef.current.value = "";
+    // }
   };
 
   const handleRefresh = () => {
@@ -85,7 +85,7 @@ export function MediaLibraryToolbar() {
     <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
       <div className="flex items-center space-x-2">
         {/* Upload Button */}
-        <Button
+        {/* <Button
           onClick={() => fileInputRef.current?.click()}
           disabled={isUploading}
           className="flex items-center space-x-2"
@@ -94,15 +94,17 @@ export function MediaLibraryToolbar() {
           <span>
             {isUploading ? `Uploading... ${uploadProgress}%` : "Upload"}
           </span>
-        </Button>
+        </Button> */}
 
-        <input
+        {/* <input
           ref={fileInputRef}
           type="file"
           multiple
           onChange={handleFileUpload}
           className="hidden"
-        />
+        /> */}
+
+        <GlobalUploader />
 
         {/* Create Folder */}
         {isCreatingFolder ? (
