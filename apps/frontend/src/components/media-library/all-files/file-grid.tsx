@@ -9,6 +9,7 @@ import {
   useMediaLibraryStore,
   type MediaItem,
 } from "@/stores/media-library.store";
+import { cn } from "@/lib/utils";
 
 interface FileGridProps {
   items: MediaItem[];
@@ -61,18 +62,25 @@ export function FileGrid({ items }: FileGridProps) {
 
   if (viewMode === "grid") {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4 p-4 min-h-10">
+      <div
+        className={cn(
+          "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8",
+          "gap-4 p-4 min-h-10"
+        )}
+      >
         {items.map((item) => {
           const isSelected = selectedItems.includes(item.fullPath);
 
           return (
             <div
               key={item.fullPath}
-              className={`relative group cursor-pointer rounded-lg border-2 transition-all duration-200 ${
+              className={cn(
+                "relative group cursor-pointer rounded-lg border-2",
+                "transition-all duration-200 aspect-square",
                 isSelected
                   ? "border-blue-500 bg-blue-50"
                   : "border-transparent hover:border-gray-300 hover:bg-gray-50"
-              }`}
+              )}
               onClick={() => handleItemClick(item)}
             >
               {/* Selection Checkbox */}
@@ -80,29 +88,33 @@ export function FileGrid({ items }: FileGridProps) {
                 <input
                   type="checkbox"
                   checked={isSelected}
-                  onChange={(e) => handleItemSelect(e, item)}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   onClick={(e) => e.stopPropagation()}
+                  onChange={(e) => handleItemSelect(e, item)}
+                  className={cn(
+                    "w-4 h-4 text-blue-600",
+                    "border-gray-300 rounded focus:ring-blue-500"
+                  )}
                 />
               </div>
 
               {/* Item Content */}
-              <div className="flex flex-col items-center p-0 space-y-2">
+              <div className="h-full w-full flex flex-col items-center p-1">
                 {item?.previewUrl ? (
-                  <img
-                    src={item.previewUrl}
-                    alt={item.originalName}
-                    loading="lazy"
-                    className="w-full h-full object-cover"
-                  />
+                  <div className="flex-1 flex items-center justify-center h-[calc(100%-24px)] max-h-[calc(100%-24px)]">
+                    <img
+                      src={item.previewUrl}
+                      alt={item.originalName}
+                      loading="lazy"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
                 ) : (
-                  getFileIcon(item)
+                  <div className="flex-1 flex items-center justify-center h-[calc(100%-24px)] max-h-[calc(100%-24px)]">
+                    {getFileIcon(item)}
+                  </div>
                 )}
                 <span className="text-sm text-center text-gray-900 truncate w-full">
                   {item.originalName || item.name}
-                </span>
-                <span className="text-xs text-gray-500">
-                  {item.type === "folder" ? "Folder" : "File"}
                 </span>
               </div>
             </div>

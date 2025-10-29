@@ -27,11 +27,22 @@ export function MediaLibraryToolbar() {
     sortBy,
     setSortBy,
     sortOrder,
+    searchQuery,
     setSortOrder,
     currentPath,
   } = useMediaLibraryStore();
 
   const queryClient = useQueryClient();
+  const queryState = queryClient.getQueryState(
+    FILES_QUERY_KEYS.list({
+      prefix: currentPath,
+      search: searchQuery || undefined,
+      sortBy,
+      sortOrder,
+    })
+  );
+  console.log({ queryState });
+
   const createFolderMutation = useCreateFolder();
 
   const handleRefresh = () => {
@@ -40,10 +51,7 @@ export function MediaLibraryToolbar() {
 
   const handleCreateFolder = () => {
     if (!newFolderName.trim()) return;
-
-    // TODO: Implement folder creation API call
     console.log("Creating folder:", newFolderName, "in path:", currentPath);
-
     try {
       createFolderMutation.mutate({
         fullPath: currentPath + newFolderName + "/",
