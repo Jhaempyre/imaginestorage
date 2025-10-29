@@ -1,8 +1,8 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
 export interface MediaItem {
   _id?: string;
-  type: 'file' | 'folder';
+  type: "file" | "folder";
   name: string;
   fullPath: string;
   originalName?: string;
@@ -12,12 +12,13 @@ export interface MediaItem {
 export interface MediaLibraryState {
   currentPath: string;
   selectedItems: string[];
-  viewMode: 'grid' | 'list';
-  sortBy: 'originalName' | 'createdAt' | 'fileSize';
-  sortOrder: 'asc' | 'desc';
+  viewMode: "grid" | "list";
+  sortBy: "originalName" | "createdAt" | "fileSize";
+  sortOrder: "asc" | "desc";
   searchQuery: string;
   isUploading: boolean;
   uploadProgress: number;
+  uploadStatusViewerVisible?: boolean;
 }
 
 export interface MediaLibraryActions {
@@ -28,24 +29,29 @@ export interface MediaLibraryActions {
   toggleItemSelection: (itemPath: string) => void;
   selectAllItems: (items: MediaItem[]) => void;
   clearSelection: () => void;
-  setViewMode: (mode: 'grid' | 'list') => void;
-  setSortBy: (sortBy: 'originalName' | 'createdAt' | 'fileSize') => void;
-  setSortOrder: (order: 'asc' | 'desc') => void;
+  setViewMode: (mode: "grid" | "list") => void;
+  setSortBy: (sortBy: "originalName" | "createdAt" | "fileSize") => void;
+  setSortOrder: (order: "asc" | "desc") => void;
   setSearchQuery: (query: string) => void;
   setUploadStatus: (isUploading: boolean, progress?: number) => void;
   getBreadcrumbs: () => Array<{ name: string; path: string }>;
+  showUploadStatusViewer: () => void;
+  hideUploadStatusViewer: () => void;
 }
 
-export const useMediaLibraryStore = create<MediaLibraryState & MediaLibraryActions>((set, get) => ({
+export const useMediaLibraryStore = create<
+  MediaLibraryState & MediaLibraryActions
+>((set, get) => ({
   // State
-  currentPath: '',
+  currentPath: "",
   selectedItems: [],
-  viewMode: 'grid',
-  sortBy: 'originalName',
-  sortOrder: 'asc',
-  searchQuery: '',
+  viewMode: "grid",
+  sortBy: "originalName",
+  sortOrder: "asc",
+  searchQuery: "",
   isUploading: false,
   uploadProgress: 0,
+  uploadStatusViewerVisible: false,
 
   // Actions
   setCurrentPath: (path: string) => {
@@ -59,30 +65,30 @@ export const useMediaLibraryStore = create<MediaLibraryState & MediaLibraryActio
   navigateUp: () => {
     const { currentPath } = get();
     if (!currentPath) return;
-    
-    const segments = currentPath.split('/').filter(Boolean);
+
+    const segments = currentPath.split("/").filter(Boolean);
     segments.pop();
-    const newPath = segments.length > 0 ? segments.join('/') + '/' : '';
+    const newPath = segments.length > 0 ? segments.join("/") + "/" : "";
     set({ currentPath: newPath, selectedItems: [] });
   },
 
   navigateToRoot: () => {
-    set({ currentPath: '', selectedItems: [] });
+    set({ currentPath: "", selectedItems: [] });
   },
 
   toggleItemSelection: (itemPath: string) => {
     const { selectedItems } = get();
     const isSelected = selectedItems.includes(itemPath);
-    
+
     if (isSelected) {
-      set({ selectedItems: selectedItems.filter(path => path !== itemPath) });
+      set({ selectedItems: selectedItems.filter((path) => path !== itemPath) });
     } else {
       set({ selectedItems: [...selectedItems, itemPath] });
     }
   },
 
   selectAllItems: (items: MediaItem[]) => {
-    const allPaths = items.map(item => item.fullPath);
+    const allPaths = items.map((item) => item.fullPath);
     set({ selectedItems: allPaths });
   },
 
@@ -90,15 +96,15 @@ export const useMediaLibraryStore = create<MediaLibraryState & MediaLibraryActio
     set({ selectedItems: [] });
   },
 
-  setViewMode: (mode: 'grid' | 'list') => {
+  setViewMode: (mode: "grid" | "list") => {
     set({ viewMode: mode });
   },
 
-  setSortBy: (sortBy: 'originalName' | 'createdAt' | 'fileSize') => {
+  setSortBy: (sortBy: "originalName" | "createdAt" | "fileSize") => {
     set({ sortBy });
   },
 
-  setSortOrder: (order: 'asc' | 'desc') => {
+  setSortOrder: (order: "asc" | "desc") => {
     set({ sortOrder: order });
   },
 
@@ -112,20 +118,28 @@ export const useMediaLibraryStore = create<MediaLibraryState & MediaLibraryActio
 
   getBreadcrumbs: () => {
     const { currentPath } = get();
-    if (!currentPath) return [{ name: 'Root', path: '' }];
+    if (!currentPath) return [{ name: "Root", path: "" }];
 
-    const segments = currentPath.split('/').filter(Boolean);
-    const breadcrumbs = [{ name: 'Root', path: '' }];
+    const segments = currentPath.split("/").filter(Boolean);
+    const breadcrumbs = [{ name: "Root", path: "" }];
 
-    let accumulatedPath = '';
+    let accumulatedPath = "";
     segments.forEach((segment) => {
-      accumulatedPath += segment + '/';
+      accumulatedPath += segment + "/";
       breadcrumbs.push({
         name: segment,
-        path: accumulatedPath
+        path: accumulatedPath,
       });
     });
 
     return breadcrumbs;
+  },
+
+  showUploadStatusViewer: () => {
+    set({ uploadStatusViewerVisible: true });
+  },
+
+  hideUploadStatusViewer: () => {
+    set({ uploadStatusViewerVisible: false });
   },
 }));

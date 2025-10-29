@@ -1,4 +1,4 @@
-import { useCreateFolder, useUploadFile } from "@/api/files/mutations";
+import { useCreateFolder } from "@/api/files/mutations";
 import { FILES_QUERY_KEYS } from "@/api/files/queries";
 import { GlobalUploader } from "@/components/reusables/uploader/global-uploader";
 import { Button } from "@/components/ui/button";
@@ -12,13 +12,12 @@ import {
   MoreHorizontalIcon,
   RefreshCwIcon,
   SortAscIcon,
-  SortDescIcon
+  SortDescIcon,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 export function MediaLibraryToolbar() {
-  // const fileInputRef = useRef<HTMLInputElement>(null);
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
 
@@ -30,30 +29,10 @@ export function MediaLibraryToolbar() {
     sortOrder,
     setSortOrder,
     currentPath,
-    isUploading,
-    uploadProgress,
   } = useMediaLibraryStore();
 
   const queryClient = useQueryClient();
-  const uploadFileMutation = useUploadFile();
   const createFolderMutation = useCreateFolder();
-
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
-
-    Array.from(files).forEach((file) => {
-      uploadFileMutation.mutate({
-        file,
-        folderPath: currentPath,
-      });
-    });
-
-    // // Reset the input
-    // if (fileInputRef.current) {
-    //   fileInputRef.current.value = "";
-    // }
-  };
 
   const handleRefresh = () => {
     queryClient.invalidateQueries({ queryKey: FILES_QUERY_KEYS.lists() });
@@ -84,28 +63,7 @@ export function MediaLibraryToolbar() {
   return (
     <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
       <div className="flex items-center space-x-2">
-        {/* Upload Button */}
-        {/* <Button
-          onClick={() => fileInputRef.current?.click()}
-          disabled={isUploading}
-          className="flex items-center space-x-2"
-        >
-          <UploadIcon className="w-4 h-4" />
-          <span>
-            {isUploading ? `Uploading... ${uploadProgress}%` : "Upload"}
-          </span>
-        </Button> */}
-
-        {/* <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          onChange={handleFileUpload}
-          className="hidden"
-        /> */}
-
         <GlobalUploader />
-
         {/* Create Folder */}
         {isCreatingFolder ? (
           <div className="flex items-center space-x-2">
