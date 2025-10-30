@@ -1,4 +1,3 @@
-import { useGetFiles } from "@/api/files/queries";
 import {
   UploadProvider,
   UploadStatus,
@@ -10,22 +9,13 @@ import { MediaLibraryBreadcrumbs } from "./breadcrumbs.tsx";
 import { FileGrid } from "./file-grid.tsx";
 import { PageLayout } from "./page-layout.tsx";
 import { MediaLibraryToolbar } from "./toolbar.tsx";
+import { useGetFilesCommon } from "./utils.ts";
 
 function AllFilesPageContent() {
-  const { currentPath, searchQuery, sortBy, sortOrder, setUploadStatus } =
-    useMediaLibraryStore();
+  const { currentPath, searchQuery, setUploadStatus } = useMediaLibraryStore();
 
-  const {
-    data: filesData,
-    isLoading,
-    error,
-    refetch,
-  } = useGetFiles({
-    prefix: currentPath,
-    search: searchQuery || undefined,
-    sortBy,
-    sortOrder,
-  });
+  const getFilesState = useGetFilesCommon();
+  const { data: filesData, isLoading, error, refetch } = getFilesState;
 
   // Reset upload status when component mounts
   useEffect(() => {
@@ -79,7 +69,7 @@ function AllFilesPageContent() {
         <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
           <MediaLibraryBreadcrumbs />
         </div>
-        
+
         <MediaLibraryToolbar />
 
         <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">

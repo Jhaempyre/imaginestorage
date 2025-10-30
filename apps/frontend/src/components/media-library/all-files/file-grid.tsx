@@ -44,11 +44,13 @@ export function FileGrid({ items }: FileGridProps) {
     useMediaLibraryStore();
 
   const handleItemClick = (item: MediaItem) => {
+    toggleItemSelection(item.fullPath);
+  };
+
+  const handleItemDoubleClick = (item: MediaItem) => {
     if (item.type === "folder") {
       navigateToFolder(item.fullPath);
     } else {
-      // TODO: Handle file preview/download
-      console.log("File clicked:", item);
     }
   };
 
@@ -82,6 +84,7 @@ export function FileGrid({ items }: FileGridProps) {
                   : "border-transparent hover:border-gray-300 hover:bg-gray-50"
               )}
               onClick={() => handleItemClick(item)}
+              onDoubleClick={() => handleItemDoubleClick(item)}
             >
               {/* Selection Checkbox */}
               <div className="absolute top-2 right-2 z-10">

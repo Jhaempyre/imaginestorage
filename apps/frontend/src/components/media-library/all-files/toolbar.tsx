@@ -16,8 +16,11 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useGetFilesCommon } from "./utils";
 
-export function MediaLibraryToolbar() {
+interface MediaLibraryToolbarProps {}
+
+export function MediaLibraryToolbar({}: MediaLibraryToolbarProps) {
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
 
@@ -27,22 +30,12 @@ export function MediaLibraryToolbar() {
     sortBy,
     setSortBy,
     sortOrder,
-    searchQuery,
     setSortOrder,
     currentPath,
   } = useMediaLibraryStore();
 
   const queryClient = useQueryClient();
-  const queryState = queryClient.getQueryState(
-    FILES_QUERY_KEYS.list({
-      prefix: currentPath,
-      search: searchQuery || undefined,
-      sortBy,
-      sortOrder,
-    })
-  );
-  console.log({ queryState });
-
+  const getFilesState = useGetFilesCommon();
   const createFolderMutation = useCreateFolder();
 
   const handleRefresh = () => {
@@ -114,14 +107,23 @@ export function MediaLibraryToolbar() {
           </Button>
         )}
 
-        {/* Refresh */}
         <Button
           variant="outline"
           onClick={handleRefresh}
           className="flex items-center space-x-2"
+          disabled={getFilesState?.isFetching}
         >
-          <RefreshCwIcon className="w-4 h-4" />
-          <span>Refresh</span>
+          {getFilesState?.isFetching ? (
+            <>
+              <RefreshCwIcon className="animate-spin" />
+              <span>Refresh</span>
+            </>
+          ) : (
+            <>
+              <RefreshCwIcon className="w-4 h-4" />
+              <span>Refresh</span>
+            </>
+          )}
         </Button>
       </div>
 
