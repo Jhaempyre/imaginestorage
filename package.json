@@ -1,0 +1,12 @@
+{
+  "name": "imaginestorage",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "run:all": "bash ./scripts/run-all.sh"
+  }
+}
