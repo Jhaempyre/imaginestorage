@@ -7,6 +7,6 @@
     "packages/*"
   ],
   "scripts": {
-    "run:all": "bash ./scripts/run-all.sh"
+    "dev": "bash ./scripts/run-all.sh"
   }
 }

@@ -6,7 +6,7 @@ import { CardContent } from "@/components/ui/card";
 import { useMediaLibraryStore } from "@/stores/media-library.store";
 import { useEffect } from "react";
 import { MediaLibraryBreadcrumbs } from "./breadcrumbs.tsx";
-import { FileGrid } from "./file-grid.tsx";
+import { FileGrid } from "./file-grid";
 import { PageLayout } from "./page-layout.tsx";
 import { MediaLibraryToolbar } from "./toolbar.tsx";
 import { useGetFilesCommon } from "./utils.ts";
