@@ -54,14 +54,6 @@ export function MediaLibraryContextMenu({
           Move to Trash
         </ContextMenuCheckboxItem>
         <ContextMenuCheckboxItem>Show Full URLs</ContextMenuCheckboxItem>
-        <ContextMenuSeparator />
-        <ContextMenuRadioGroup value="pedro">
-          <ContextMenuLabel inset>People</ContextMenuLabel>
-          <ContextMenuRadioItem value="pedro">
-            Pedro Duarte
-          </ContextMenuRadioItem>
-          <ContextMenuRadioItem value="colm">Colm Tuite</ContextMenuRadioItem>
-        </ContextMenuRadioGroup>
       </ContextMenuContent>
     </ContextMenu>
   );

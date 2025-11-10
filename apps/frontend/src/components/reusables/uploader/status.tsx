@@ -15,8 +15,11 @@ import type { UploadItem } from "./types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 
-export function UploadStatus() {
+interface UploadStatusProps extends React.HTMLAttributes<HTMLDivElement> {}
+
+export function UploadStatus(props: UploadStatusProps) {
   const { items, retryUpload, cancelUpload } = useUpload();
   const [activeTab, setActiveTab] = useState("queue");
 
@@ -145,7 +148,7 @@ export function UploadStatus() {
   );
 
   return (
-    <div className="w-full">
+    <div className={cn("w-full", props?.className)}>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid grid-cols-3 h-auto p-1 bg-transparent shadow-none">
           <TabsTrigger

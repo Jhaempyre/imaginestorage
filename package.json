@@ -7,6 +7,8 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "bash ./scripts/run-all.sh"
+    "dev": "bash ./scripts/run-all.sh",
+    "clean": "rm -rf node_modules && cd apps/frontend && rm -rf node_modules && cd ../nest-backend && rm -rf node_modules",
+    "install": "npm install --verbose"
   }
 }
