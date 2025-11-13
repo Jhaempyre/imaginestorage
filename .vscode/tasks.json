@@ -1,0 +1,48 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "start-dev",
+      "type": "shell",
+      "command": "npm run dev",
+      "group": "build",
+      "isBackground": true,
+      "presentation": {
+        "panel": "dedicated",
+        "reveal": "always"
+      }
+    },
+    {
+      "label": "open-second-terminal",
+      "type": "shell",
+      "command": "",
+      "presentation": {
+        "panel": "new"
+      }
+    },
+    {
+      "label": "start-all",
+      "dependsOn": ["start-dev", "open-second-terminal"]
+    },
+    {
+      "label": "add-todo",
+      "type": "shell",
+      "command": "./scripts/add-todo.sh ${input:todoFolder}",
+      "presentation": {
+        "reveal": "silent",
+        "panel": "dedicated",
+        "echo": false,
+        "focus": false,
+        "showReuseMessage": false
+      },
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "todoFolder",
+      "type": "promptString",
+      "description": "Enter todo folder (leave empty to reuse last one)"
+    }
+  ]
+}

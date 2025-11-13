@@ -2,10 +2,6 @@
   "name": "imaginestorage",
   "version": "1.0.0",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "scripts": {
     "dev": "bash ./scripts/run-all.sh",
     "clean": "rm -rf node_modules && cd apps/frontend && rm -rf node_modules && cd ../nest-backend && rm -rf node_modules",
