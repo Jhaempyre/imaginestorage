@@ -1,9 +1,10 @@
 import axios from "axios";
-import { ErrorInterceptor } from '../error/interceptor';
+import { ErrorInterceptor } from "../error/interceptor";
+import { API_URL } from "@/config";
 
 // Create a pre-configured Axios instance
 const axiosClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000',
+  baseURL: API_URL || "http://localhost:3000",
   timeout: 10000, // 10s timeout
   headers: {
     "Content-Type": "application/json",
@@ -12,7 +13,7 @@ const axiosClient = axios.create({
 });
 
 // Add metadata property to axios config type
-declare module 'axios' {
+declare module "axios" {
   interface InternalAxiosRequestConfig {
     metadata?: {
       startTime?: number;
@@ -25,13 +26,13 @@ declare module 'axios' {
 // ✅ Request Interceptors with Error Handling
 axiosClient.interceptors.request.use(
   ErrorInterceptor.onRequest,
-  ErrorInterceptor.onRequestError
+  ErrorInterceptor.onRequestError,
 );
 
 // ✅ Response Interceptors with Error Handling
 axiosClient.interceptors.response.use(
   ErrorInterceptor.onResponse,
-  ErrorInterceptor.onResponseError
+  ErrorInterceptor.onResponseError,
 );
 
 export default axiosClient;
