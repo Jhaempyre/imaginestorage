@@ -43,6 +43,7 @@ services:
       retries: 3
     volumes:
       - ./apps/nest-backend/uploads:/app/uploads
+    user: "1000:1000"
 
   nginx:
     image: nginx:stable
