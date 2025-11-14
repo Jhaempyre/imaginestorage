@@ -1,11 +1,13 @@
 // src/server.ts
+import dotenv from "dotenv";
 import express from "express";
 import mongoose from "mongoose";
 import { pipeline } from "stream";
 import { promisify } from "util";
 import { FileModel } from "./models/file";
-import { getStreamForFile } from "./adapters";
-import dotenv from "dotenv";
+import { UserModel } from "./models/user";
+import { UserStorageConfigModel } from "./models/user-storage-config";
+import { getFileStream } from "./adapters";
 
 dotenv.config({ path: ".env" });
 console.log(process.env.MONGODB_URI);
@@ -27,74 +29,62 @@ app.use((req: any, res, next) => {
   next();
 });
 
-app.get("/file/:fileId", async (req: any, res) => {
+app.get("/:userId/:fileId", async (req, res) => {
   try {
-    const fileId = req.params.fileId;
-    if (!mongoose.Types.ObjectId.isValid(fileId))
-      return res.status(400).send("invalid id");
+    const { userId, fileId } = req.params;
+    const action = req.query.action || "view";
 
-    const file = await FileModel.findById(fileId).exec();
-    if (!file || file.deletedAt) return res.status(404).send("Not found");
+    // 1. Validate user
+    const user = await UserModel.findById(userId);
+    if (!user) return res.status(404).json({ error: "User not found" });
 
-    // ACL
-    // if (!file.isPublic) {
-    //   // If no user and no token, block
-    //   const token = req.query.token as string | undefined;
+    // 2. Validate file
+    const file = await FileModel.findById(fileId);
+    if (!file) return res.status(404).json({ error: "File not found" });
 
-    //   if (!req.user && !token) return res.status(403).send("Forbidden");
+    // 3. Verify file belongs to user
+    if (!file.ownerId.equals(user._id)) {
+      return res.status(403).json({ error: "Forbidden: not your file" });
+    }
 
-    //   // If a token is provided, validate it
-    //   if (token) {
-    //     if (
-    //       !file.shareToken ||
-    //       file.shareToken !== token ||
-    //       !file.isShareTokenValid()
-    //     ) {
-    //       return res.status(403).send("Token invalid or expired");
-    //     }
-    //   } else {
-    //     // user-based access: must be owner
-    //     if (!file.ownerId.equals(req.user._id)) {
-    //       return res.status(403).send("Forbidden");
-    //     }
-    //   }
-    // }
+    // 4. Fetch user storage config
+    const config = await UserStorageConfigModel.findOne({ userId: user._id });
+    if (!config)
+      return res.status(400).json({ error: "No storage config found" });
 
-    // get adapter stream
-    const { stream, meta } = await getStreamForFile(file, req);
+    const creds = config.credentials;
 
-    // sanitize + set headers
+    // 5. Get storage stream
+    const rangeHeader = req.headers.range as string | undefined;
+
+    const { stream, meta } = await getFileStream(
+      config.provider,
+      creds,
+      file,
+      rangeHeader
+    );
+
+    // 6. Set headers
     if (meta.mime) res.setHeader("Content-Type", meta.mime);
-    if (meta.etag) res.setHeader("ETag", meta.etag);
-    if (meta.length != null)
-      res.setHeader("Content-Length", String(meta.length));
+    if (meta.length) res.setHeader("Content-Length", meta.length);
     if (meta.range) {
       res.status(206);
       res.setHeader("Content-Range", meta.range);
-      res.setHeader("Accept-Ranges", "bytes");
-    } else {
-      res.status(200);
-      res.setHeader("Accept-Ranges", "bytes");
     }
 
-    // CDN-friendly caching: adjust as your policy requires
-    // If file is public, long cache; otherwise short or private
-    if (file.isPublic) {
-      res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
-    } else {
-      res.setHeader("Cache-Control", "private, max-age=60");
+    // 7. Handle actions
+    if (action === "download") {
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${file.originalName}"`
+      );
     }
 
-    // Security hygiene: remove any headers we would otherwise forward (we don't forward upstream headers)
-    // NOTE: using res.setHeader above ensures only intended headers are present.
-
-    // stream and handle errors
-    await pipe(stream as NodeJS.ReadableStream, res as NodeJS.WritableStream);
-    // pipeline ends the response
-  } catch (err: any) {
-    console.error("proxy error:", err);
-    if (!res.headersSent) res.status(500).send("Internal server error");
-    else res.end();
+    // 8. Stream to client
+    stream.pipe(res);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal error" });
   }
 });
 

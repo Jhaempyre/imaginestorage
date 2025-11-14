@@ -1,15 +1,27 @@
 // src/adapters/index.ts
-import { IFile } from "../models/file";
 import { awsGetStream } from "./awsAdapter";
 import { gcpGetStream } from "./gcpAdapter";
 
-export async function getStreamForFile(file: IFile, req: any) {
-  switch (file.storageProvider) {
+export async function getFileStream(
+  provider: string,
+  creds: any,
+  file: any,
+  range?: string
+) {
+  switch (provider) {
     case "aws":
-      return awsGetStream(file, req);
+      return awsGetStream(creds, file, range);
+
     case "gcp":
-      return gcpGetStream(file, req);
+      return gcpGetStream(creds, file, range);
+
+    case "local":
+      throw new Error("Local provider not implemented");
+
+    case "azure":
+      throw new Error("Azure provider not implemented");
+
     default:
-      throw new Error(`Unsupported provider: ${file.storageProvider}`);
+      throw new Error(`Unknown provider: ${provider}`);
   }
 }
