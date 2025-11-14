@@ -42,5 +42,4 @@ lerna-debug.log*
 .env.production.local
 
 # Uploads
-/uploads
 /public/temp
