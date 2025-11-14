@@ -37,3 +37,11 @@ high level pending featrues:
     11. 
 
   file permissions and access control - for major project or if time permits
+
+
+
+
+  frontend - http server - static file serve
+  backend - nodejs express server
+  file proxy server - node js custom express server
+  cdn server for widget files - http server - js file serve

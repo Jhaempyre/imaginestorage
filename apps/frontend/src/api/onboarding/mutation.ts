@@ -1,12 +1,19 @@
-import { useMutation, useQueryClient, type UseMutationOptions, type UseMutationResult } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQueryClient,
+  type UseMutationOptions,
+  type UseMutationResult,
+} from "@tanstack/react-query";
 import { ErrorHandler, type NormalizedError } from "../error";
 import { onboardingApi } from "./api";
 import { onboardingKeys } from "./queires";
 
-type SubmitProviderSelectionData = Awaited<ReturnType<typeof onboardingApi.submitProviderSelection>>;
+type SubmitProviderSelectionData = Awaited<
+  ReturnType<typeof onboardingApi.submitProviderSelection>
+>;
 
 export const useSubmitProviderSelection = (
-  options?: UseMutationOptions<SubmitProviderSelectionData, Error, unknown>
+  options?: UseMutationOptions<SubmitProviderSelectionData, Error, unknown>,
 ): UseMutationResult<SubmitProviderSelectionData, Error, unknown> => {
   const queryClient = useQueryClient();
 
@@ -17,26 +24,33 @@ export const useSubmitProviderSelection = (
 
     onSuccess: async (data, variables, context) => {
       // Invalidate & refetch all onboarding-related queries
-      await queryClient.invalidateQueries({ queryKey: onboardingKeys.onboarding });
-      await queryClient.invalidateQueries({ queryKey: onboardingKeys.storageProviderFields });
+      await queryClient.invalidateQueries({
+        queryKey: onboardingKeys.onboarding,
+      });
+      await queryClient.invalidateQueries({
+        queryKey: onboardingKeys.storageProviderFields,
+      });
 
-      // Call user-provided callback (if any)
-      onSuccess?.(data, variables, context);
+      // Call user-provided callback (if any), passing context
+      onSuccess?.(data, variables, context, undefined as any); // Pass undefined for onMutateResult if not used
     },
 
     onError: (error, variables, context) => {
       ErrorHandler.handle(error as unknown as NormalizedError);
-      onError?.(error, variables, context);
+      // Call user-provided callback (if any), passing context
+      onError?.(error, variables, undefined, context as any); // Pass undefined for onMutateResult if not used
     },
 
     ...rest,
   });
 };
 
-type SubmitConfigureCredentialsData = Awaited<ReturnType<typeof onboardingApi.submitProviderSelection>>;
+type SubmitConfigureCredentialsData = Awaited<
+  ReturnType<typeof onboardingApi.submitConfigureCredentials>
+>;
 
 export const useSubmitConfigureCredentials = (
-  options?: UseMutationOptions<SubmitConfigureCredentialsData, Error, unknown>
+  options?: UseMutationOptions<SubmitConfigureCredentialsData, Error, unknown>,
 ): UseMutationResult<SubmitConfigureCredentialsData, Error, unknown> => {
   const queryClient = useQueryClient();
 
@@ -47,20 +61,22 @@ export const useSubmitConfigureCredentials = (
 
     onSuccess: async (data, variables, context) => {
       // Invalidate & refetch all onboarding-related queries
-      await queryClient.invalidateQueries({ queryKey: onboardingKeys.onboarding });
-      await queryClient.invalidateQueries({ queryKey: onboardingKeys.storageProviderFields });
+      await queryClient.invalidateQueries({
+        queryKey: onboardingKeys.onboarding,
+      });
+      await queryClient.invalidateQueries({
+        queryKey: onboardingKeys.storageProviderFields,
+      });
 
       // Call user-provided callback (if any)
-      onSuccess?.(data, variables, context);
+      onSuccess?.(data, variables, context, undefined as any); // Pass undefined for onMutateResult if not used
     },
 
     onError: (error, variables, context) => {
       ErrorHandler.handle(error as unknown as NormalizedError);
-      onError?.(error, variables, context);
+      onError?.(error, variables, undefined, context as any); // Pass undefined for onMutateResult if not used
     },
 
     ...rest,
   });
 };
-
-

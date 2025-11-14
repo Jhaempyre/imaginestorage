@@ -1,10 +1,10 @@
+import { useIsAuthenticated } from "@/api";
 import { useEffect } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
-import { queryClient, useIsAuthenticated, authApi } from "@/api";
 
 export function PrivateLayout() {
   const navigate = useNavigate();
-  const { isAuthenticated, isLoading, user } = useIsAuthenticated();
+  const { isAuthenticated, isLoading } = useIsAuthenticated();
 
   useEffect(() => {
     // If not loading and not authenticated, redirect to login
