@@ -82,7 +82,7 @@ export class AuthController {
     // Set refresh token in httpOnly cookie
     response.cookie("refreshToken", result.tokens.refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      // secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
       maxAge: parseExpiry(this.configService.get("REFRESH_TOKEN_EXPIRY")), // 7 days
       path: "/",
@@ -91,7 +91,7 @@ export class AuthController {
     // Set access token in cookie (optional)
     response.cookie("accessToken", result.tokens.accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      // secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
       maxAge: parseExpiry(this.configService.get("ACCESS_TOKEN_EXPIRY")), // 15 minutes,
       path: "/",
