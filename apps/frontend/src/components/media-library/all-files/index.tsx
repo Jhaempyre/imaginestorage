@@ -10,6 +10,7 @@ import { FileGrid } from "./file-grid";
 import { PageLayout } from "./page-layout.tsx";
 import { MediaLibraryToolbar } from "./toolbar.tsx";
 import { useGetFilesCommon } from "./utils.ts";
+import { API_URL } from "@/config.ts";
 
 function AllFilesPageContent() {
   const { currentPath, searchQuery, setUploadStatus } = useMediaLibraryStore();
@@ -60,7 +61,7 @@ function AllFilesPageContent() {
 
   return (
     <UploadProvider
-      uploadUrl="http://localhost:8001/api/files/upload"
+      uploadUrl={`${API_URL}/files/upload`}
       formFieldName="file"
       currentPath={currentPath}
     >
@@ -118,8 +119,8 @@ function AllFilesPageContent() {
                   {searchQuery
                     ? `No files match "${searchQuery}"`
                     : currentPath
-                    ? "This folder is empty"
-                    : "Upload your first file to get started"}
+                      ? "This folder is empty"
+                      : "Upload your first file to get started"}
                 </p>
               </div>
             </div>
