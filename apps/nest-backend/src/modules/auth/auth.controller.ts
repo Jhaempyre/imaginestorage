@@ -133,19 +133,22 @@ export class AuthController {
 
     const result = await this.authService.refreshTokens(refreshToken);
 
+    const isProduction = process.env.NODE_ENV === "production";
     // Set new refresh token in httpOnly cookie
     response.cookie("refreshToken", result.tokens.refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
+      domain: isProduction ? ".imaginarystorage.com" : undefined,
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
     // Set new access token in cookie
     response.cookie("accessToken", result.tokens.accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
+      domain: isProduction ? ".imaginarystorage.com" : undefined,
       maxAge: 15 * 60 * 1000, // 15 minutes
     });
 
