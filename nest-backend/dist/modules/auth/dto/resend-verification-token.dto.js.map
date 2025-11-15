@@ -1,1 +1,0 @@
-{"version":3,"file":"resend-verification-token.dto.js","sourceRoot":"","sources":["../../../../src/modules/auth/dto/resend-verification-token.dto.ts"],"names":[],"mappings":";;;;;;;;;;;;AAAA,6CAA8C;AAC9C,qDAA0C;AAE1C,MAAa,0BAA0B;CAOtC;AAPD,gEAOC;AADC;IALC,IAAA,qBAAW,EAAC;QACX,WAAW,EAAE,sDAAsD;QACnE,OAAO,EAAE,kBAAkB;KAC5B,CAAC;IACD,IAAA,yBAAO,GAAE;;yDACI"}

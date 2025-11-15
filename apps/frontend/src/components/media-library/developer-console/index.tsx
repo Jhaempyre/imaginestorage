@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { Label } from '../../ui/label';
+import { useCreateApiKey, useApiKeyHistory, useRevokeApiKey } from '../../../api/api-keys';
 
 const MIME_TYPES = [
   { value: 'image/jpeg', label: 'JPEG Images (.jpg, .jpeg)' },
@@ -23,28 +24,35 @@ export function DeveloperConsolePage() {
   const [isGenerated, setIsGenerated] = useState(false);
   const [maxFileSize, setMaxFileSize] = useState<string>('1');
   const [selectedMimeTypes, setSelectedMimeTypes] = useState<string[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
 
-  const generateApiKey = () => {
-    // Generate a random 30-character string
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
-    for (let i = 0; i < 30; i++) {
-      result += characters.charAt(Math.floor(Math.random() * characters.length));
+  // API hooks
+  const createApiKeyMutation = useCreateApiKey();
+  const { data: historyData, isLoading: isLoadingHistory } = useApiKeyHistory();
+  const revokeApiKeyMutation = useRevokeApiKey();
+
+  const generateApiKey = async () => {
+    try {
+      const response = await createApiKeyMutation.mutateAsync({
+        maxFileSize: parseFloat(maxFileSize),
+        allowedMimeTypes: selectedMimeTypes,
+      });
+
+      if (response.success) {
+        // Log all options to console
+        console.log('API Key Configuration:', {
+          apiKey: response.data.key,
+          maxFileSize: `${response.data.maxFileSize} GB`,
+          allowedMimeTypes: response.data.allowedMimeTypes,
+          allowedExtensions: response.data.allowedExtensions
+        });
+        
+        setApiKey(response.data.key);
+        setIsGenerated(true);
+      }
+    } catch (error) {
+      console.error('Failed to generate API key:', error);
     }
-    
-    // Log all options to console
-    console.log('API Key Configuration:', {
-      apiKey: result,
-      maxFileSize: `${maxFileSize} GB`,
-      allowedMimeTypes: selectedMimeTypes,
-      allowedExtensions: selectedMimeTypes.map(mime => {
-        const type = MIME_TYPES.find(t => t.value === mime);
-        return type ? type.label.match(/\(([^)]+)\)/)?.[1] : mime;
-      }).filter(Boolean)
-    });
-    
-    setApiKey(result);
-    setIsGenerated(true);
   };
 
   const copyApiKey = () => {
@@ -55,6 +63,14 @@ export function DeveloperConsolePage() {
       setIsGenerated(false);
       setMaxFileSize('1');
       setSelectedMimeTypes([]);
+    }
+  };
+
+  const handleRevokeApiKey = async (keyId: string) => {
+    try {
+      await revokeApiKeyMutation.mutateAsync(keyId);
+    } catch (error) {
+      console.error('Failed to revoke API key:', error);
     }
   };
 
@@ -69,7 +85,7 @@ export function DeveloperConsolePage() {
   return (
     <div className="flex-1 bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 min-h-screen">
       <div className="container mx-auto px-6 py-12">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="text-center mb-12">
             <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full mb-6">
@@ -77,16 +93,45 @@ export function DeveloperConsolePage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
               </svg>
             </div>
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
+            <h1 className="text-5xl font-bold `bg-gradient-to-r` from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
               Hi Developer! 👨‍💻
             </h1>
             <p className="text-xl text-gray-600">
               Configure and generate your personalized API key
             </p>
           </div>
+
+          {/* Navigation Tabs */}
+          <div className="flex justify-center mb-8">
+            <div className="bg-white rounded-full p-2 shadow-lg">
+              <button
+                onClick={() => setShowHistory(false)}
+                className={`px-6 py-3 rounded-full font-semibold transition-all duration-200 ${
+                  !showHistory 
+                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                🔑 Generate New Key
+              </button>
+              <button
+                onClick={() => setShowHistory(true)}
+                className={`px-6 py-3 rounded-full font-semibold transition-all duration-200 ${
+                  showHistory 
+                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                📊 API Key History {historyData?.total && `(${historyData.total})`}
+              </button>
+            </div>
+          </div>
         
-          {!isGenerated ? (
-            <div className="bg-white rounded-2xl shadow-2xl p-8 border border-gray-200">
+          {/* Content */}
+          {!showHistory ? (
+            /* API Key Generation */
+            !isGenerated ? (
+              <div className="bg-white rounded-2xl shadow-2xl p-8 border border-gray-200">
               <div className="space-y-8">
                 {/* Max File Size */}
                 <div>
@@ -149,10 +194,17 @@ export function DeveloperConsolePage() {
                 <div className="text-center pt-6">
                   <Button 
                     onClick={generateApiKey}
-                    disabled={selectedMimeTypes.length === 0}
+                    disabled={selectedMimeTypes.length === 0 || createApiKeyMutation.isPending}
                     className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-12 py-4 text-lg font-semibold rounded-xl shadow-lg transform transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                   >
-                    🚀 Generate API Key
+                    {createApiKeyMutation.isPending ? (
+                      <>
+                        <div className="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                        Generating...
+                      </>
+                    ) : (
+                      '🚀 Generate API Key'
+                    )}
                   </Button>
                   {selectedMimeTypes.length === 0 && (
                     <p className="text-red-500 mt-2 text-sm">Please select at least one file type</p>
@@ -191,6 +243,107 @@ export function DeveloperConsolePage() {
                   📋 Copy API Key
                 </Button>
               </div>
+            </div>
+            )
+          ) : (
+            /* API Key History */
+            <div className="bg-white rounded-2xl shadow-2xl p-8 border border-gray-200">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">🔐 API Key History</h2>
+                <div className="text-sm text-gray-500">
+                  {historyData?.total || 0} total keys
+                </div>
+              </div>
+
+              {isLoadingHistory ? (
+                <div className="flex justify-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                </div>
+              ) : historyData?.history?.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="text-6xl mb-4">🔑</div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">No API Keys Yet</h3>
+                  <p className="text-gray-600 mb-4">Generate your first API key to get started!</p>
+                  <Button 
+                    onClick={() => setShowHistory(false)}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-2 rounded-lg"
+                  >
+                    Generate First Key
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4 max-h-96 overflow-y-auto">
+                  {historyData?.history?.map((key, index) => (
+                    <div
+                      key={key.id}
+                      className="border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow duration-200"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-3">
+                            <span className="text-lg font-mono bg-gray-100 px-3 py-1 rounded-lg">
+                              {key.maskedKey}
+                            </span>
+                            <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                              key.isActive 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-red-100 text-red-800'
+                            }`}>
+                              {key.isActive ? '✅ Active' : '❌ Revoked'}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                            <div>
+                              <span className="font-semibold text-gray-700">Max Size:</span>
+                              <span className="ml-2 text-gray-600">{key.maxFileSize} GB</span>
+                            </div>
+                            <div>
+                              <span className="font-semibold text-gray-700">Usage:</span>
+                              <span className="ml-2 text-gray-600">{key.usageCount} times</span>
+                            </div>
+                            <div>
+                              <span className="font-semibold text-gray-700">Created:</span>
+                              <span className="ml-2 text-gray-600">
+                                {new Date(key.createdAt).toLocaleDateString()}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="mt-3">
+                            <span className="font-semibold text-gray-700 text-sm">File Types:</span>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {key.allowedMimeTypes.slice(0, 3).map((mimeType) => (
+                                <span
+                                  key={mimeType}
+                                  className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full"
+                                >
+                                  {mimeType.split('/')[1].toUpperCase()}
+                                </span>
+                              ))}
+                              {key.allowedMimeTypes.length > 3 && (
+                                <span className="text-xs text-gray-500 px-2 py-1">
+                                  +{key.allowedMimeTypes.length - 3} more
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {key.isActive && (
+                          <Button
+                            onClick={() => handleRevokeApiKey(key.id)}
+                            disabled={revokeApiKeyMutation.isPending}
+                            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 text-sm rounded-lg ml-4"
+                          >
+                            {revokeApiKeyMutation.isPending ? 'Revoking...' : 'Revoke'}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

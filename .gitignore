@@ -1,3 +1,8 @@
 .tmp
 .test*
 node_modules
+.env
+# Environment files
+.env
+*.env
+nest-backend/.env

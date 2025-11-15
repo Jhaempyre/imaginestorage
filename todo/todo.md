@@ -34,7 +34,11 @@ high level pending featrues:
         3. set/get Analytics()
     9. isPublic access control
     10. resource.imaginarystore.com/username/objectId
-    11. 
+    11. Email verification
+    12. fILES KABHI KAWAR 2 Baar upload ho rhi hae fail ke case mae -- 
+    13. apney credentials edit krne ka option 
+    14.
+
 
   file permissions and access control - for major project or if time permits
 
