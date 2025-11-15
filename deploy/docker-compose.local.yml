@@ -1,10 +1,57 @@
-version: "3.8"
-
 services:
+  backend:
+    build:
+      context: ../apps/nest-backend
+      dockerfile: Dockerfile
+    container_name: imaginary_backend
+    ports:
+      - "8001:8001"
+    environment:
+      - NODE_ENV=development
+      - PORT=8001
+    env_file:
+      - ../apps/nest-backend/.env.local
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - ../apps/nest-backend/uploads:/app/uploads
+    user: "1000:1000"
+
+  nginx:
+    image: nginx:stable
+    container_name: imaginary_nginx
+    ports:
+      - "80:80"
+      # - "80:80"
+      # - "443:443"
+    volumes:
+      - ../apps/frontend/dist:/usr/share/nginx/html:ro
+      - ./config/nginx/nginx.local.conf:/etc/nginx/nginx.conf:ro
+      # - /etc/letsencrypt/live/frontend.listit.avinashjha.space/fullchain.pem:/etc/ssl/certs/cert.pem:ro
+      # - /etc/letsencrypt/live/frontend.listit.avinashjha.space/privkey.pem:/etc/ssl/certs/key.pem:ro
+
+  proxy:
+    build:
+      context: ../apps/proxy
+      dockerfile: Dockerfile
+    container_name: imaginary_proxy
+    ports:
+      - "9000:9000"
+    env_file:
+      - ../apps/proxy/.env.local
+    restart: unless-stopped
+    networks:
+      - app-network
   # Frontend React Application
   # frontend:
   #   build:
-  #     context: ./apps/frontend
+  #     context: ../apps/frontend
   #     dockerfile: Dockerfile
   #   ports:
   #     - "3000:80"
@@ -22,41 +69,6 @@ services:
   #     retries: 3
 
   # Backend NestJS Application
-  backend:
-    build:
-      context: ./apps/nest-backend
-      dockerfile: Dockerfile
-    ports:
-      - "8001:8001"
-    environment:
-      - NODE_ENV=production
-      - PORT=8001
-    env_file:
-      - ./apps/nest-backend/.env
-    networks:
-      - app-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    volumes:
-      - ./apps/nest-backend/uploads:/app/uploads
-    user: "1000:1000"
-
-  nginx:
-    image: nginx:stable
-    container_name: imaginary_nginx
-    ports:
-      - "80:80"
-      # - "80:80"
-      # - "443:443"
-    volumes:
-      - ./apps/frontend/dist:/usr/share/nginx/html:ro
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      # - /etc/letsencrypt/live/frontend.listit.avinashjha.space/fullchain.pem:/etc/ssl/certs/cert.pem:ro
-      # - /etc/letsencrypt/live/frontend.listit.avinashjha.space/privkey.pem:/etc/ssl/certs/key.pem:ro
 
   # MongoDB Database
   # mongodb:
@@ -95,10 +107,9 @@ services:
   #     interval: 30s
   #     timeout: 10s
   #     retries: 3
-
-volumes:
-  mongodb_data:
-  redis_data:
+# volumes:
+# mongodb_data:
+# redis_data:
 
 networks:
   app-network:

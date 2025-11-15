@@ -1,4 +1,3 @@
-// src/server.ts
 import dotenv from "dotenv";
 import express from "express";
 import mongoose from "mongoose";
@@ -9,7 +8,9 @@ import { UserModel } from "./models/user";
 import { UserStorageConfigModel } from "./models/user-storage-config";
 import { getFileStream } from "./adapters";
 
-dotenv.config({ path: ".env" });
+if (process.env.NODE_ENV !== "production") {
+  dotenv.config({ path: ".env" });
+}
 console.log(process.env.MONGODB_URI);
 console.log(process.env.PORT);
 
