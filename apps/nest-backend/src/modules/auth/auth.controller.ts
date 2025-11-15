@@ -85,7 +85,7 @@ export class AuthController {
     response.cookie("refreshToken", result.tokens.refreshToken, {
       httpOnly: true,
       secure: isProduction,            // MUST be true for SameSite=None
-      sameSite: "none",                // allows cross-domain cookies
+      sameSite: isProduction ? "none" : "lax",                // allows cross-domain cookies
       domain: isProduction ? ".imaginarystorage.com" : undefined,
       maxAge: parseExpiry(this.configService.get("REFRESH_TOKEN_EXPIRY")),
       path: "/",
@@ -94,7 +94,7 @@ export class AuthController {
     response.cookie("accessToken", result.tokens.accessToken, {
       httpOnly: true,
       secure: isProduction,            // MUST be true for SameSite=None
-      sameSite: "none",
+      sameSite: isProduction ? "none" : "lax",
       domain: isProduction ? ".imaginarystorage.com" : undefined,
       maxAge: parseExpiry(this.configService.get("ACCESS_TOKEN_EXPIRY")),
       path: "/",

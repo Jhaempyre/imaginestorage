@@ -12,12 +12,18 @@ import { ShellModule } from "./modules/shell/shell.module";
 import { validateEnv } from "src/common/utils/validate-env";
 import { LoggerModule } from "./common/utils/logger";
 
+const isDevelopment = process.env.NODE_ENV !== "production";
+
 @Module({
   imports: [
     // Configuration module
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: [`.env`],
+      ...(isDevelopment
+        ? {
+            envFilePath: [`.env.local`],
+          }
+        : {}),
       // envFilePath: [`.env.${process.env.NODE_ENV || "development"}`],
       validate: validateEnv,
     }),

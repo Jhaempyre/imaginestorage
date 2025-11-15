@@ -247,15 +247,27 @@ export class AuthService {
   async verifyEmail(token: string): Promise<{ user: any; navigation: any }> {
     const user = await this.userModel.findOne({
       emailVerificationToken: token,
-      emailVerificationExpiry: { $gt: new Date() },
+      // emailVerificationExpiry: { $gt: new Date() },
     });
 
     if (!user) {
       throw new AppException({
         code: ERROR_CODES.BAD_REQUEST,
-        message: 'Auth.verifyEmail.invalidOrExpiredToken',
-        userMessage: 'Invalid or expired verification token',
+        message: 'Auth.verifyEmail.invalidToken',
+        userMessage: 'Invalid verification token',
         details: 'Please try requesting a new verification email.',
+        statusCode: HttpStatus.BAD_REQUEST,
+      });
+    }
+
+    console.log({ expiry: user.emailVerificationExpiry, now: new Date() });
+
+    if (user.emailVerificationExpiry < new Date()) {
+      throw new AppException({
+        code: ERROR_CODES.BAD_REQUEST,
+        message: 'Auth.verifyEmail.expiredToken',
+        userMessage: 'Verification token has expired',
+        details: 'Please request a new verification email.',
         statusCode: HttpStatus.BAD_REQUEST,
       });
     }
