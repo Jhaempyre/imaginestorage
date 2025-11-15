@@ -1,6 +1,15 @@
-import { Link, Outlet } from "react-router";
+import { Link, Outlet, useLocation } from "react-router";
 
 export function MediaLibraryLayout() {
+  const location = useLocation();
+  
+  const getNavItemClass = (path: string) => {
+    const isActive = location.pathname.startsWith(path);
+    return isActive
+      ? "flex items-center px-3 py-2 text-sm font-medium text-gray-900 bg-gray-100 rounded-md"
+      : "flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md";
+  };
+
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
@@ -12,8 +21,8 @@ export function MediaLibraryLayout() {
         </div>
         <nav className="flex-1 p-4 space-y-2">
           <Link
-            to="#"
-            className="flex items-center px-3 py-2 text-sm font-medium text-gray-900 bg-gray-100 rounded-md"
+            to="/all-files"
+            className={getNavItemClass("/all-files")}
           >
             <svg
               className="w-5 h-5 mr-3"
@@ -32,7 +41,7 @@ export function MediaLibraryLayout() {
           </Link>
           <Link
             to="#"
-            className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md"
+            className={getNavItemClass("#")}
           >
             <svg
               className="w-5 h-5 mr-3"
@@ -51,7 +60,7 @@ export function MediaLibraryLayout() {
           </Link>
           <Link
             to="#"
-            className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md"
+            className={getNavItemClass("#")}
           >
             <svg
               className="w-5 h-5 mr-3"
@@ -70,7 +79,7 @@ export function MediaLibraryLayout() {
           </Link>
           <Link
             to="#"
-            className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md"
+            className={getNavItemClass("#")}
           >
             <svg
               className="w-5 h-5 mr-3"
@@ -86,6 +95,25 @@ export function MediaLibraryLayout() {
               />
             </svg>
             Videos
+          </Link>
+          <Link
+            to="/developer-console"
+            className={getNavItemClass("/developer-console")}
+          >
+            <svg
+              className="w-5 h-5 mr-3"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+              />
+            </svg>
+            Developer Console
           </Link>
         </nav>
       </div>
