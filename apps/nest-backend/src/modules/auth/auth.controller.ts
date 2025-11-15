@@ -79,21 +79,24 @@ export class AuthController {
     this.logger.log("loginDto" + JSON.stringify(loginDto));
     const result = await this.authService.login(loginDto);
 
+    const isProduction = process.env.NODE_ENV === "production";
+    
     // Set refresh token in httpOnly cookie
     response.cookie("refreshToken", result.tokens.refreshToken, {
       httpOnly: true,
-      // secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: parseExpiry(this.configService.get("REFRESH_TOKEN_EXPIRY")), // 7 days
+      secure: isProduction,            // MUST be true for SameSite=None
+      sameSite: "none",                // allows cross-domain cookies
+      domain: isProduction ? ".imaginarystorage.com" : undefined,
+      maxAge: parseExpiry(this.configService.get("REFRESH_TOKEN_EXPIRY")),
       path: "/",
     });
 
-    // Set access token in cookie (optional)
     response.cookie("accessToken", result.tokens.accessToken, {
       httpOnly: true,
-      // secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: parseExpiry(this.configService.get("ACCESS_TOKEN_EXPIRY")), // 15 minutes,
+      secure: isProduction,            // MUST be true for SameSite=None
+      sameSite: "none",
+      domain: isProduction ? ".imaginarystorage.com" : undefined,
+      maxAge: parseExpiry(this.configService.get("ACCESS_TOKEN_EXPIRY")),
       path: "/",
     });
 

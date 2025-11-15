@@ -29,11 +29,12 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    networks:
+      - app-network
     volumes:
       - ../apps/frontend/dist:/usr/share/nginx/html:ro
       - ./config/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      # - /etc/letsencrypt/live/frontend.listit.avinashjha.space/fullchain.pem:/etc/ssl/certs/cert.pem:ro
-      # - /etc/letsencrypt/live/frontend.listit.avinashjha.space/privkey.pem:/etc/ssl/certs/key.pem:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
 
   proxy:
     build:
@@ -47,6 +48,12 @@ services:
     restart: unless-stopped
     networks:
       - app-network
+  
+  
+networks:
+  app-network:
+    driver: bridge
+    
   # Frontend React Application
   # frontend:
   #   build:
@@ -109,7 +116,3 @@ services:
 # volumes:
 # mongodb_data:
 # redis_data:
-
-networks:
-  app-network:
-    driver: bridge
