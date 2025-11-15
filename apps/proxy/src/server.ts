@@ -52,7 +52,6 @@ app.get("/:userId/:fileId", async (req, res) => {
     const config = await UserStorageConfigModel.findOne({ userId: user._id });
     if (!config)
       return res.status(400).json({ error: "No storage config found" });
-
     const creds = config.credentials;
 
     // 5. Get storage stream

@@ -9,10 +9,10 @@ export async function awsGetStream(
 ) {
   const s3 = new S3Client({
     region: creds.region,
-    // credentials: {
-    //   accessKeyId: creds.accessKeyId,
-    //   secretAccessKey: creds.secretAccessKey,
-    // },
+    credentials: {
+      accessKeyId: creds.accessKeyId,
+      secretAccessKey: creds.secretAccessKey,
+    },
   });
 
   const params: any = {
