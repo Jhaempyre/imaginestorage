@@ -361,7 +361,7 @@ export class FilesService {
     }>
   > {
     const results: Array<any> = [];
-    debugger;
+    // debugger;
     // Validate destination folder
     const destFolder = await this.fileModel.findOne({
       _id: copyDto.destinationFolderId,

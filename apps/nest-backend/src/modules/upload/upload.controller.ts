@@ -96,6 +96,7 @@ export class UploadController {
     @Body() uploadDto: UploadWithTokenDto,
   ): Promise<ApiResponseDto<UploadResponseDto>> {
     try {
+      // debugger;
       if (!file) {
         throw new BadRequestException('No file provided');
       }

@@ -1,51 +1,65 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { FileDocument } from "@/schemas/file.schema";
+import { ApiProperty } from "@nestjs/swagger";
 
 export class UploadResponseDto {
   @ApiProperty({
-    description: 'Unique identifier for the uploaded file',
-    example: '507f1f77bcf86cd799439011',
+    description: "Unique identifier for the uploaded file",
+    example: "507f1f77bcf86cd799439011",
   })
   fileId: string;
 
   @ApiProperty({
-    description: 'Original filename',
-    example: 'document.pdf',
+    description: "Original filename",
+    example: "document.pdf",
   })
   fileName: string;
 
   @ApiProperty({
-    description: 'Unique filename used in storage',
-    example: 'document-1640995200000-123456789.pdf',
+    description: "Unique filename used in storage",
+    example: "document-1640995200000-123456789.pdf",
   })
   uniqueFileName: string;
 
   @ApiProperty({
-    description: 'File size in bytes',
+    description: "File size in bytes",
     example: 2048576,
   })
   size: number;
 
   @ApiProperty({
-    description: 'MIME type of the file',
-    example: 'application/pdf',
+    description: "MIME type of the file",
+    example: "application/pdf",
   })
   mimeType: string;
 
   @ApiProperty({
-    description: 'URL to access the uploaded file',
-    example: 'https://storage.example.com/files/document-1640995200000-123456789.pdf',
+    description: "URL to access the uploaded file",
+    example:
+      "https://storage.example.com/files/document-1640995200000-123456789.pdf",
   })
   fileUrl: string;
 
   @ApiProperty({
-    description: 'Upload timestamp',
-    example: '2023-12-31T23:59:59.999Z',
+    description: "Upload timestamp",
+    example: "2023-12-31T23:59:59.999Z",
   })
   uploadedAt: Date;
 
   @ApiProperty({
-    description: 'Folder path where file was uploaded',
-    example: 'documents/images/',
+    description: "Folder path where file was uploaded",
+    example: "documents/images/",
   })
   folderPath: string;
+
+  constructor(partial: Partial<UploadResponseDto>) {
+    Object.assign(this, partial);
+  }
+
+  // getPreviewUrlForFile(file: FileDocument, proxyUrl): string {
+  //   return proxyUrl + file.ownerId + "/" + file.metadata?.previewImageId;
+  // }
+
+  // getOpenUrl(file: FileDocument, proxyUrl): string {
+  //   return proxyUrl + file.ownerId + "/" + file._id;
+  // }
 }

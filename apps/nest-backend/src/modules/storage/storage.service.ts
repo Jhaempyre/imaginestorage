@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { InjectModel } from "@nestjs/mongoose";
-import { Model } from "mongoose";
+import { Model, Types } from "mongoose";
 import {
   BatchCopyMapping,
   CopyObjectParams,
@@ -54,13 +54,16 @@ export class StorageService {
    * @returns provider info with credentials for internal use only
    */
   private async _getActiveProviderForUser(
-    userId: string,
+    userId: string | Types.ObjectId,
   ): Promise<IStorageProvider> {
+    if (typeof userId === "string") {
+      userId = new Types.ObjectId(userId);
+    }
     const userConfig = await this.userStorageConfigModel
       .findOne({ userId, isActive: true })
       .select("provider credentials");
 
-    console.log("User Storage Config:", userConfig);  
+    console.log("User Storage Config:", userConfig);
     if (!userConfig) {
       throw new Error("No active storage config found for user");
     }
@@ -149,7 +152,12 @@ export class StorageService {
     if (!provider.moveObject) {
       // fallback: implement move using copy + delete via provider methods
       if (provider.copyObject && provider.deleteFile) {
-        await provider.copyObject({ from: params.from, to: params.to, metadata: params.metadata, replaceMetadata: params.replaceMetadata });
+        await provider.copyObject({
+          from: params.from,
+          to: params.to,
+          metadata: params.metadata,
+          replaceMetadata: params.replaceMetadata,
+        });
         await provider.deleteFile({ fileName: params.from });
         return;
       }
@@ -171,16 +179,22 @@ export class StorageService {
       // fallback: simple sequential copy to preserve behavior if provider doesn't implement batchCopy
       for (const m of mappings) {
         if (!provider.copyObject) {
-          throw new Error("Provider does not support batch copy or single copy");
+          throw new Error(
+            "Provider does not support batch copy or single copy",
+          );
         }
-        await provider.copyObject({ from: m.from, to: m.to, metadata: m.metadata, replaceMetadata: m.replaceMetadata });
+        await provider.copyObject({
+          from: m.from,
+          to: m.to,
+          metadata: m.metadata,
+          replaceMetadata: m.replaceMetadata,
+        });
       }
       return;
     }
 
     return provider.batchCopy(mappings, concurrency);
   }
-
 
   async getDownloadUrl(
     userId: string,
