@@ -1,5 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { fileTypeFromFile } from "file-type";
+// import { fileTypeFromFile } from "file-type";
 import * as path from "path";
 
 import { ImagePreviewHandler } from "./handlers/image.handler";
@@ -26,6 +26,7 @@ export class PreviewService {
 
   async generatePreview(tempFilePath: string) {
     // detect file type via magic bytes
+    const { fileTypeFromFile } = await import("file-type");
     const detected = await fileTypeFromFile(tempFilePath);
     const ext = detected?.ext || path.extname(tempFilePath).slice(1);
     const mime = detected?.mime || "application/octet-stream";
