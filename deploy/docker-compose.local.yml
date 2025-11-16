@@ -33,8 +33,6 @@ services:
     volumes:
       - ../apps/frontend/dist:/usr/share/nginx/html:ro
       - ./config/nginx/nginx.local.conf:/etc/nginx/nginx.conf:ro
-      # - /etc/letsencrypt/live/frontend.listit.avinashjha.space/fullchain.pem:/etc/ssl/certs/cert.pem:ro
-      # - /etc/letsencrypt/live/frontend.listit.avinashjha.space/privkey.pem:/etc/ssl/certs/key.pem:ro
 
   proxy:
     build:

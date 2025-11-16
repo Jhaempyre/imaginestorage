@@ -1,14 +1,26 @@
-import { Injectable, Logger, ConflictException, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
-import { ApiKey, ApiKeyDocument } from '../../schemas/api-key.schema';
-import { CreateApiKeyDto } from './dto/create-api-key.dto';
-import { ApiKeyResponseDto, ApiKeyHistoryResponseDto, ApiKeyHistoryItemDto } from './dto/api-key-response.dto';
-import { ConstraintsResponseDto } from './dto/constraints-response.dto';
+import {
+  Injectable,
+  Logger,
+  ConflictException,
+  NotFoundException,
+} from "@nestjs/common";
+import { InjectModel } from "@nestjs/mongoose";
+import { Model, Types } from "mongoose";
+import { ApiKey, ApiKeyDocument } from "../../schemas/api-key.schema";
+import { CreateApiKeyDto } from "./dto/create-api-key.dto";
+import {
+  ApiKeyResponseDto,
+  ApiKeyHistoryResponseDto,
+  ApiKeyHistoryItemDto,
+} from "./dto/api-key-response.dto";
+import { ConstraintsResponseDto } from "./dto/constraints-response.dto";
+import { AppException } from "@/common/dto/app-exception";
+import { ERROR_CODES } from "@/common/constants/error-code.constansts";
 
 @Injectable()
 export class ApiKeysService {
   private readonly logger = new Logger(ApiKeysService.name);
+  private readonly maxFileSizeLimitMB = 100; // 100 MB
 
   constructor(
     @InjectModel(ApiKey.name) private apiKeyModel: Model<ApiKeyDocument>,
@@ -18,10 +30,13 @@ export class ApiKeysService {
    * Generate a random 30-character API key
    */
   private generateApiKey(): string {
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
+    const characters =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let result = "";
     for (let i = 0; i < 30; i++) {
-      result += characters.charAt(Math.floor(Math.random() * characters.length));
+      result += characters.charAt(
+        Math.floor(Math.random() * characters.length),
+      );
     }
     return result;
   }
@@ -31,21 +46,21 @@ export class ApiKeysService {
    */
   private extractExtensionsFromMimeTypes(mimeTypes: string[]): string[] {
     const mimeToExtensions: Record<string, string> = {
-      'image/jpeg': '.jpg, .jpeg',
-      'image/png': '.png',
-      'image/gif': '.gif',
-      'image/webp': '.webp',
-      'video/mp4': '.mp4',
-      'video/avi': '.avi',
-      'video/mov': '.mov',
-      'application/pdf': '.pdf',
-      'text/plain': '.txt',
-      'application/zip': '.zip',
-      'application/json': '.json',
-      'text/csv': '.csv',
+      "image/jpeg": ".jpg, .jpeg",
+      "image/png": ".png",
+      "image/gif": ".gif",
+      "image/webp": ".webp",
+      "video/mp4": ".mp4",
+      "video/avi": ".avi",
+      "video/mov": ".mov",
+      "application/pdf": ".pdf",
+      "text/plain": ".txt",
+      "application/zip": ".zip",
+      "application/json": ".json",
+      "text/csv": ".csv",
     };
 
-    return mimeTypes.map(mime => mimeToExtensions[mime]).filter(Boolean);
+    return mimeTypes.map((mime) => mimeToExtensions[mime]).filter(Boolean);
   }
 
   /**
@@ -55,14 +70,17 @@ export class ApiKeysService {
     if (key.length <= 10) return key;
     const start = key.slice(0, 6);
     const end = key.slice(-4);
-    const middle = '*'.repeat(key.length - 10);
+    const middle = "*".repeat(key.length - 10);
     return `${start}${middle}${end}`;
   }
 
   /**
    * Create a new API key for a user
    */
-  async createApiKey(userId: string, createApiKeyDto: CreateApiKeyDto): Promise<ApiKeyResponseDto> {
+  async createApiKey(
+    userId: string,
+    createApiKeyDto: CreateApiKeyDto,
+  ): Promise<ApiKeyResponseDto> {
     try {
       // Generate unique API key
       let apiKey: string;
@@ -75,14 +93,18 @@ export class ApiKeysService {
         const existingKey = await this.apiKeyModel.findOne({ key: apiKey });
         isUnique = !existingKey;
         attempts++;
-        
+
         if (attempts >= maxAttempts) {
-          throw new ConflictException('Unable to generate unique API key. Please try again.');
+          throw new ConflictException(
+            "Unable to generate unique API key. Please try again.",
+          );
         }
       } while (!isUnique);
 
       // Extract extensions from MIME types
-      const allowedExtensions = this.extractExtensionsFromMimeTypes(createApiKeyDto.allowedMimeTypes);
+      const allowedExtensions = this.extractExtensionsFromMimeTypes(
+        createApiKeyDto.allowedMimeTypes,
+      );
 
       // Create API key document
       const newApiKey = new this.apiKeyModel({
@@ -139,14 +161,19 @@ export class ApiKeysService {
         revokedAt: key.revokedAt,
       }));
 
-      this.logger.log(`Retrieved API key history for user ${userId}: ${total} keys`);
+      this.logger.log(
+        `Retrieved API key history for user ${userId}: ${total} keys`,
+      );
 
       return {
         history,
         total,
       };
     } catch (error) {
-      this.logger.error(`Failed to get API key history for user ${userId}:`, error);
+      this.logger.error(
+        `Failed to get API key history for user ${userId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -162,7 +189,7 @@ export class ApiKeysService {
       });
 
       if (!apiKey) {
-        throw new NotFoundException('API key not found');
+        throw new NotFoundException("API key not found");
       }
 
       apiKey.isActive = false;
@@ -173,7 +200,10 @@ export class ApiKeysService {
 
       this.logger.log(`API key ${keyId} revoked by user ${userId}`);
     } catch (error) {
-      this.logger.error(`Failed to revoke API key ${keyId} for user ${userId}:`, error);
+      this.logger.error(
+        `Failed to revoke API key ${keyId} for user ${userId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -185,7 +215,7 @@ export class ApiKeysService {
     try {
       const apiKey = await this.apiKeyModel
         .findOne({ key, isActive: true })
-        .populate('userId')
+        .populate("userId")
         .exec();
 
       if (apiKey) {
@@ -205,35 +235,56 @@ export class ApiKeysService {
   async getConstraints(publicKey: string): Promise<ConstraintsResponseDto> {
     try {
       this.logger.log(`Getting constraints for public key: ${publicKey}`);
-      
+      const apiKey = await this.apiKeyModel.findOne({
+        key: publicKey,
+        isActive: true,
+      });
+
+      if (!apiKey) {
+        this.logger.warn(`API key not found or inactive: ${publicKey}`);
+        throw new AppException({
+          statusCode: 404,
+          message: "ApiKeyService.getConstraints.notFound",
+          code: ERROR_CODES.NOT_FOUND,
+          userMessage: "API key not found",
+        });
+      }
+
       // For now, return default constraints without database validation
       // This allows widget testing without requiring valid API keys
-      // TODO: Add proper API key validation in production
-      
-      this.logger.log(`Returning default constraints for public key: ${publicKey}`);
+      this.logger.log(
+        `Returning default constraints for public key: ${publicKey}`,
+      );
 
       // Return standard constraints for file uploads
       return {
-        maxFileSize: 100 * 1024 * 1024, // 100MB
-        allowedMimeTypes: [
-          'image/jpeg',
-          'image/png',
-          'image/gif',
-          'image/webp',
-          'video/mp4',
-          'video/webm',
-          'audio/mp3',
-          'audio/wav',
-          'audio/ogg',
-          'application/pdf',
-          'text/plain',
-          'application/json',
-        ],
+        maxFileSize:
+          Math.min(apiKey.maxFileSize, this.maxFileSizeLimitMB) * 1024 * 1024,
+        allowedMimeTypes:
+          apiKey.allowedMimeTypes.length > 0
+            ? apiKey.allowedMimeTypes
+            : [
+                "image/jpeg",
+                "image/png",
+                "image/gif",
+                "image/webp",
+                "video/mp4",
+                "video/webm",
+                "audio/mp3",
+                "audio/wav",
+                "audio/ogg",
+                "application/pdf",
+                "text/plain",
+                "application/json",
+              ],
         allowedDomains: [], // No domain restrictions for now
         requireCaptcha: false,
       };
     } catch (error) {
-      this.logger.error(`Failed to get constraints for public key ${publicKey}:`, error);
+      this.logger.error(
+        `Failed to get constraints for public key ${publicKey}:`,
+        error,
+      );
       throw error;
     }
   }
