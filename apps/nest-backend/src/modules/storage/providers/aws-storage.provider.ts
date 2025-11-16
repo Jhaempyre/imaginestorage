@@ -7,6 +7,7 @@ import {
   HeadBucketCommand,
   ListObjectsV2Command,
   CreateBucketCommand,
+  CopyObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import * as fs from "fs";
@@ -168,6 +169,142 @@ export class AWSStorageProvider implements IStorageProvider {
     }
   }
 
+  // ---------- New: listObjects (returns list of keys) ----------
+  /**
+   * List all object keys under the given prefix (handles pagination).
+   * @param params { prefix?: string; maxKeys?: number }
+   * @returns { keys: string[] }
+   */
+  async listObjects(params: GetFilesParams): Promise<{ keys: string[] }> {
+    if (!this.isConfigured()) throw new Error("AWS S3 provider not configured");
+
+    const { prefix = "", maxKeys = 1000 } = params || {};
+    const normalizedPrefix = this.normalizeKey(prefix);
+
+    const keys: string[] = [];
+    let continuationToken: string | undefined = undefined;
+
+    try {
+      do {
+        const command = new ListObjectsV2Command({
+          Bucket: this.config!.bucketName,
+          Prefix: normalizedPrefix,
+          MaxKeys: Math.min(maxKeys, 1000),
+          ContinuationToken: continuationToken,
+        });
+
+        const result = await this.s3Client!.send(command);
+
+        if (result.Contents && result.Contents.length > 0) {
+          for (const obj of result.Contents) {
+            if (obj.Key) keys.push(obj.Key);
+          }
+        }
+
+        continuationToken = result.IsTruncated
+          ? result.NextContinuationToken
+          : undefined;
+        // If user provided a maxKeys smaller than all objects, we obey it.
+        if (keys.length >= maxKeys) break;
+      } while (continuationToken);
+    } catch (error) {
+      throw new Error(`Failed to list objects from AWS S3: ${error}`);
+    }
+
+    return { keys };
+  }
+
+  // ---------- New: copyObject ----------
+  /**
+   * Copy a single object within the bucket.
+   * Note: By default this will COPY metadata. If you want to replace metadata pass metadata and metadataDirective = 'REPLACE'.
+   */
+  async copyObject(params: {
+    from: string; // source key
+    to: string; // destination key
+    metadata?: Record<string, string>;
+    replaceMetadata?: boolean;
+  }): Promise<void> {
+    if (!this.isConfigured()) throw new Error("AWS S3 provider not configured");
+
+    const { from, to, metadata, replaceMetadata = false } = params;
+    const src = encodeURIComponent(
+      `${this.config!.bucketName}/${this.normalizeKey(from)}`,
+    );
+    const destKey = this.normalizeKey(to);
+
+    try {
+      const command = new CopyObjectCommand({
+        Bucket: this.config!.bucketName,
+        Key: destKey,
+        CopySource: src,
+        // If replaceMetadata true, pass MetadataDirective: 'REPLACE' and metadata
+        ...(replaceMetadata
+          ? { MetadataDirective: "REPLACE", Metadata: { ...(metadata || {}) } }
+          : { MetadataDirective: "COPY" }),
+      });
+
+      await this.s3Client!.send(command);
+    } catch (error) {
+      throw new Error(`Failed to copy object ${from} => ${to}: ${error}`);
+    }
+  }
+
+  // ---------- New: moveObject (copy + delete) ----------
+  /**
+   * MoveObject: copy then delete. Best-effort; not transactional.
+   */
+  async moveObject(params: {
+    from: string;
+    to: string;
+    metadata?: Record<string, string>;
+    replaceMetadata?: boolean;
+  }): Promise<void> {
+    if (!this.isConfigured()) throw new Error("AWS S3 provider not configured");
+
+    const { from, to, metadata, replaceMetadata = false } = params;
+    // 1) copy
+    await this.copyObject({ from, to, metadata, replaceMetadata });
+
+    // 2) delete source
+    try {
+      const del = new DeleteObjectCommand({
+        Bucket: this.config!.bucketName,
+        Key: this.normalizeKey(from),
+      });
+      await this.s3Client!.send(del);
+    } catch (error) {
+      // If delete fails we should surface error so callers can decide to retry or cleanup.
+      throw new Error(`Copied but failed to delete source ${from}: ${error}`);
+    }
+  }
+
+  // ---------- New: batchCopy (concurrency controlled) ----------
+  /**
+   * mappings: Array<{ from: string; to: string }>
+   */
+  async batchCopy(
+    mappings: Array<{
+      from: string;
+      to: string;
+      replaceMetadata?: boolean;
+      metadata?: Record<string, string>;
+    }>,
+    concurrency = 8,
+  ): Promise<void> {
+    if (!this.isConfigured()) throw new Error("AWS S3 provider not configured");
+    if (!mappings || mappings.length === 0) return;
+
+    await this.asyncPool(concurrency, mappings, async (m) => {
+      await this.copyObject({
+        from: m.from,
+        to: m.to,
+        metadata: m.metadata,
+        replaceMetadata: !!m.replaceMetadata,
+      });
+    });
+  }
+
   async getDownloadUrl(params: DownloadUrlParams): Promise<string> {
     if (!this.isConfigured()) {
       throw new Error("AWS S3 provider not configured");
@@ -251,5 +388,37 @@ export class AWSStorageProvider implements IStorageProvider {
   getProviderInfo() {
     const f = STORAGE_PROVIDER_METADATA[STORAGE_PROVIDERS.AWS];
     return f satisfies StorageProviderMetadata;
+  }
+
+  // ---------- Helpers ----------
+  private normalizeKey(key: string): string {
+    // Remove leading slashes if any
+    if (!key) return key;
+    return key.startsWith("/") ? key.slice(1) : key;
+  }
+
+  private async asyncPool<T, R>(
+    poolLimit: number,
+    array: T[],
+    iteratorFn: (item: T) => Promise<R>,
+  ): Promise<R[]> {
+    const ret: R[] = [];
+    const executing = new Set<Promise<any>>();
+
+    for (const item of array) {
+      const p = Promise.resolve().then(() => iteratorFn(item));
+      ret.push(await p); // push result in order (if you want out-of-order, adjust)
+      const e = p
+        .then(() => executing.delete(e))
+        .catch(() => executing.delete(e));
+      executing.add(e);
+
+      if (executing.size >= poolLimit) {
+        await Promise.race(executing);
+      }
+    }
+
+    await Promise.all(executing);
+    return ret;
   }
 }

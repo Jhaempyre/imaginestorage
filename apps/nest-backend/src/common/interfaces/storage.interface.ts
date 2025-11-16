@@ -1,4 +1,7 @@
-import { StorageProvider, StorageValidationError } from '../constants/storage.constants';
+import {
+  StorageProvider,
+  StorageValidationError,
+} from "../constants/storage.constants";
 
 /**
  * Storage Provider Credentials Interface
@@ -9,19 +12,19 @@ export interface StorageCredentials {
   secretAccessKey?: string;
   region?: string;
   bucketName?: string;
-  
+
   // GCP
   projectId?: string;
   keyFile?: string; // Base64 encoded key file
-  
+
   // Azure
   accountName?: string;
   accountKey?: string;
   containerName?: string;
-  
+
   // Local
   storagePath?: string;
-  
+
   // Additional provider-specific fields
   [key: string]: any;
 }
@@ -63,7 +66,7 @@ export interface StorageValidationResult {
 export interface StorageFieldDefinition {
   name: string;
   label: string;
-  type: 'text' | 'password' | 'select' | 'textarea' | string;
+  type: "text" | "password" | "select" | "textarea" | string;
   required: boolean;
   description: string;
   placeholder?: string;
@@ -128,7 +131,6 @@ export interface DownloadUrlParams {
  */
 export interface DeleteParams {
   fileName: string;
-  userId: string;
 }
 
 export interface CreateFolderParams {
@@ -139,6 +141,27 @@ export interface CreateFolderResults {
   fullPath: string;
 }
 
+// new small types for copy/move/batch
+export type CopyObjectParams = {
+  from: string; // source key (provider key, e.g. "images/a.jpg")
+  to: string; // destination key
+  metadata?: Record<string, string>;
+  replaceMetadata?: boolean;
+};
+
+export type MoveObjectParams = CopyObjectParams; // same shape: copy then delete
+
+export type BatchCopyMapping = {
+  from: string;
+  to: string;
+  metadata?: Record<string, string>;
+  replaceMetadata?: boolean;
+};
+
+export type ListObjectsResult = {
+  keys: string[];
+};
+
 /**
  * Storage Provider Interface
  * All storage providers must implement this interface
@@ -146,11 +169,36 @@ export interface CreateFolderResults {
 export interface IStorageProvider {
   readonly name: string;
   readonly type: StorageProvider;
-  
+
   initialize(credentials: StorageCredentials): Promise<void>;
   getFiles(params: GetFilesParams): Promise<any>;
   uploadFile(params: UploadParams): Promise<UploadResult>;
   createFolder(params: CreateFolderParams): Promise<CreateFolderResults>;
+  /**
+   * List objects under a prefix — must handle pagination and return keys only.
+   * Keys returned should be provider-level keys (no _rt/ prefix unless you use it).
+   */
+  listObjects?(params: {
+    prefix?: string;
+    maxKeys?: number;
+  }): Promise<ListObjectsResult>;
+
+  /**
+   * Copy a single object inside the provider.
+   * Should use provider-specific copy semantics (eg S3 CopyObjectCommand).
+   */
+  copyObject?(params: CopyObjectParams): Promise<void>;
+
+  /**
+   * Move: copy then delete (best-effort). Providers may implement optimized server-side moves if available.
+   */
+  moveObject?(params: MoveObjectParams): Promise<void>;
+
+  /**
+   * Batch copy many objects with concurrency control.
+   */
+  batchCopy?(mappings: BatchCopyMapping[], concurrency?: number): Promise<void>;
+
   getDownloadUrl(params: DownloadUrlParams): Promise<string>;
   deleteFile(params: DeleteParams): Promise<void>;
   validateCredentials(): Promise<StorageValidationResult>;

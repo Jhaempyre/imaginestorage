@@ -2,6 +2,7 @@ import { FileDocument } from "@/schemas/file.schema";
 import { FlattenMaps, Types } from "mongoose";
 
 export class GetFilesResponseDto {
+  id: string;
   type: "file" | "folder";
   name: string;
   fullPath: string;
@@ -18,6 +19,7 @@ export class GetFilesResponseDto {
     proxyUrl: string,
   ): GetFilesResponseDto {
     const dto = new GetFilesResponseDto();
+    dto.id = fileDoc._id.toString();
     dto.type = fileDoc.type;
     dto.name = fileDoc.originalName;
     dto.fullPath = fileDoc.fullPath?.slice?.(4);

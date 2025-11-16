@@ -3,9 +3,13 @@ import { ConfigService } from "@nestjs/config";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import {
+  BatchCopyMapping,
+  CopyObjectParams,
   CreateFolderParams,
   DeleteParams,
   DownloadUrlParams,
+  ListObjectsResult,
+  MoveObjectParams,
   UploadResult,
 } from "src/common/interfaces/storage.interface";
 import { AWSStorageProvider } from "./providers/aws-storage.provider";
@@ -109,6 +113,73 @@ export class StorageService {
     const result = await provider.createFolder(createFolderDto);
     return { ...result, provider: provider.type };
   }
+
+  /**
+   * List provider keys under a prefix for a given user.
+   * Returns { keys: string[] } where keys are provider-level object keys.
+   */
+  async listObjects(
+    userId: string,
+    params: { prefix?: string; maxKeys?: number } = {},
+  ): Promise<ListObjectsResult> {
+    const provider = await this._getActiveProviderForUser(userId);
+    if (!provider.listObjects) {
+      throw new Error("Provider does not support listObjects");
+    }
+    return provider.listObjects(params);
+  }
+
+  /**
+   * Copy a single object inside the user's active provider.
+   */
+  async copyObject(userId: string, params: CopyObjectParams): Promise<void> {
+    const provider = await this._getActiveProviderForUser(userId);
+    if (!provider.copyObject) {
+      throw new Error("Provider does not support copyObject");
+    }
+    return provider.copyObject(params);
+  }
+
+  /**
+   * Move a single object (copy then delete) inside the provider.
+   */
+  async moveObject(userId: string, params: MoveObjectParams): Promise<void> {
+    const provider = await this._getActiveProviderForUser(userId);
+    if (!provider.moveObject) {
+      // fallback: implement move using copy + delete via provider methods
+      if (provider.copyObject && provider.deleteFile) {
+        await provider.copyObject({ from: params.from, to: params.to, metadata: params.metadata, replaceMetadata: params.replaceMetadata });
+        await provider.deleteFile({ fileName: params.from });
+        return;
+      }
+      throw new Error("Provider does not support moveObject");
+    }
+    return provider.moveObject(params);
+  }
+
+  /**
+   * Batch copy many object mappings with optional concurrency tuning.
+   */
+  async batchCopy(
+    userId: string,
+    mappings: BatchCopyMapping[],
+    concurrency = 8,
+  ): Promise<void> {
+    const provider = await this._getActiveProviderForUser(userId);
+    if (!provider.batchCopy) {
+      // fallback: simple sequential copy to preserve behavior if provider doesn't implement batchCopy
+      for (const m of mappings) {
+        if (!provider.copyObject) {
+          throw new Error("Provider does not support batch copy or single copy");
+        }
+        await provider.copyObject({ from: m.from, to: m.to, metadata: m.metadata, replaceMetadata: m.replaceMetadata });
+      }
+      return;
+    }
+
+    return provider.batchCopy(mappings, concurrency);
+  }
+
 
   async getDownloadUrl(
     userId: string,

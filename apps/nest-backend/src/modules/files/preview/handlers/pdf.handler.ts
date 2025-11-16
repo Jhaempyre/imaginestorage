@@ -11,7 +11,7 @@ export class PdfPreviewHandler implements FilePreviewHandler {
   }
 
   async generate(filePath: string): Promise<string> {
-    const out = filePath + "_preview.jpg";
+    const out = filePath + "_preview";
     const outName = path.basename(out);
     const outDir = path.dirname(out);
 
@@ -20,6 +20,6 @@ export class PdfPreviewHandler implements FilePreviewHandler {
     );
 
     // This produces outName.jpg; ensure naming consistency
-    return out;
+    return out + '.jpg';
   }
 }
