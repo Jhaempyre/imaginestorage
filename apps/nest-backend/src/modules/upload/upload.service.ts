@@ -85,22 +85,7 @@ export class UploadService {
 
       return {
         token,
-        expiresIn: 3600, // 1 hour in seconds
-        maxFileSize: 100 * 1024 * 1024, // 100MB
-        allowedTypes: [
-          "image/jpeg",
-          "image/png",
-          "image/gif",
-          "image/webp",
-          "video/mp4",
-          "video/webm",
-          "audio/mp3",
-          "audio/wav",
-          "audio/ogg",
-          "application/pdf",
-          "text/plain",
-          "application/json",
-        ],
+        expiresIn: 3600,
       };
     } catch (error) {
       this.logger.error(

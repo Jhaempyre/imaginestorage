@@ -1,15 +1,15 @@
-import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
-import { MulterModule } from '@nestjs/platform-express';
-import { ConfigService } from '@nestjs/config';
-import { FilesController } from './files.controller';
-import { FilesService } from './files.service';
-import { File, FileSchema } from '../../schemas/file.schema';
-import { StorageModule } from '../storage/storage.module';
-import * as multer from 'multer';
-import * as path from 'path';
-import * as fs from 'fs';
-import { PreviewService } from './preview/preview.service';
+import { Module } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { MongooseModule } from "@nestjs/mongoose";
+import { MulterModule } from "@nestjs/platform-express";
+import * as fs from "fs";
+import * as multer from "multer";
+import * as path from "path";
+import { File, FileSchema } from "../../schemas/file.schema";
+import { StorageModule } from "../storage/storage.module";
+import { FilesController } from "./files.controller";
+import { FilesService } from "./files.service";
+import { PreviewService } from "./preview/preview.service";
 
 @Module({
   imports: [
@@ -19,17 +19,18 @@ import { PreviewService } from './preview/preview.service';
       useFactory: (configService: ConfigService) => ({
         storage: multer.diskStorage({
           destination: (req, file, cb) => {
-            const uploadDir = path.join(process.cwd(), 'uploads', 'temp');
+            const uploadDir = path.join(process.cwd(), "uploads", "temp");
             if (!fs.existsSync(uploadDir)) {
               fs.mkdirSync(uploadDir, { recursive: true });
             }
             cb(null, uploadDir);
           },
           filename: (req, file, cb) => {
-            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+            const uniqueSuffix =
+              Date.now() + "-" + Math.round(Math.random() * 1e9);
             const fileExtension = path.extname(file.originalname);
-            cb(null, file.fieldname + '-' + uniqueSuffix + fileExtension);
-          }
+            cb(null, file.fieldname + "-" + uniqueSuffix + fileExtension);
+          },
         }),
         fileFilter: (req, file, cb) => {
           // const allowedTypes = configService.get('ALLOWED_FILE_TYPES')?.split(',') || [
@@ -42,7 +43,7 @@ import { PreviewService } from './preview/preview.service';
           //   'video/mp4',
           //   'application/x-zip-compressed',
           // ];
-          
+
           cb(null, true);
           // if (allowedTypes.includes(file.mimetype)) {
           // } else {
@@ -50,7 +51,8 @@ import { PreviewService } from './preview/preview.service';
           // }
         },
         limits: {
-          fileSize: parseInt(configService.get('MAX_FILE_SIZE') || '500') * 1024 * 1024, // Convert MB to bytes
+          fileSize:
+            parseInt(configService.get("MAX_FILE_SIZE") || "500") * 1024 * 1024, // Convert MB to bytes
         },
       }),
       inject: [ConfigService],

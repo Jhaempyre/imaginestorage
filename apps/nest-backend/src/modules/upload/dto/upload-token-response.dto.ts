@@ -12,17 +12,4 @@ export class UploadTokenResponseDto {
     example: 3600,
   })
   expiresIn: number;
-
-  @ApiProperty({
-    description: 'Maximum file size allowed in bytes',
-    example: 104857600, // 100MB
-  })
-  maxFileSize: number;
-
-  @ApiProperty({
-    description: 'Allowed file MIME types',
-    example: ['image/jpeg', 'image/png', 'video/mp4', 'application/pdf'],
-    type: [String],
-  })
-  allowedTypes: string[];
 }

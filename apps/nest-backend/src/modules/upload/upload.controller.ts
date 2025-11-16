@@ -1,95 +1,126 @@
 import {
-  Controller,
-  Post,
-  Body,
-  UseInterceptors,
-  UploadedFile,
   BadRequestException,
-  UnauthorizedException,
+  Body,
+  Controller,
   HttpStatus,
   Logger,
-  Headers,
-} from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiOperation, ApiResponse, ApiConsumes, ApiBody } from '@nestjs/swagger';
-import { UploadService } from './upload.service';
-import { ApiResponseDto } from '../../common/dto/api-response.dto';
-import { RequestUploadTokenDto } from './dto/request-upload-token.dto';
-import { UploadTokenResponseDto } from './dto/upload-token-response.dto';
-import { UploadWithTokenDto } from './dto/upload-with-token.dto';
-import { UploadResponseDto } from './dto/upload-response.dto';
+  Options,
+  Post,
+  Res,
+  UploadedFile,
+  UseInterceptors
+} from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
+import {
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from "@nestjs/swagger";
+import { ApiResponseDto } from "../../common/dto/api-response.dto";
+import { RequestUploadTokenDto } from "./dto/request-upload-token.dto";
+import { UploadResponseDto } from "./dto/upload-response.dto";
+import { UploadTokenResponseDto } from "./dto/upload-token-response.dto";
+import { UploadWithTokenDto } from "./dto/upload-with-token.dto";
+import { UploadService } from "./upload.service";
+import { Response } from "express";
 
-@ApiTags('Upload')
-@Controller('upload')
+@ApiTags("Upload")
+@Controller("upload")
 export class UploadController {
   private readonly logger = new Logger(UploadController.name);
 
   constructor(private readonly uploadService: UploadService) {}
 
-  @Post('token')
+  // TODO: Attempt to handle OPTIONS preflight here for /token route
+  // this way we can avoid fully opening CORS for /upload
+  // we can even read the origin header and validate it here if have
+  // a api key generated for specific origins, if yes then respond with
+  // Access-Control-Allow-Origin header accordingly
+  // @Options("token")
+  // handleOptions(@Res() res: Response) {
+  //   res.set({
+  //     "Access-Control-Allow-Origin": "*",
+  //     "Access-Control-Allow-Headers": "*",
+  //     "Access-Control-Allow-Methods": "*",
+  //   });
+  //   res.status(204).send();
+  // }
+
+  @Post("token")
   @ApiOperation({
-    summary: 'Request upload token',
-    description: 'Generates a temporary upload token using API key authentication for widget uploads',
+    summary: "Request upload token",
+    description:
+      "Generates a temporary upload token using API key authentication for widget uploads",
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Upload token generated successfully',
+    description: "Upload token generated successfully",
     type: UploadTokenResponseDto,
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Invalid request data',
+    description: "Invalid request data",
   })
   @ApiResponse({
     status: HttpStatus.UNAUTHORIZED,
-    description: 'Invalid API key or unauthorized access',
+    description: "Invalid API key or unauthorized access",
   })
   async requestUploadToken(
     @Body() requestTokenDto: RequestUploadTokenDto,
   ): Promise<ApiResponseDto<UploadTokenResponseDto>> {
     try {
-      this.logger.log(`Requesting upload token for public key: ${requestTokenDto.publicKey}`);
-      
+      this.logger.log(
+        `Requesting upload token for public key: ${requestTokenDto.publicKey}`,
+      );
+
       const tokenData = await this.uploadService.generateUploadToken(
         requestTokenDto.publicKey,
         requestTokenDto.origin,
       );
 
-      this.logger.log(`Upload token generated successfully for public key: ${requestTokenDto.publicKey}`);
+      this.logger.log(
+        `Upload token generated successfully for public key: ${requestTokenDto.publicKey}`,
+      );
 
       return ApiResponseDto.success({
-        message: 'Upload token generated successfully',
+        message: "Upload token generated successfully",
         data: tokenData,
       });
     } catch (error) {
-      this.logger.error(`Failed to generate upload token for public key ${requestTokenDto.publicKey}:`, error);
+      this.logger.error(
+        `Failed to generate upload token for public key ${requestTokenDto.publicKey}:`,
+        error,
+      );
       throw error;
     }
   }
 
   @Post()
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor("file"))
   @ApiOperation({
-    summary: 'Upload file with token',
-    description: 'Uploads a file using a temporary upload token generated from the token endpoint',
+    summary: "Upload file with token",
+    description:
+      "Uploads a file using a temporary upload token generated from the token endpoint",
   })
-  @ApiConsumes('multipart/form-data')
+  @ApiConsumes("multipart/form-data")
   @ApiBody({
-    description: 'File upload with token',
+    description: "File upload with token",
     type: UploadWithTokenDto,
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'File uploaded successfully',
+    description: "File uploaded successfully",
     type: UploadResponseDto,
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Invalid file or upload failed',
+    description: "Invalid file or upload failed",
   })
   @ApiResponse({
     status: HttpStatus.UNAUTHORIZED,
-    description: 'Invalid or expired token',
+    description: "Invalid or expired token",
   })
   async uploadFile(
     @UploadedFile() file: Express.Multer.File,
@@ -98,14 +129,16 @@ export class UploadController {
     try {
       // debugger;
       if (!file) {
-        throw new BadRequestException('No file provided');
+        throw new BadRequestException("No file provided");
       }
 
       if (!uploadDto.token) {
-        throw new BadRequestException('Upload token is required');
+        throw new BadRequestException("Upload token is required");
       }
 
-      this.logger.log(`Uploading file with token: ${uploadDto.token.substring(0, 8)}...`);
+      this.logger.log(
+        `Uploading file with token: ${uploadDto.token.substring(0, 8)}...`,
+      );
 
       const uploadResult = await this.uploadService.uploadFileWithToken(
         file,
@@ -116,7 +149,7 @@ export class UploadController {
       this.logger.log(`File uploaded successfully: ${uploadResult.fileName}`);
 
       return ApiResponseDto.success({
-        message: 'File uploaded successfully',
+        message: "File uploaded successfully",
         data: uploadResult,
       });
     } catch (error) {

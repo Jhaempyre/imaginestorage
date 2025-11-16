@@ -7,6 +7,7 @@ import { AppModule } from "./app.module";
 import { GlobalExceptionFilter } from "./common/exception-filters/global";
 import { AppLogger } from "./common/utils/logger";
 import { LoggingInterceptor } from "./common/interceptor/logger.interceptor";
+import { CorsConfig } from "./common/config/cors.config";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
@@ -33,19 +34,44 @@ async function bootstrap() {
   // Cookie parser
   app.use(cookieParser());
 
-  // CORS configuration
-  app.enableCors({
-    origin: [
-      "http://localhost:3000",
-      "http://localhost:8080", 
-      "http://127.0.0.1:8080",
-      "http://localhost:5173",
-      ...(configService.get("CORS_ORIGIN")?.split(",") || [])
-    ],
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-  });
+  // This solved the CORS issues for upload routes
+  // By handling OPTIONS preflight here with permissive headers
+  // for specific routes
+  // app.use((req, res, next) => {
+  //   // Check if this is an upload route
+  //   if (req.path.includes("/upload")) {
+  //     // Set permissive CORS headers for upload routes
+  //     res.header("Access-Control-Allow-Origin", "*");
+  //     res.header("Access-Control-Allow-Headers", "*");
+  //     res.header("Access-Control-Allow-Methods", "*");
+  //     res.header("Access-Control-Allow-Credentials", "false");
+
+  //     // Handle OPTIONS preflight immediately
+  //     if (req.method === "OPTIONS") {
+  //       console.log("✅ Handling OPTIONS for upload route:", req.path);
+  //       return res.status(204).end();
+  //     }
+  //   }
+
+  //   // For non-upload routes, continue to global CORS
+  //   next();
+  // });
+
+  // // CORS configuration
+  // app.enableCors({
+  //   origin: [
+  //     "http://localhost:3000",
+  //     "http://localhost:8080",
+  //     "http://127.0.0.1:8080",
+  //     "http://localhost:5173",
+  //     ...(configService.get("CORS_ORIGIN")?.split(",") || []),
+  //   ],
+  //   credentials: true,
+  //   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  //   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  // });
+
+  CorsConfig.configureApp(app, configService);
 
   // Global prefix
   app.setGlobalPrefix("api");
