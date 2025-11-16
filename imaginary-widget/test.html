@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ImaginaryWidget Test</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 20px;
+      padding: 48px;
+      max-width: 600px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    h1 {
+      font-size: 32px;
+      color: #1f2937;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    p {
+      color: #6b7280;
+      margin-bottom: 32px;
+      text-align: center;
+      font-size: 16px;
+    }
+
+    .button {
+      width: 100%;
+      padding: 16px 32px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+    }
+
+    .button:active {
+      transform: translateY(0);
+    }
+
+    .status {
+      margin-top: 24px;
+      padding: 16px;
+      background: #f3f4f6;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #4b5563;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .status-item {
+      padding: 8px 0;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .status-item:last-child {
+      border-bottom: none;
+    }
+
+    .success {
+      color: #10b981;
+    }
+
+    .error {
+      color: #ef4444;
+    }
+
+    .info {
+      color: #3b82f6;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🚀 ImaginaryWidget Test</h1>
+    <p>Click the button below to open the upload widget</p>
+    
+    <button class="button" id="openWidget">
+      Open Upload Widget
+    </button>
+
+    <div class="status" id="status">
+      <div class="status-item info">Ready to upload files...</div>
+    </div>
+  </div>
+
+  <!-- Load the widget -->
+  <script src="dist/widget.js"></script>
+  
+  <script>
+    const statusEl = document.getElementById('status');
+    let widget;
+
+    function addStatus(message, type = 'info') {
+      const item = document.createElement('div');
+      item.className = `status-item ${type}`;
+      item.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      statusEl.appendChild(item);
+      statusEl.scrollTop = statusEl.scrollHeight;
+    }
+
+    // Initialize widget
+    async function initWidget() {
+      try {
+        widget = new window.ImaginaryWidget();
+        
+        await widget.init({
+          publicKey: 'LrYTsDdhzqYihZvfA4snnQixy6kJJ9', // Your test public key
+          apiUrl: 'http://localhost:8000', // Your backend URL (NestJS typically runs on 3001)
+          
+          // Event handlers
+          onSuccess: (data) => {
+            addStatus(`✅ File uploaded: ${data.file.name}`, 'success');
+            addStatus(`📎 URL: ${data.url}`, 'success');
+          },
+          
+          onError: (data) => {
+            addStatus(`❌ Upload failed: ${data.file.name} - ${data.error}`, 'error');
+          },
+          
+          onProgress: (data) => {
+            if (data.progress % 25 === 0) { // Log every 25%
+              addStatus(`⏳ Uploading ${data.file.name}: ${Math.round(data.progress)}%`, 'info');
+            }
+          },
+          
+          onComplete: (data) => {
+            addStatus(`🎉 Upload complete! ${data.successful}/${data.total} files uploaded`, 'success');
+          }
+        });
+
+        addStatus('Widget initialized successfully!', 'success');
+
+        // Open widget button
+        document.getElementById('openWidget').addEventListener('click', () => {
+          widget.open();
+        });
+
+        // You can also listen to widget events
+        widget.on('widget:open', () => {
+          addStatus('Widget opened', 'info');
+        });
+
+        widget.on('widget:close', () => {
+          addStatus('Widget closed', 'info');
+        });
+
+      } catch (error) {
+        addStatus(`Failed to initialize: ${error.message}`, 'error');
+        console.error('Widget initialization error:', error);
+        
+        // Show helpful error messages
+        if (error.message.includes('Failed to fetch')) {
+          addStatus('💡 Make sure the backend server is running on http://localhost:8000', 'info');
+          addStatus('💡 Check CORS settings in the backend', 'info');
+        }
+      }
+    }
+
+    // Initialize on page load
+    initWidget();
+  </script>
+</body>
+</html>
