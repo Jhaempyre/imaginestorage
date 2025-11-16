@@ -9,6 +9,7 @@ import { StorageModule } from '../storage/storage.module';
 import * as multer from 'multer';
 import * as path from 'path';
 import * as fs from 'fs';
+import { PreviewService } from './preview/preview.service';
 
 @Module({
   imports: [
@@ -31,22 +32,22 @@ import * as fs from 'fs';
           }
         }),
         fileFilter: (req, file, cb) => {
-          const allowedTypes = configService.get('ALLOWED_FILE_TYPES')?.split(',') || [
-            'image/jpeg',
-            'image/png',
-            'image/gif',
-            'image/webp',
-            'application/pdf',
-            'text/plain',
-            'video/mp4',
-            'application/x-zip-compressed',
-          ];
+          // const allowedTypes = configService.get('ALLOWED_FILE_TYPES')?.split(',') || [
+          //   'image/jpeg',
+          //   'image/png',
+          //   'image/gif',
+          //   'image/webp',
+          //   'application/pdf',
+          //   'text/plain',
+          //   'video/mp4',
+          //   'application/x-zip-compressed',
+          // ];
           
-          if (allowedTypes.includes(file.mimetype)) {
-            cb(null, true);
-          } else {
-            cb(new Error(`File type ${file.mimetype} is not allowed`), false);
-          }
+          cb(null, true);
+          // if (allowedTypes.includes(file.mimetype)) {
+          // } else {
+          //   cb(new Error(`File type ${file.mimetype} is not allowed`), false);
+          // }
         },
         limits: {
           fileSize: parseInt(configService.get('MAX_FILE_SIZE') || '500') * 1024 * 1024, // Convert MB to bytes
@@ -56,7 +57,7 @@ import * as fs from 'fs';
     }),
   ],
   controllers: [FilesController],
-  providers: [FilesService],
+  providers: [FilesService, PreviewService],
   exports: [FilesService],
 })
 export class FilesModule {}

@@ -1,5 +1,6 @@
 import { UploadResult } from "@/common/interfaces/storage.interface";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { InjectModel } from "@nestjs/mongoose";
 import * as fs from "fs";
 import { FilterQuery, Model, Types } from "mongoose";
@@ -8,9 +9,11 @@ import { ERROR_CODES } from "../../common/constants/error-code.constansts";
 import { AppException } from "../../common/dto/app-exception";
 import { File, FileDocument } from "../../schemas/file.schema";
 import { StorageService } from "../storage/storage.service";
-import { GetFilesDto } from "./dto/get-files.dto";
-import { UploadFileDto } from "./dto/upload-file.dto";
 import { CreateFolderDto } from "./dto/create-folder.dto";
+import { GetFilesRequestDto } from "./dto/get-files-request.dto";
+import { UploadFileDto } from "./dto/upload-file.dto";
+import { PreviewService } from "./preview/preview.service";
+import { GetFilesResponseDto } from "./dto/get-files-response.dto";
 
 @Injectable()
 export class FilesService {
@@ -18,6 +21,8 @@ export class FilesService {
   constructor(
     @InjectModel(File.name) private fileModel: Model<FileDocument>,
     private storageService: StorageService,
+    private previewService: PreviewService, // 👈 ADD THIS
+    private config: ConfigService,
   ) {}
 
   async uploadFile(
@@ -88,7 +93,54 @@ export class FilesService {
       const parentPath = this.extractParentPath(uploadResult.fullPath);
       this.logger.debug(`parentPath => ${JSON.stringify(parentPath)}`);
 
+      // let previewFileDoc: any = null;
+      // if (previewLocalPath) {
+      //   const previewUploadResult = await this.storageService.uploadFile(
+      //     userId,
+      //     {
+      //       tmpLocation: previewLocalPath,
+      //       mimeType: "image/jpeg",
+      //       fullPath: `.imaginary/${uniqueFileName}_preview.jpg`,
+      //     },
+      //   );
+
+      //   this.logger.debug(
+      //     `previewUploadResult => ${JSON.stringify(previewUploadResult)}`,
+      //   );
+
+      //   // save preview file metadata to database
+      //   previewFileDoc = new this.fileModel({
+      //     ownerId: new Types.ObjectId(userId),
+      //     type: "file",
+      //     originalName: `${originalName}_preview.jpg`,
+      //     fileName: `${uniqueFileName}_preview.jpg`,
+      //     fullPath: `_rt/${previewUploadResult.fullPath}`,
+      //     parentPath: this.extractParentPath(previewUploadResult.fullPath),
+      //     mimeType: "image/jpeg",
+      //     fileExtension: ".jpg",
+      //     storageProvider: previewUploadResult.provider,
+      //     fileUrl: previewUploadResult.fileUrl,
+      //     metadata: {
+      //       uploadedAt: new Date(),
+      //       provider: previewUploadResult.provider,
+      //       isPreview: true,
+      //     },
+      //   });
+
+      //   await previewFileDoc.save();
+      //   // Clean up preview temp file
+      //   fs.unlinkSync(previewLocalPath);
+      // }
+
       // Save file metadata to database
+
+      const previewFileId = await this.generatePreview(
+        tempFilePath,
+        userId,
+        uniqueFileName,
+        originalName,
+      );
+
       const fileDoc = new this.fileModel({
         ownerId: new Types.ObjectId(userId),
         type: "file",
@@ -103,6 +155,7 @@ export class FilesService {
         metadata: {
           uploadedAt: new Date(),
           provider: uploadResult.provider,
+          previewImageId: previewFileId,
         },
       });
 
@@ -124,9 +177,66 @@ export class FilesService {
     }
   }
 
+  async generatePreview(
+    tempFilePath: string,
+    userId: string,
+    uniqueFileName: string,
+    originalName: string,
+  ): Promise<string | null> {
+    if (tempFilePath) {
+      try {
+        const previewLocalPath =
+          await this.previewService.generatePreview(tempFilePath);
+
+        if (!previewLocalPath) return null;
+
+        const previewUploadResult = await this.storageService.uploadFile(
+          userId,
+          {
+            tmpLocation: previewLocalPath,
+            mimeType: "image/jpeg",
+            fullPath: `.imaginary/${uniqueFileName}_preview.jpg`,
+          },
+        );
+
+        this.logger.debug(
+          `previewUploadResult => ${JSON.stringify(previewUploadResult)}`,
+        );
+
+        // save preview file metadata to database
+        const previewFileDoc = new this.fileModel({
+          ownerId: new Types.ObjectId(userId),
+          type: "file",
+          originalName: `${originalName}_preview.jpg`,
+          fileName: `${uniqueFileName}_preview.jpg`,
+          fullPath: `_rt/${previewUploadResult.fullPath}`,
+          parentPath: this.extractParentPath(previewUploadResult.fullPath),
+          mimeType: "image/jpeg",
+          fileExtension: ".jpg",
+          storageProvider: previewUploadResult.provider,
+          fileUrl: previewUploadResult.fileUrl,
+          metadata: {
+            uploadedAt: new Date(),
+            provider: previewUploadResult.provider,
+            isPreview: true,
+          },
+        });
+
+        await previewFileDoc.save();
+        // Clean up preview temp file
+        fs.unlinkSync(previewLocalPath);
+        return previewFileDoc._id;
+      } catch (error) {
+        this.logger.error(`Failed to generate preview: ${error.message}`);
+        return null;
+      }
+    }
+    return null;
+  }
+
   async getFiles(
     userId: string,
-    getFilesDto: GetFilesDto,
+    GetFilesRequestDto: GetFilesRequestDto,
   ): Promise<{
     items: { type: "file" | "folder"; name: string; fullPath: string }[];
   }> {
@@ -136,9 +246,11 @@ export class FilesService {
       sortBy = "createdAt",
       sortOrder = "desc",
       prefix,
-    } = getFilesDto;
+    } = GetFilesRequestDto;
 
-    this.logger.debug(`getFilesDto => ${JSON.stringify(getFilesDto)}`);
+    this.logger.debug(
+      `GetFilesRequestDto => ${JSON.stringify(GetFilesRequestDto)}`,
+    );
 
     // Build query
     const query: FilterQuery<FileDocument> = {
@@ -146,7 +258,7 @@ export class FilesService {
       deletedAt: null,
       parentPath: prefix ? `_rt/${prefix}` : "_rt/",
     };
-    
+
     // ✅ Text search on file/folder names
     if (search) {
       query.$or = [
@@ -154,14 +266,14 @@ export class FilesService {
         { "metadata.tags": { $regex: search, $options: "i" } },
       ];
     }
-    
+
     // ✅ Filter by mimeType (only affects files)
     if (mimeType) {
       query.mimeType = mimeType;
     }
 
     this.logger.debug(`query => ${JSON.stringify(query)}`);
-    
+
     // === Build Sort Object ===
     const sort: Record<string, 1 | -1> = {};
     sort[sortBy] = sortOrder === "asc" ? 1 : -1;
@@ -171,22 +283,20 @@ export class FilesService {
       .find(query)
       .sort(sort)
       .select(
-        "type originalName fullPath fileSize mimeType fileUrl providerMetadata createdAt",
+        "ownerId type originalName fullPath fileSize mimeType fileUrl metadata providerMetadata createdAt",
       )
       .lean();
     this.logger.debug(`files.length => ${JSON.stringify(files.length)}`);
 
     return {
-      items: files.map((f) => ({
-        type: f.type,
-        name: f.originalName,
-        fullPath: f.fullPath?.slice?.(4), // remove "_rt/" prefix
-        fileSize: f.fileSize,
-        mimeType: f.mimeType,
-        providerMetadata: f.providerMetadata,
-        previewUrl: f.mimeType?.startsWith?.("image") ? f.fileUrl : null,
-      })),
-    };
+      items: files.map((f) =>
+        GetFilesResponseDto.prototype.fromFileDocument(
+          f,
+          this.config.get("PROXY_URL"),
+        ),
+      ),
+      raw: files,
+    } as any;
   }
 
   async getFileById(fileId: string, userId: string): Promise<FileDocument> {

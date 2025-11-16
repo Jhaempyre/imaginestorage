@@ -29,7 +29,7 @@ import { FilesService } from "./files.service";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { UploadFileDto } from "./dto/upload-file.dto";
 import { ShareFileDto } from "./dto/share-file.dto";
-import { GetFilesDto } from "./dto/get-files.dto";
+import { GetFilesRequestDto } from "./dto/get-files-request.dto";
 import { ApiResponseDto } from "../../common/dto/api-response.dto";
 import { CreateFolderDto } from "./dto/create-folder.dto";
 
@@ -90,9 +90,9 @@ export class FilesController {
   @ApiBearerAuth("JWT-auth")
   @ApiOperation({ summary: "Get user files with pagination and filtering" })
   @ApiResponse({ status: 200, description: "Files retrieved successfully" })
-  async getFiles(@Query() getFilesDto: GetFilesDto, @Req() request: Request) {
+  async getFiles(@Query() GetFilesRequestDto: GetFilesRequestDto, @Req() request: Request) {
     const userId = request.user["_id"];
-    const result = await this.filesService.getFiles(userId, getFilesDto);
+    const result = await this.filesService.getFiles(userId, GetFilesRequestDto);
 
     return ApiResponseDto.success({
       message: "Files.getFiles.success",

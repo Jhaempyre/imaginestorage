@@ -1,23 +1,43 @@
-FROM node:18-alpine AS deps
+# ---- BASE IMAGE WITH SYSTEM DEPENDENCIES ----
+FROM node:18-bullseye AS base
+
+RUN apt-get update && apt-get install -y \
+    poppler-utils \
+    libreoffice \
+    ffmpeg \
+    && apt-get clean
+
 WORKDIR /app
+
+# ---- INSTALL DEPENDENCIES ----
+FROM base AS deps
 COPY package*.json ./
 RUN npm install
 
-FROM node:18-alpine AS builder
+
+# ---- BUILD ----
+FROM base AS builder
 WORKDIR /app
-COPY --from=deps /app/node_modules node_modules
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
 
-FROM node:18-alpine AS prod-deps
+
+# ---- PRODUCTION DEPS ----
+FROM base AS prod-deps
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --only=production
 
-FROM node:18-alpine AS runner
+
+# ---- FINAL RUNTIME ----
+FROM base AS runner
 WORKDIR /app
-COPY --from=prod-deps /app/node_modules node_modules
-COPY --from=builder /app/dist dist
+
+COPY --from=prod-deps /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+
 USER node
 EXPOSE 3000
+
 CMD ["node", "dist/main.js"]

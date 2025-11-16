@@ -3,7 +3,7 @@ import { Transform } from "class-transformer";
 import { IsIn, IsOptional, IsString } from "class-validator";
 import { sanitizePath } from "../utils/santize-path";
 
-export class GetFilesDto {
+export class GetFilesRequestDto {
   @ApiPropertyOptional({
     description: "Search term for file names",
     example: "document",

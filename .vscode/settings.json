@@ -1,8 +1,9 @@
 {
-    "files.exclude": {
-        "**/backend": true
-    },
-    "search.exclude": {
-        "**/backend": true,
-    }
+  "files.exclude": {
+    "**/backend": true
+  },
+  "search.exclude": {
+    "**/backend": true,
+    "**/backend/**": true
+  }
 }

@@ -21,6 +21,18 @@ run_backend() {
   done
 }
 
+run_proxy() {
+  echo "[PROXY] Starting proxy..."
+  cd apps/proxy
+  if [ ! -d "node_modules" ]; then
+      echo "[PROXY] Installing proxy dependencies..."
+      npm install
+  fi
+  NO_CLEAR=1 npm run dev 2>&1 | while IFS= read -r line; do
+      echo "[PROXY] $line"
+  done
+}
+
 run_frontend() {
   echo "[FRONTEND] Starting frontend..."
   cd apps/frontend
@@ -48,6 +60,9 @@ echo "----------------------------------------"
 
 # run_database
 
+run_proxy &
+PROXY_PID=$!
+
 run_backend &
 NEST_BACKEND_PID=$!
 
@@ -58,4 +73,4 @@ echo "Backend PID: $NEST_BACKEND_PID"
 echo "Frontend PID: $FRONTEND_PID"
 echo "----------------------------------------"
 
-wait $NEST_BACKEND_PID $FRONTEND_PID
+wait $PROXY_PID $NEST_BACKEND_PID $FRONTEND_PID

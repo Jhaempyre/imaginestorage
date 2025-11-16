@@ -17,7 +17,7 @@ export async function awsGetStream(
 
   const params: any = {
     Bucket: creds.bucketName,
-    Key: file.fileName,
+    Key: file.fullPath.slice(4), // remove leading '/rt/' from path
   };
 
   if (rangeHeader) params.Range = rangeHeader;

@@ -9,7 +9,7 @@ import { UserStorageConfigModel } from "./models/user-storage-config";
 import { getFileStream } from "./adapters";
 
 if (process.env.NODE_ENV !== "production") {
-  dotenv.config({ path: ".env" });
+  dotenv.config({ path: ".env.local" });
 }
 console.log(process.env.MONGODB_URI);
 console.log(process.env.PORT);
@@ -31,6 +31,7 @@ app.use((req: any, res, next) => {
 });
 
 app.get("/:userId/:fileId", async (req, res) => {
+  console.log(`[${new Date().toISOString()}] GET ${req.originalUrl}`);
   try {
     const { userId, fileId } = req.params;
     const action = req.query.action || "view";
@@ -47,12 +48,23 @@ app.get("/:userId/:fileId", async (req, res) => {
     if (!file.ownerId.equals(user._id)) {
       return res.status(403).json({ error: "Forbidden: not your file" });
     }
+    console.log(
+      `[${new Date().toISOString()}] file.isPublic: ${
+        file.isPublic
+      }, action: ${action}`
+    );
 
     // 4. Fetch user storage config
     const config = await UserStorageConfigModel.findOne({ userId: user._id });
     if (!config)
       return res.status(400).json({ error: "No storage config found" });
     const creds = config.credentials;
+    console.log(
+      `[${new Date().toISOString()}] Using provider: ${config.provider}`
+    );
+    console.debug(
+      `[${new Date().toISOString()}] config: ${JSON.stringify(creds)}`
+    );
 
     // 5. Get storage stream
     const rangeHeader = req.headers.range as string | undefined;
@@ -62,6 +74,11 @@ app.get("/:userId/:fileId", async (req, res) => {
       creds,
       file,
       rangeHeader
+    );
+    console.log(
+      `[${new Date().toISOString()}] originalName: ${
+        file.originalName
+      }, mime: ${meta.mime}, length: ${meta.length}, range: ${meta.range}`
     );
 
     // 6. Set headers

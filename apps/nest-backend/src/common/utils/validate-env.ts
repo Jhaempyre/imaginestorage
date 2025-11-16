@@ -70,9 +70,9 @@ export class EnvironmentVariables {
   @IsString()
   EMAIL_FROM: string;
 
-  @IsNotEmpty()
-  @IsString()
-  ALLOWED_FILE_TYPES: string; // comma-separated, e.g. "jpg,png,pdf"
+  // @IsNotEmpty()
+  // @IsString()
+  // ALLOWED_FILE_TYPES: string; // comma-separated, e.g. "jpg,png,pdf"
 
   @IsNotEmpty()
   @IsString()
@@ -102,6 +102,10 @@ export class EnvironmentVariables {
   @IsNotEmpty()
   @IsString()
   SESSION_SECRET: string;
+
+  @IsNotEmpty()
+  @IsString()
+  PROXY_URL: string;
 }
 
 export function validateEnv(config: Record<string, unknown>) {
