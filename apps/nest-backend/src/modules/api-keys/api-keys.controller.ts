@@ -18,10 +18,11 @@ import { ApiResponseDto } from '../../common/dto/api-response.dto';
 import { ApiKeysService } from './api-keys.service';
 import { CreateApiKeyDto } from './dto/create-api-key.dto';
 import { ApiKeyResponseDto, ApiKeyHistoryResponseDto } from './dto/api-key-response.dto';
+import { ConstraintsResponseDto } from './dto/constraints-response.dto';
 
 @ApiTags('API Keys')
 @Controller('api-keys')
-@UseGuards(JwtAuthGuard, EmailVerifiedGuard)
+
 @ApiBearerAuth()
 export class ApiKeysController {
   private readonly logger = new Logger(ApiKeysController.name);
@@ -50,6 +51,8 @@ export class ApiKeysController {
     status: HttpStatus.CONFLICT,
     description: 'Unable to generate unique API key',
   })
+
+  @UseGuards(JwtAuthGuard, EmailVerifiedGuard)
   async createApiKey(
     @Req() req: Request,
     @Body() createApiKeyDto: CreateApiKeyDto,
@@ -90,6 +93,8 @@ export class ApiKeysController {
     status: HttpStatus.UNAUTHORIZED,
     description: 'User not authenticated',
   })
+
+  @UseGuards(JwtAuthGuard, EmailVerifiedGuard)
   async getApiKeyHistory(
     @Req() req: Request,
   ): Promise<ApiResponseDto<ApiKeyHistoryResponseDto>> {
@@ -129,6 +134,8 @@ export class ApiKeysController {
     status: HttpStatus.UNAUTHORIZED,
     description: 'User not authenticated',
   })
+
+  @UseGuards(JwtAuthGuard, EmailVerifiedGuard)
   async revokeApiKey(
     @Req() req: Request,
     @Param('keyId') keyId: string,
@@ -148,6 +155,31 @@ export class ApiKeysController {
     } catch (error) {
       const userId = req.user['_id'];
       this.logger.error(`Failed to revoke API key ${keyId} for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  @Get('constraints/:publicKey')
+  @ApiOperation({
+    summary: 'Get upload constraints for public key',
+    description: 'Returns upload constraints (file size limits, allowed types, etc.) for a given public API key',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Upload constraints retrieved successfully',
+    type: ConstraintsResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'API key not found',
+  })
+ // Override class-level guards to make this endpoint public
+  async getConstraints(@Param('publicKey') publicKey: string): Promise<ConstraintsResponseDto> {
+    try {
+      this.logger.log(`Getting constraints for public key: ${publicKey}`);
+      return await this.apiKeysService.getConstraints(publicKey);
+    } catch (error) {
+      this.logger.error(`Failed to get constraints for public key ${publicKey}:`, error);
       throw error;
     }
   }

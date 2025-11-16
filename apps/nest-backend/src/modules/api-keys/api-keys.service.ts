@@ -4,6 +4,7 @@ import { Model, Types } from 'mongoose';
 import { ApiKey, ApiKeyDocument } from '../../schemas/api-key.schema';
 import { CreateApiKeyDto } from './dto/create-api-key.dto';
 import { ApiKeyResponseDto, ApiKeyHistoryResponseDto, ApiKeyHistoryItemDto } from './dto/api-key-response.dto';
+import { ConstraintsResponseDto } from './dto/constraints-response.dto';
 
 @Injectable()
 export class ApiKeysService {
@@ -198,6 +199,42 @@ export class ApiKeysService {
     } catch (error) {
       this.logger.error(`Failed to validate API key:`, error);
       return null;
+    }
+  }
+
+  async getConstraints(publicKey: string): Promise<ConstraintsResponseDto> {
+    try {
+      this.logger.log(`Getting constraints for public key: ${publicKey}`);
+      
+      // For now, return default constraints without database validation
+      // This allows widget testing without requiring valid API keys
+      // TODO: Add proper API key validation in production
+      
+      this.logger.log(`Returning default constraints for public key: ${publicKey}`);
+
+      // Return standard constraints for file uploads
+      return {
+        maxFileSize: 100 * 1024 * 1024, // 100MB
+        allowedMimeTypes: [
+          'image/jpeg',
+          'image/png',
+          'image/gif',
+          'image/webp',
+          'video/mp4',
+          'video/webm',
+          'audio/mp3',
+          'audio/wav',
+          'audio/ogg',
+          'application/pdf',
+          'text/plain',
+          'application/json',
+        ],
+        allowedDomains: [], // No domain restrictions for now
+        requireCaptcha: false,
+      };
+    } catch (error) {
+      this.logger.error(`Failed to get constraints for public key ${publicKey}:`, error);
+      throw error;
     }
   }
 }

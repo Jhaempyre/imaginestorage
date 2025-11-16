@@ -60,6 +60,7 @@ export class StorageService {
       .findOne({ userId, isActive: true })
       .select("provider credentials");
 
+    console.log("User Storage Config:", userConfig);  
     if (!userConfig) {
       throw new Error("No active storage config found for user");
     }

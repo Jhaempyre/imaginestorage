@@ -136,7 +136,8 @@
         
         await widget.init({
           publicKey: 'LrYTsDdhzqYihZvfA4snnQixy6kJJ9', // Your test public key
-          apiUrl: 'http://localhost:8000', // Your backend URL (NestJS typically runs on 3001)
+          apiUrl: 'http://localhost:8000/api', // Your backend URL
+          mount: document.body, // Explicitly set mount target
           
           // Event handlers
           onSuccess: (data) => {

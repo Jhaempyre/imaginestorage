@@ -10,6 +10,7 @@ import { StorageModule } from "./modules/storage/storage.module";
 import { OnboardingModule } from "./modules/onboarding/onboarding.module";
 import { ShellModule } from "./modules/shell/shell.module";
 import { ApiKeysModule } from "./modules/api-keys/api-keys.module";
+import { UploadModule } from "./modules/upload/upload.module";
 import { validateEnv } from "src/common/utils/validate-env";
 import { LoggerModule } from "./common/utils/logger";
 
@@ -49,6 +50,7 @@ const isDevelopment = process.env.NODE_ENV !== "production";
     OnboardingModule,
     ShellModule,
     ApiKeysModule,
+    UploadModule,
   ],
   controllers: [AppController],
   providers: [AppService],

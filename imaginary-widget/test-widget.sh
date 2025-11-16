@@ -4,9 +4,9 @@ echo "🔨 Building widget..."
 npm run build
 
 echo "📦 Installing test server dependencies..."
-npm install express cors multer
 
-echo "🚀 Starting mock server on http://localhost:3001..."
+
+
 echo "📝 Open http://localhost:8080 in your browser to test the widget"
 echo ""
 echo "Starting servers..."

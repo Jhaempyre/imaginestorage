@@ -44,12 +44,21 @@ export class WidgetUI {
     const closeBtn = this.shadowRoot.getElementById('closeBtn');
     closeBtn.addEventListener('click', () => this.close());
 
-    // Click outside to close
+    // Click outside to close (backdrop clicks)
     this.container.addEventListener('click', (e) => {
+      // Only close if clicking the backdrop (container itself), not its children
       if (e.target === this.container) {
         this.close();
       }
     });
+
+    // Prevent clicks inside the modal from bubbling up
+    const modal = this.shadowRoot.querySelector('.widget-modal');
+    if (modal) {
+      modal.addEventListener('click', (e) => {
+        e.stopPropagation();
+      });
+    }
 
     // Browse button
     const browseBtn = this.shadowRoot.getElementById('browseBtn');
@@ -314,22 +323,31 @@ export class WidgetUI {
     if (!this.isOpen) {
       this.isOpen = true;
       this.container.style.display = 'flex';
-      // Trigger reflow
+      
+      // Force a reflow to ensure display change is applied
       this.container.offsetHeight;
-      this.container.classList.add('visible');
+      
+      // Add visible class with a small delay to ensure smooth animation
+      setTimeout(() => {
+        this.container.classList.add('visible');
+      }, 10);
+      
       document.body.style.overflow = 'hidden';
       this.core.emit('widget:open');
+      
+      console.log('🔥 Widget opened successfully');
     }
   }
 
   close() {
     if (this.isOpen) {
+      console.log('🚪 Closing widget');
       this.isOpen = false;
       this.container.classList.remove('visible');
       setTimeout(() => {
         this.container.style.display = 'none';
         document.body.style.overflow = '';
-      }, 200);
+      }, 300);
       this.core.emit('widget:close');
     }
   }

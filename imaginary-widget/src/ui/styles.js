@@ -35,10 +35,12 @@ export const styles = `
     justify-content: center;
     z-index: 999999;
     animation: fadeIn 0.2s ease;
-    opacity: 0;
+    opacity: 1;
+    display: none;
   }
 
   .widget-container.visible {
+  display:flex;
     opacity: 1;
   }
 
