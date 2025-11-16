@@ -10,6 +10,7 @@ export class GetFilesResponseDto {
   mimeType: string;
   providerMetadata: Record<string, any>;
   previewUrl: string | null;
+  openUrl: string | null;
   downloadUrl?: string | null;
 
   fromFileDocument(
@@ -27,17 +28,19 @@ export class GetFilesResponseDto {
     dto.mimeType = fileDoc.mimeType;
     dto.providerMetadata = fileDoc.providerMetadata;
     dto.previewUrl = null;
+    dto.openUrl = null;
     dto.downloadUrl = null;
 
     if (fileDoc.type === "file") {
       if (fileDoc?.metadata?.isPreview) {
-        dto.previewUrl = this.getPreviewUrlForImage(fileDoc, proxyUrl);
+        dto.previewUrl = this.getOpenUrl(fileDoc, proxyUrl);
       } else if (fileDoc.metadata?.previewImageId) {
         dto.previewUrl = this.getPreviewUrlForFile(fileDoc, proxyUrl);
       } else if (fileDoc.mimeType?.startsWith("image/")) {
-        dto.previewUrl = this.getPreviewUrlForImage(fileDoc, proxyUrl);
+        dto.previewUrl = this.getOpenUrl(fileDoc, proxyUrl);
       }
 
+      dto.openUrl = this.getOpenUrl(fileDoc, proxyUrl);
       dto.downloadUrl = this.getDownloadUrl(fileDoc, proxyUrl);
     }
 
@@ -48,7 +51,7 @@ export class GetFilesResponseDto {
     return proxyUrl + file.ownerId + "/" + file.metadata?.previewImageId;
   }
 
-  getPreviewUrlForImage(file: FileDocument, proxyUrl): string {
+  getOpenUrl(file: FileDocument, proxyUrl): string {
     return proxyUrl + file.ownerId + "/" + file._id;
   }
 
