@@ -10,6 +10,7 @@ import { StorageModule } from "../storage/storage.module";
 import { FilesController } from "./files.controller";
 import { FilesService } from "./files.service";
 import { PreviewService } from "./preview/preview.service";
+import { JwtService } from "@nestjs/jwt";
 
 @Module({
   imports: [
@@ -59,7 +60,7 @@ import { PreviewService } from "./preview/preview.service";
     }),
   ],
   controllers: [FilesController],
-  providers: [FilesService, PreviewService],
+  providers: [FilesService, PreviewService, JwtService],
   exports: [FilesService],
 })
 export class FilesModule {}

@@ -28,12 +28,12 @@ import { Request } from "express";
 import { FilesService } from "./files.service";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { UploadFileDto } from "./dto/upload-file.dto";
-import { ShareFileDto } from "./dto/share-file.dto";
 import { GetFilesRequestDto } from "./dto/get-files-request.dto";
 import { ApiResponseDto } from "../../common/dto/api-response.dto";
 import { CreateFolderDto } from "./dto/create-folder.dto";
 import { CopyObjectsDto } from "./dto/copy-object.dto";
 import { MoveObjectsDto } from "./dto/move-object.dto";
+import { CreateSharingUrlDto } from "./dto/create-sharing-url.dto";
 
 @ApiTags("Files")
 @Controller("files")
@@ -277,6 +277,28 @@ export class FilesController {
     return ApiResponseDto.success({
       message: "Files.hardDeleteObjects.success",
       data: result,
+    });
+  }
+
+  @Post("/create-sharing-url")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth("JWT-auth")
+  @ApiOperation({ summary: "Create a sharing URL for a file" })
+  @ApiBody({ type: CreateSharingUrlDto })
+  @ApiResponse({ status: 200, description: "Sharing URL created successfully" })
+  @ApiResponse({ status: 404, description: "File not found" })
+  async createSharingUrl(
+    @Body() createSharingUrlDto: CreateSharingUrlDto,
+    @Req() request: Request,
+  ) {
+    const userId = request.user["_id"];
+    const shareUrl = await this.filesService.createSharingUrl(
+      userId,
+      createSharingUrlDto,
+    );
+    return ApiResponseDto.success({
+      message: "Files.createSharingUrl.success",
+      data: { shareUrl },
     });
   }
 
