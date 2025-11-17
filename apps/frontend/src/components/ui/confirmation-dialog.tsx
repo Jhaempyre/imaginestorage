@@ -1,6 +1,5 @@
-import * as React from "react";
+import { Alert, AlertDescription } from "./alert";
 import { Button } from "./button";
-import { Alert, AlertDescription, AlertTitle } from "./alert";
 
 interface ConfirmationDialogProps {
   isOpen: boolean;
