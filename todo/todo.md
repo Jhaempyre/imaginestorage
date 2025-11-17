@@ -40,6 +40,7 @@ high level pending featrues:
     14.create landing page to better explain the project and its features, documentation etc.
     15. setup ci cd pipeline for all the applications
     16. User kp aws ya gcp pe buck et kaise banana haae aur access keys kese lene hae private public case iske.liyeee suru se hi root user ka account kese banega wo bhi toutoriald types krbdengeee
+    17. encrpytion of userStorageConnfigs and urls in db
 
 
   file permissions and access control - for major project or if time permits

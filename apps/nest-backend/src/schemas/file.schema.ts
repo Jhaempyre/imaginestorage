@@ -1,20 +1,26 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
+import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { Document, Types } from "mongoose";
 
-export type FileDocument = File & Document & {
-  generateShareToken(expiryHours?: number): string;
-  isShareTokenValid(): boolean;
-};
+export type FileDocument = File &
+  Document & {
+    generateShareToken(expiryHours?: number): string;
+    isShareTokenValid(): boolean;
+  };
 
 @Schema({ timestamps: true })
 export class File {
   // 🔑 Who owns this node (file or folder)
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
+  @Prop({ type: Types.ObjectId, ref: "User", required: true, index: true })
   ownerId: Types.ObjectId;
 
   // 🔑 Whether this is a file or folder
-  @Prop({ required: true, enum: ['file', 'folder'], default: 'file', index: true })
-  type: 'file' | 'folder';
+  @Prop({
+    required: true,
+    enum: ["file", "folder"],
+    default: "file",
+    index: true,
+  })
+  type: "file" | "folder";
 
   // Human-readable name (for files: name without path)
   @Prop({ required: true, trim: true, maxlength: 255 })
@@ -57,9 +63,9 @@ export class File {
 
   @Prop({
     required: true,
-    enum: ['aws', 'gcp', 'azure', 'local'],
-    default: 'aws',
-    index: true
+    enum: ["aws", "gcp", "azure", "local"],
+    default: "aws",
+    index: true,
   })
   storageProvider: string;
 
@@ -82,15 +88,17 @@ FileSchema.index({ createdAt: -1 });
 
 // Full-text search
 FileSchema.index({
-  originalName: 'text',
-  'metadata.description': 'text',
-  'metadata.tags': 'text',
+  originalName: "text",
+  "metadata.description": "text",
+  "metadata.tags": "text",
 });
 
 // Instance methods
-FileSchema.methods.generateShareToken = function (expiryHours: number = 24): string {
-  const crypto = require('crypto');
-  this.shareToken = crypto.randomBytes(32).toString('hex');
+FileSchema.methods.generateShareToken = function (
+  expiryHours: number = 24,
+): string {
+  const crypto = require("crypto");
+  this.shareToken = crypto.randomBytes(32).toString("hex");
   this.shareExpiry = new Date(Date.now() + expiryHours * 60 * 60 * 1000);
   return this.shareToken;
 };
@@ -102,7 +110,10 @@ FileSchema.methods.isShareTokenValid = function (): boolean {
 };
 
 // Static helpers
-FileSchema.statics.findByUser = function (userId: Types.ObjectId, options: any = {}) {
+FileSchema.statics.findByUser = function (
+  userId: Types.ObjectId,
+  options: any = {},
+) {
   const query = { ownerId: userId, deletedAt: null };
   return this.find(query, null, options);
 };
