@@ -106,6 +106,10 @@ export class EnvironmentVariables {
   @IsNotEmpty()
   @IsString()
   PROXY_URL: string;
+
+  @IsNotEmpty()
+  @IsString()
+  SHARING_TOKEN_SECRET: string;
 }
 
 export function validateEnv(config: Record<string, unknown>) {

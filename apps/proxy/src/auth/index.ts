@@ -29,19 +29,7 @@ export async function authenticate(
   console.log(`[${new Date().toISOString()}] Auth payload: `, payload);
   if (!payload) return { allowed: false, reason: "invalid_jwt" };
 
-  // Step 2 — Sharing token logic
-  if (tokenData.type === "sharing") {
-    if (
-      payload.type === "share" &&
-      payload.fileId === file._id.toString() &&
-      payload.exp * 1000 > Date.now()
-    ) {
-      return { allowed: true, reason: "share_token" };
-    }
-    return { allowed: false, reason: "invalid_share_token" };
-  }
-
-  // Step 3 — Access token logic
+  // Step 2 — Access token logic
   if (payload.sub) {
     if (payload.sub !== file.ownerId.toString()) {
       return { allowed: false, reason: "not_owner" };
@@ -56,6 +44,18 @@ export async function authenticate(
     }
 
     return { allowed: true, reason: "owner" };
+  }
+
+  // Step 3 — Sharing token logic
+  if (tokenData.type === "sharing") {
+    if (
+      payload.type === "share" &&
+      payload.fileId === file._id.toString() &&
+      payload.ownerId === file.ownerId.toString()
+    ) {
+      return { allowed: true, reason: "share_token" };
+    }
+    return { allowed: false, reason: "invalid_share_token" };
   }
 
   return { allowed: false, reason: "unknown_token_shape" };

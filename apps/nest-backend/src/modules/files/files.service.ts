@@ -20,6 +20,8 @@ import { GetFilesResponseDto } from "./dto/get-files-response.dto";
 import { CopyObjectsDto } from "./dto/copy-object.dto";
 import { MoveObjectsDto } from "./dto/move-object.dto";
 import { dbFullPathOf, providerKeyOf } from "./utils/key-transfomers";
+import { CreateSharingUrlDto } from "./dto/create-sharing-url.dto";
+import { JwtService } from "@nestjs/jwt";
 
 @Injectable()
 export class FilesService {
@@ -28,6 +30,7 @@ export class FilesService {
     @InjectModel(File.name) private fileModel: Model<FileDocument>,
     private storageService: StorageService,
     private previewService: PreviewService, // 👈 ADD THIS
+    private jwtService: JwtService,
     private config: ConfigService,
   ) {}
 
@@ -1069,6 +1072,65 @@ export class FilesService {
       : [];
 
     return { all, files, folders, previews };
+  }
+
+  async createSharingUrl(
+    userId: string,
+    dto: CreateSharingUrlDto,
+  ): Promise<string> {
+    try {
+      const file = await this.fileModel.findOne({
+        _id: new Types.ObjectId(dto.fileId),
+        ownerId: new Types.ObjectId(userId),
+      });
+
+      if (!file) {
+        throw new AppException({
+          statusCode: HttpStatus.NOT_FOUND,
+          code: ERROR_CODES.FILE_NOT_FOUND,
+          message: "Files.createSharingUrl.fileNotFound",
+          userMessage: "File not found",
+        });
+      }
+
+      let exp: number;
+
+      if (dto.expiresAt) {
+        exp = Math.floor(dto.expiresAt.getTime() / 1000);
+      } else if (dto.durationSeconds) {
+        exp = Math.floor(
+          (Date.now() + (dto.durationSeconds || 3600) * 1000) / 1000,
+        );
+      } else {
+        exp = Math.floor((Date.now() + 3600 * 1000) / 1000); // default 1 hour
+      }
+
+      const payload = {
+        type: "share",
+        fileId: file._id.toString(),
+        ownerId: file.ownerId.toString(),
+      };
+
+      const url = new URL(this.config.get("PROXY_URL"));
+      url.pathname = `/${file.ownerId.toString()}/${file._id.toString()}`;
+      url.searchParams.set(
+        "token",
+        this.jwtService.sign(payload, {
+          secret: this.config.get("SHARING_TOKEN_SECRET"),
+          expiresIn: exp - Math.floor(Date.now() / 1000),
+        }),
+      );
+
+      return url.toString();
+    } catch (error) {
+      throw new AppException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        code: ERROR_CODES.BAD_REQUEST,
+        message: "Files.createSharingUrl.failed",
+        userMessage: "Failed to create sharing URL",
+        details: error.message,
+      });
+    }
   }
 
   /**
