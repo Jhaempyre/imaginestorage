@@ -48,8 +48,8 @@ export function FileOperations({
   const { 
     clearSelection, 
     navigateToFolder, 
-    setCurrentPath,
-    currentPath 
+    // setCurrentPath,
+    // currentPath 
   } = useMediaLibraryStore();
   
   // State to track destination for navigation after operations
