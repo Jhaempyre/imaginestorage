@@ -27,7 +27,12 @@ export async function authenticate(
     payload = decodeJwtOrNull(tokenData.token, SHARE_SECRET);
   }
 
-  appLogger.log(`Auth payload: ${JSON.stringify(payload)}`);
+  appLogger.log/* The line `appLogger.log(`Auth payload: ${JSON.stringify(payload)}`);` is logging the
+  authentication payload in the application's logs. It is converting the `payload`
+  object to a JSON string using `JSON.stringify()` and then appending it to the log
+  message "Auth payload:". This helps in debugging and tracking the authentication
+  process by logging the details of the payload being used for authentication. */
+  (`Auth payload: ${JSON.stringify(payload)}`);
   if (!payload) return { allowed: false, reason: "invalid_jwt" };
 
   // Step 2 — Access token logic
