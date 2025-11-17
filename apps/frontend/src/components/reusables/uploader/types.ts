@@ -23,7 +23,10 @@ export type UploadContextValue = {
   items: UploadItem[];
   setMaxParallel: (n: number) => void;
   maxParallel: number;
+  isUploadStatusTabOpen: boolean;
+  isDraggedOver: boolean;
   cancelUpload: (id: string) => void;
   retryUpload: (id: string) => void;
   clearCompleted: () => void;
+  closeStatusViewerTab: () => void;
 };

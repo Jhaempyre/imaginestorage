@@ -4,6 +4,7 @@ import { extractToken } from "./extract-token";
 import { Request } from "express";
 import { decodeJwtOrNull } from "./decord-jwt";
 import { UserModel } from "../models/user";
+import { appLogger } from "../common/logger";
 
 export async function authenticate(
   req: Request,
@@ -26,7 +27,7 @@ export async function authenticate(
     payload = decodeJwtOrNull(tokenData.token, SHARE_SECRET);
   }
 
-  console.log(`[${new Date().toISOString()}] Auth payload: `, payload);
+  appLogger.log(`Auth payload: ${JSON.stringify(payload)}`);
   if (!payload) return { allowed: false, reason: "invalid_jwt" };
 
   // Step 2 — Access token logic
