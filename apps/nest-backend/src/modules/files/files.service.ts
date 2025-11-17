@@ -22,6 +22,9 @@ import { MoveObjectsDto } from "./dto/move-object.dto";
 import { dbFullPathOf, providerKeyOf } from "./utils/key-transfomers";
 import { CreateSharingUrlDto } from "./dto/create-sharing-url.dto";
 import { JwtService } from "@nestjs/jwt";
+import { User, UserDocument } from "@/schemas/user.schema";
+import { UserStorageConfig } from "@/schemas/user-storage-config.schema";
+import { GetFileDetailsResponseDto } from "./dto/get-file-details-response.dto";
 
 @Injectable()
 export class FilesService {
@@ -298,13 +301,14 @@ export class FilesService {
     this.logger.debug(`files.length => ${JSON.stringify(files.length)}`);
 
     return {
-      items: files.map((f) =>
-        GetFilesResponseDto.prototype.fromFileDocument(
-          f,
-          this.config.get("PROXY_URL"),
+      items: files
+        .sort((a, b) => -1 * a.type.localeCompare(b.type))
+        .map((f) =>
+          GetFilesResponseDto.prototype.fromFileDocument(
+            f,
+            this.config.get("PROXY_URL"),
+          ),
         ),
-      ),
-      raw: files,
     } as any;
   }
 
@@ -1128,6 +1132,48 @@ export class FilesService {
         code: ERROR_CODES.BAD_REQUEST,
         message: "Files.createSharingUrl.failed",
         userMessage: "Failed to create sharing URL",
+        details: error.message,
+      });
+    }
+  }
+
+  async getDetails(
+    userId: string,
+    fileId: string,
+  ): Promise<GetFileDetailsResponseDto> {
+    try {
+      type ActualPopulatedDocument = Omit<FileDocument, "ownerId"> & {
+        ownerId: UserDocument;
+      };
+      const fileWithDetails = (await this.fileModel
+        .findOne({
+          _id: new Types.ObjectId(fileId),
+          ownerId: new Types.ObjectId(userId),
+          deletedAt: null,
+        })
+        .populate<User>("ownerId")
+        .lean()) as ActualPopulatedDocument | null;
+
+      if (!fileWithDetails) {
+        throw new AppException({
+          statusCode: HttpStatus.NOT_FOUND,
+          code: ERROR_CODES.FILE_NOT_FOUND,
+          message: "Files.getDetails.fileNotFound",
+          userMessage: "File not found",
+        });
+      }
+
+      return GetFileDetailsResponseDto.prototype.fromFileDocument(
+        fileWithDetails,
+        this.config.get("PROXY_URL"),
+      );
+    } catch (error) {
+      this.logger.error(`Get file details failed: ${error.message}`);
+      throw new AppException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        code: ERROR_CODES.BAD_REQUEST,
+        message: "Files.getDetails.failed",
+        userMessage: "Failed to get file details",
         details: error.message,
       });
     }
