@@ -1,12 +1,15 @@
 import { create } from "zustand";
 
 export interface MediaItem {
-  _id?: string;
+  id: string;
   type: "file" | "folder";
   name: string;
   fullPath: string;
-  originalName?: string;
+  fileSize?: number;
+  mimeType?: string;
   previewUrl?: string;
+  openUrl?: string;
+  originalName?: string;
 }
 
 export interface MediaLibraryState {
@@ -26,7 +29,8 @@ export interface MediaLibraryActions {
   navigateToFolder: (folderPath: string) => void;
   navigateUp: () => void;
   navigateToRoot: () => void;
-  toggleItemSelection: (itemPath: string) => void;
+  selectItem: (id: string | null) => void;
+  toggleItemSelection: (id: string) => void;
   selectAllItems: (items: MediaItem[]) => void;
   clearSelection: () => void;
   setViewMode: (mode: "grid" | "list") => void;
@@ -74,6 +78,10 @@ export const useMediaLibraryStore = create<
 
   navigateToRoot: () => {
     set({ currentPath: "", selectedItems: [] });
+  },
+
+  selectItem: (id: string | null) => {
+    set({ selectedItems: id ? [id] : [] });
   },
 
   toggleItemSelection: (itemPath: string) => {

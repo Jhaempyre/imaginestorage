@@ -83,7 +83,7 @@ export function DeveloperConsolePage() {
   };
 
   return (
-    <div className="flex-1 bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 min-h-screen">
+    <div className="flex-1 bg-linear-to-br from-purple-50 via-blue-50 to-indigo-100 min-h-screen">
       <div className="container mx-auto px-6 py-12">
         <div className="max-w-6xl mx-auto">
           {/* Header */}

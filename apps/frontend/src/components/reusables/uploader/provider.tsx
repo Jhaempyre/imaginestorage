@@ -1,3 +1,5 @@
+import { FILES_QUERY_KEYS } from "@/api/files";
+import { useQueryClient } from "@tanstack/react-query";
 import React, {
   createContext,
   useCallback,
@@ -8,8 +10,7 @@ import React, {
   useState,
 } from "react";
 import type { UploadContextValue, UploadItem } from "./types";
-import { useQueryClient } from "@tanstack/react-query";
-import { FILES_QUERY_KEYS } from "@/api/files";
+import { DragoverOverlay } from "./dragover-overlay";
 
 const UploadContext = createContext<UploadContextValue | null>(null);
 
@@ -55,6 +56,8 @@ export function UploadProvider({
   const activeCountRef = useRef(0);
   const maxParallelRef = useRef(defaultMaxParallel);
   const maxRetriesRef = useRef(defaultMaxRetries);
+  const [isUploadStatusTabOpen, setIsUploadStatusTabOpen] = useState(false);
+  const [isDraggedOver, setIsDraggedOver] = useState(false);
   // const queueOpenRef = useRef(false);
   const [, forceRerender] = useState(0);
   const queryClient = useQueryClient();
@@ -63,9 +66,14 @@ export function UploadProvider({
   const makeId = (f: File) =>
     `${Date.now()}-${Math.random().toString(36).slice(2, 9)}-${f.name}`;
 
+  const closeStatusViewerTab = () => {
+    setIsUploadStatusTabOpen(false);
+  };
+
   const addFiles = useCallback((files: FileList | File[]) => {
     const arr = Array.from(files);
     if (!arr.length) return;
+    setIsUploadStatusTabOpen(true);
     const newItems: UploadItem[] = arr.map((f) => {
       const it: UploadItem = {
         id: makeId(f),
@@ -348,16 +356,39 @@ export function UploadProvider({
   const onDrop = useCallback(
     (ev: React.DragEvent) => {
       ev.preventDefault();
+
       const dt = ev.dataTransfer;
       if (!dt) return;
-      if (dt.files && dt.files.length) addFiles(dt.files);
+
+      // Only handle external file drops
+      const isFileDrag = dt.types.includes("Files");
+      if (!isFileDrag) return;
+
+      if (dt.files?.length) addFiles(dt.files);
+      setIsDraggedOver(false);
     },
     [addFiles]
   );
 
-  const onDragOver = useCallback((ev: React.DragEvent) => {
+  const onDragOver = useCallback(
+    (ev: React.DragEvent) => {
+      const isFileDrag = ev.dataTransfer.types.includes("Files");
+      if (!isFileDrag) return;
+
+      ev.preventDefault();
+      ev.dataTransfer.dropEffect = "copy";
+
+      if (!isDraggedOver) setIsDraggedOver(true);
+    },
+    [isDraggedOver]
+  );
+
+  const onDragLeave = useCallback((ev: React.DragEvent) => {
+    const isFileDrag = ev.dataTransfer.types.includes("Files");
+    if (!isFileDrag) return;
+
     ev.preventDefault();
-    ev.dataTransfer!.dropEffect = "copy";
+    setIsDraggedOver(false);
   }, []);
 
   // expose context value
@@ -370,8 +401,23 @@ export function UploadProvider({
       cancelUpload,
       retryUpload,
       clearCompleted,
+      isUploadStatusTabOpen,
+      closeStatusViewerTab,
+      isDraggedOver,
+      setIsDraggedOver,
     }),
-    [addFiles, items, cancelUpload, retryUpload, clearCompleted, setMaxParallel]
+    [
+      addFiles,
+      items,
+      cancelUpload,
+      retryUpload,
+      clearCompleted,
+      setMaxParallel,
+      isUploadStatusTabOpen,
+      closeStatusViewerTab,
+      isDraggedOver,
+      setIsDraggedOver,
+    ]
   );
 
   // cleanup on unmount
@@ -391,7 +437,13 @@ export function UploadProvider({
 
   return (
     <UploadContext.Provider value={value}>
-      <div onDrop={onDrop} onDragOver={onDragOver} style={{ height: "100%" }}>
+      <DragoverOverlay />
+      <div
+        onDrop={onDrop}
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        style={{ height: "100%" }}
+      >
         {children}
       </div>
     </UploadContext.Provider>

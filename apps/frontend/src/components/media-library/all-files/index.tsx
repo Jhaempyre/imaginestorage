@@ -5,12 +5,14 @@ import {
 import { CardContent } from "@/components/ui/card";
 import { useMediaLibraryStore } from "@/stores/media-library.store";
 import { useEffect } from "react";
-import { MediaLibraryBreadcrumbs } from "./breadcrumbs.tsx";
+import { MediaLibraryBreadcrumbs } from "./bread-crumbs/index.tsx";
 import { FileGrid } from "./file-grid";
 import { PageLayout } from "./page-layout.tsx";
-import { MediaLibraryToolbar } from "./toolbar.tsx";
+import { MediaLibraryToolbar } from "./toolbar/index.tsx";
 import { useGetFilesCommon } from "./utils.ts";
 import { API_URL } from "@/config.ts";
+import { FolderIcon } from "lucide-react";
+import { GlobalUploader } from "@/components/reusables/uploader/global-uploader.tsx";
 
 function AllFilesPageContent() {
   const { currentPath, searchQuery, setUploadStatus } = useMediaLibraryStore();
@@ -66,18 +68,9 @@ function AllFilesPageContent() {
       currentPath={currentPath}
     >
       <div className="flex flex-col h-full overflow-y-auto">
-        {/* Breadcrumbs */}
-        <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
-          <MediaLibraryBreadcrumbs />
-        </div>
-
+        <MediaLibraryBreadcrumbs className="p-2 border-b border-gray-200 bg-gray-50" />
         <MediaLibraryToolbar />
-
-        <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
-          <UploadStatus />
-        </div>
-
-        {/* Toolbar */}
+        <UploadStatus className="p-2 border-b border-gray-200 bg-gray-50" />
 
         {/* Content Area */}
         <div className="flex-1 overflow-auto">
@@ -92,25 +85,7 @@ function AllFilesPageContent() {
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
                 <div className="text-gray-400 mb-4">
-                  <svg
-                    className="w-16 h-16 mx-auto"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1}
-                      d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1}
-                      d="M8 5a2 2 0 012-2h2a2 2 0 012 2v0H8v0z"
-                    />
-                  </svg>
+                  <FolderIcon className="w-12 h-12 mx-auto" />
                 </div>
                 <h3 className="text-lg font-medium text-gray-900 mb-1">
                   No files found
@@ -119,9 +94,10 @@ function AllFilesPageContent() {
                   {searchQuery
                     ? `No files match "${searchQuery}"`
                     : currentPath
-                      ? "This folder is empty"
-                      : "Upload your first file to get started"}
+                    ? "This folder is empty"
+                    : "Upload your first file to get started"}
                 </p>
+                <GlobalUploader />
               </div>
             </div>
           ) : (
