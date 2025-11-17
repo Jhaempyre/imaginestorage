@@ -12,6 +12,7 @@ export class GetFilesResponseDto {
   previewUrl: string | null;
   openUrl: string | null;
   downloadUrl?: string | null;
+  isPublic?: boolean;
 
   fromFileDocument(
     fileDoc: FlattenMaps<FileDocument> & {
@@ -27,6 +28,7 @@ export class GetFilesResponseDto {
     dto.fileSize = fileDoc.fileSize;
     dto.mimeType = fileDoc.mimeType;
     dto.providerMetadata = fileDoc.providerMetadata;
+    dto.isPublic = fileDoc.isPublic;
     dto.previewUrl = null;
     dto.openUrl = null;
     dto.downloadUrl = null;

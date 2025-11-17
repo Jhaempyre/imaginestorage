@@ -1,23 +1,24 @@
-import dotenv from "dotenv";
 import express from "express";
 import mongoose from "mongoose";
 import { pipeline } from "stream";
 import { promisify } from "util";
+import { getFileStream } from "./adapters";
+import { authenticate } from "./auth";
+import { EnvSetup } from "./common/env";
+import { requestLogger } from "./common/request-logger";
 import { FileModel } from "./models/file";
 import { UserModel } from "./models/user";
 import { UserStorageConfigModel } from "./models/user-storage-config";
-import { getFileStream } from "./adapters";
+import { appLogger } from "./common/logger";
+import cookieParser from "cookie-parser";
 
-if (process.env.NODE_ENV !== "production") {
-  dotenv.config({ path: ".env.local" });
-}
-console.log(process.env.MONGODB_URI);
-console.log(process.env.PORT);
-
-const pipe = promisify(pipeline);
+EnvSetup.loadDev();
+EnvSetup.validateRequiredEnvVars();
 
 const app = express();
 app.use(express.json());
+app.use(cookieParser());
+app.use(requestLogger);
 
 // Simple middleware to populate req.user for demo.
 // Replace with your real auth middleware.
@@ -30,8 +31,8 @@ app.use((req: any, res, next) => {
   next();
 });
 
+const pipe = promisify(pipeline);
 app.get("/:userId/:fileId", async (req, res) => {
-  console.log(`[${new Date().toISOString()}] GET ${req.originalUrl}`);
   try {
     const { userId, fileId } = req.params;
     const action = req.query.action || "view";
@@ -41,30 +42,27 @@ app.get("/:userId/:fileId", async (req, res) => {
     if (!user) return res.status(404).json({ error: "User not found" });
 
     // 2. Validate file
-    const file = await FileModel.findById(fileId);
+    const file = (await FileModel.findById(fileId))?.toObject();
     if (!file) return res.status(404).json({ error: "File not found" });
 
     // 3. Verify file belongs to user
     if (!file.ownerId.equals(user._id)) {
       return res.status(403).json({ error: "Forbidden: not your file" });
     }
-    console.log(
-      `[${new Date().toISOString()}] file.isPublic: ${
-        file.isPublic
-      }, action: ${action}`
-    );
+    appLogger.log(`file.isPublic: ${file.isPublic}, action: ${action}`);
+
+    const authResult = await authenticate(req, file);
+    if (!authResult.allowed) {
+      return res.status(403).json({ error: `Forbidden: ${authResult.reason}` });
+    }
 
     // 4. Fetch user storage config
     const config = await UserStorageConfigModel.findOne({ userId: user._id });
     if (!config)
       return res.status(400).json({ error: "No storage config found" });
     const creds = config.credentials;
-    console.log(
-      `[${new Date().toISOString()}] Using provider: ${config.provider}`
-    );
-    console.debug(
-      `[${new Date().toISOString()}] config: ${JSON.stringify(creds)}`
-    );
+    appLogger.log(`Using provider: ${config.provider}`);
+    appLogger.debug(`config: ${JSON.stringify(creds)}`);
 
     // 5. Get storage stream
     const rangeHeader = req.headers.range as string | undefined;
@@ -75,10 +73,8 @@ app.get("/:userId/:fileId", async (req, res) => {
       file,
       rangeHeader
     );
-    console.log(
-      `[${new Date().toISOString()}] originalName: ${
-        file.originalName
-      }, mime: ${meta.mime}, length: ${meta.length}, range: ${meta.range}`
+    appLogger.log(
+      `originalName: ${file.originalName}, mime: ${meta.mime}, length: ${meta.length}, range: ${meta.range}`
     );
 
     // 6. Set headers
@@ -100,7 +96,7 @@ app.get("/:userId/:fileId", async (req, res) => {
     // 8. Stream to client
     stream.pipe(res);
   } catch (err) {
-    console.error(err);
+    appLogger.error(err);
     res.status(500).json({ error: "Internal error" });
   }
 });
@@ -112,10 +108,10 @@ const PORT = Number(process.env.PORT ?? 3000);
 mongoose
   .connect(MONGO)
   .then(() => {
-    console.log("mongodb connected");
-    app.listen(PORT, () => console.log("listening on", PORT));
+    appLogger.log("mongodb connected");
+    app.listen(PORT, () => appLogger.log("listening on", PORT));
   })
   .catch((err) => {
-    console.error("mongo connection failed", err);
+    appLogger.error("mongo connection failed", err);
     process.exit(1);
   });
