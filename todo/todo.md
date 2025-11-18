@@ -34,17 +34,6 @@ high level pending featrues:
         3. set/get Analytics()
     9. isPublic access control
     10. resource.imaginarystore.com/username/objectId
-<<<<<<< HEAD
-    11. Email verification -- *****
-    12. fILES KABHI KAWAR 2 Baar upload ho rhi hae fail ke case mae -- *
-    13. apney credentials edit krne ka option -- *
-    14. create landing page to better explain the project and its features, documentation etc. -- *****
-    15. setup ci cd pipeline for all the applications -- **
-    16. tutorial, use youtube tutorial for s3 -- ***
-    17. encrpytion of userStorageConnfigs and urls in db -- **
-    18. profile section - change password, delete account, update profile details, log out -- ***
-    19. test and validate the storage at the time of onbaording -- ***
-=======
     11. Email verification
     12. fILES KABHI KAWAR 2 Baar upload ho rhi hae fail ke case mae -- 
     13. apney credentials edit krne ka option 
@@ -55,7 +44,6 @@ high level pending featrues:
 
 
   file permissions and access control - for major project or if time permits
->>>>>>> ebefa99 (feat: create sharing token api added)
 
 
 
