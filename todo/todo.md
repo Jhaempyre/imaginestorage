@@ -26,24 +26,23 @@ high level pending featrues:
     4. file preview - images, pdf, text files
     5. sync db with storage provider - preview generation - after onboarding - not in this version
     6. delete files and folders
+      Developer Widget
     7. add other provider modules like gcp
     8. developer widget
-      Developer Widget
         1. createApiKey()
         2. revoseApiKey()
         3. set/get Analytics()
     9. isPublic access control
     10. resource.imaginarystore.com/username/objectId
-    11. Email verification
-    12. fILES KABHI KAWAR 2 Baar upload ho rhi hae fail ke case mae -- 
-    13. apney credentials edit krne ka option 
-    14.create landing page to better explain the project and its features, documentation etc.
-    15. setup ci cd pipeline for all the applications
-    16. User kp aws ya gcp pe buck et kaise banana haae aur access keys kese lene hae private public case iske.liyeee suru se hi root user ka account kese banega wo bhi toutoriald types krbdengeee
-    17. encrpytion of userStorageConnfigs and urls in db
-
-
-  file permissions and access control - for major project or if time permits
+    11. Email verification -- *****
+    12. fILES KABHI KAWAR 2 Baar upload ho rhi hae fail ke case mae -- *
+    13. apney credentials edit krne ka option -- *
+    14. create landing page to better explain the project and its features, documentation etc. -- *****
+    15. setup ci cd pipeline for all the applications -- **
+    16. tutorial, use youtube tutorial for s3 -- ***
+    17. encrpytion of userStorageConnfigs and urls in db -- **
+    18. profile section - change password, delete account, update profile details, log out -- ***
+    19. test and validate the storage at the time of onbaording -- ***
 
 
 
@@ -52,3 +51,5 @@ high level pending featrues:
   backend - nodejs express server
   file proxy server - node js custom express server
   cdn server for widget files - http server - js file serve
+
+  file permissions and access control - for major project or if time permits
