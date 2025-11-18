@@ -93,6 +93,8 @@ app.get("/:userId/:fileId", async (req, res) => {
       );
     }
 
+    res.setHeader("Cache-Control", "private, max-age=3600, must-revalidate");
+
     // 8. Stream to client
     stream.pipe(res);
   } catch (err) {
