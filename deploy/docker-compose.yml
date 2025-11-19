@@ -32,7 +32,7 @@ services:
     networks:
       - app-network
     volumes:
-      - ../apps/frontend/dist:/usr/share/nginx/html:ro
+      - frontend_dist:/usr/share/nginx/html:ro
       - ../apps/landing-site/out:/usr/share/nginx/landing:ro 
       - ./cdn:/cdn:ro
       - ./config/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
@@ -64,7 +64,7 @@ services:
     networks:
       - app-network
     volumes:
-      - ../apps/frontend/dist:/app/dist  # Export dist to host
+      - frontend_dist:/app/dist  # Export dist to host
     command: ["tail", "-f", "/dev/null"]  # Keep container alive
 
   landing:
@@ -75,7 +75,7 @@ services:
     networks:
       - app-network
     volumes:
-      - ../apps/landing-site/dist:/app/dist  # Export dist to host
+      - ../apps/landing-site/out:/app/dist  # Export dist to host
     command: ["tail", "-f", "/dev/null"]  # Keep container alive
    
 networks:
@@ -83,7 +83,8 @@ networks:
     driver: bridge
 
 
-
+volumes:
+  frontend_dist:
 
     
   # Frontend React Application
