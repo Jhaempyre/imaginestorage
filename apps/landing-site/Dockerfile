@@ -12,7 +12,7 @@ COPY . .
 
 # Build Next.js (static export)
 RUN npm run build
-RUN npm run export  # ensures /app/out is generated
+RUN echo "Available NPM scripts:" && npm run # ensures /app/out is generated
 
 # Debug: show exact build output
 RUN echo "---- CONTENTS OF /app/out ----" && ls -la /app/out
