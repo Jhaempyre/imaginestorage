@@ -10,7 +10,7 @@ export class CorsConfig {
    */
   private static readonly FULLY_OPEN_ROUTES = [
     "/api/upload*", // POST /api/upload (file upload)
-    "/api/api-keys*",
+    "/api/api-keys/*",
   ];
 
   /**

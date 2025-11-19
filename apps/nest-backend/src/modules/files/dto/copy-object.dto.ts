@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { ArrayNotEmpty, IsArray, IsMongoId } from "class-validator";
+import { ArrayNotEmpty, IsArray, IsMongoId, IsOptional, IsString } from "class-validator";
 
 export class CopyObjectsDto {
   @ApiProperty({
@@ -12,9 +12,21 @@ export class CopyObjectsDto {
   sourceIds: string[];
 
   @ApiProperty({
-    description: "Destination folder ID where objects will be moved",
+    description: "Destination folder ID where objects will be copied. Use 'root' for root directory.",
     type: String,
+    required: false,
   })
-  @IsMongoId()
-  destinationFolderId: string;
+  @IsOptional()
+  @IsString()
+  destinationFolderId?: string;
+
+  @ApiProperty({
+    description: "Destination folder path. Use when copying to root or specific path.",
+    type: String,
+    required: false,
+    default: "/",
+  })
+  @IsOptional()
+  @IsString()
+  destinationPath?: string;
 }

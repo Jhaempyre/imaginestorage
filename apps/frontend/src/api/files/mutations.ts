@@ -32,3 +32,71 @@ export function useCreateFolder(
     ...options,
   });
 }
+
+export function useMoveFiles(
+  options?: Omit<UseMutationOptions<any, Error, { sourceIds: string[]; destinationFolderId: string; destinationPath?: string }>, 'mutationFn'>
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ sourceIds, destinationFolderId, destinationPath }) => 
+      filesApi.moveFiles(sourceIds, destinationFolderId, destinationPath),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: FILES_QUERY_KEYS.lists() });
+    },
+    ...options,
+  });
+}
+
+export function useCopyFiles(
+  options?: Omit<UseMutationOptions<any, Error, { sourceIds: string[]; destinationFolderId: string; destinationPath?: string }>, 'mutationFn'>
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ sourceIds, destinationFolderId, destinationPath }) => 
+      filesApi.copyFiles(sourceIds, destinationFolderId, destinationPath),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: FILES_QUERY_KEYS.lists() });
+    },
+    ...options,
+  });
+}
+
+export function useDeleteFiles(
+  options?: Omit<UseMutationOptions<any, Error, { ids: string[] }>, 'mutationFn'>
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ ids }) => filesApi.deleteFiles(ids),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: FILES_QUERY_KEYS.lists() });
+    },
+    ...options,
+  });
+}
+
+export function usePermanentDeleteFiles(
+  options?: Omit<UseMutationOptions<any, Error, { ids: string[] }>, 'mutationFn'>
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ ids }) => filesApi.permanentDeleteFiles(ids),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: FILES_QUERY_KEYS.lists() });
+    },
+    ...options,
+  });
+}
+
+export function useCreateSharingUrl(
+  options?: Omit<UseMutationOptions<any, Error, { fileId: string; expiresAt?: Date; durationSeconds?: number }>, 'mutationFn'>
+) {
+  return useMutation({
+    mutationFn: ({ fileId, expiresAt, durationSeconds }) => 
+      filesApi.createSharingUrl(fileId, expiresAt, durationSeconds),
+    ...options,
+  });
+}

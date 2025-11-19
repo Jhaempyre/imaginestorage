@@ -16,7 +16,7 @@ export function MediaLibraryLayout() {
       <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
         <div className="p-4 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">
-            Imagine Storage
+            Imaginary Storage
           </h2>
         </div>
         <nav className="flex-1 p-4 space-y-2">
