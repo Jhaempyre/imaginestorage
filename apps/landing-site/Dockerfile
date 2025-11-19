@@ -1,19 +1,31 @@
+# Step 1: Install dependencies
 FROM node:20-alpine AS deps
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
+# Step 2: Build the app
 FROM node:20-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npm run build
-# Verify the build output
-RUN ls -la /app/out || ls -la /app/.next
 
+# Build Next.js (static export)
+RUN npm run build
+RUN npm run export  # ensures /app/out is generated
+
+# Debug: show exact build output
+RUN echo "---- CONTENTS OF /app/out ----" && ls -la /app/out
+
+# Step 3: Final runtime container (only contains build output)
 FROM alpine AS runner
 WORKDIR /app
-# Copy from wherever Next.js outputs (usually 'out' for static export)
+
+# Move Next.js "out" folder → /app/dist which is volume-mounted
 COPY --from=builder /app/out /app/dist
-# Verify files were copied
-RUN ls -la /app/dist
+
+# Debug: confirm files copied into volume mount location
+RUN echo "---- CONTENTS OF /app/dist ----" && ls -la /app/dist
+
+# container stays idle (this is a build-only container)
+CMD ["sh", "-c", "echo 'Ready – build output is in /app/dist' && tail -f /dev/null"]
