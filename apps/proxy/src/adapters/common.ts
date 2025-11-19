@@ -2,7 +2,7 @@
 import { awsGetStream } from "./awsAdapter";
 import { gcpGetStream } from "./gcpAdapter";
 
-export async function getFileStream(
+export default async function getFileStream(
   provider: string,
   creds: any,
   file: any,

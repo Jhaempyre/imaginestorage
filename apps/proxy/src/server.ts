@@ -2,7 +2,7 @@ import express from "express";
 import mongoose from "mongoose";
 import { pipeline } from "stream";
 import { promisify } from "util";
-import { getFileStream } from "./adapters";
+import getFileStream from "./adapters/common";
 import { authenticate } from "./auth";
 import { EnvSetup } from "./common/env";
 import { requestLogger } from "./common/request-logger";
