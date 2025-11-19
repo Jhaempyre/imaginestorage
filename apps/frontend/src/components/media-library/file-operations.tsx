@@ -2,6 +2,7 @@ import * as React from "react";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { FolderSelectorDialog } from "./folder-selector-dialog";
 import { FileSharingModal } from "./file-sharing-modal";
+import { FileDetailsPanel } from "./file-details-panel";
 import { useMoveFiles, useCopyFiles, useDeleteFiles } from "@/api/files/mutations";
 import { useMediaLibraryStore } from "@/stores/media-library.store";
 import type { MediaItem } from "@/stores/media-library.store";
@@ -18,6 +19,10 @@ interface FileOperationsProps {
   setShowShareModal: (show: boolean) => void;
   shareFile: MediaItem | null;
   setShareFile: (file: MediaItem | null) => void;
+  showDetailsPanel: boolean;
+  setShowDetailsPanel: (show: boolean) => void;
+  detailsFileId: string | null;
+  setDetailsFileId: (fileId: string | null) => void;
   onOperationComplete?: () => void;
 }
 
@@ -33,6 +38,10 @@ export function FileOperations({
   setShowShareModal,
   shareFile,
   setShareFile,
+  showDetailsPanel,
+  setShowDetailsPanel,
+  detailsFileId,
+  setDetailsFileId,
   onOperationComplete 
 }: FileOperationsProps) {
   
@@ -191,6 +200,16 @@ export function FileOperations({
         file={shareFile}
       />
 
+      {/* File Details Panel */}
+      <FileDetailsPanel
+        isOpen={showDetailsPanel}
+        onClose={() => {
+          setShowDetailsPanel(false);
+          setDetailsFileId(null);
+        }}
+        fileId={detailsFileId}
+      />
+
       {/* Expose functions to parent components */}
       <div style={{ display: 'none' }}>
         <button ref={(el) => {
@@ -212,10 +231,17 @@ export function useFileOperations() {
   const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
   const [showShareModal, setShowShareModal] = React.useState(false);
   const [shareFile, setShareFile] = React.useState<MediaItem | null>(null);
+  const [showDetailsPanel, setShowDetailsPanel] = React.useState(false);
+  const [detailsFileId, setDetailsFileId] = React.useState<string | null>(null);
 
   const showShareFileDialog = (file: MediaItem) => {
     setShareFile(file);
     setShowShareModal(true);
+  };
+
+  const showDetailsDialog = (fileId: string) => {
+    setDetailsFileId(fileId);
+    setShowDetailsPanel(true);
   };
 
   return {
@@ -223,6 +249,7 @@ export function useFileOperations() {
     showCopyDialog: () => setShowCopyDialog(true),
     showDeleteConfirm: () => setShowDeleteConfirm(true),
     showShareFileDialog,
+    showDetailsDialog,
     dialogs: {
       showMoveDialog,
       setShowMoveDialog,
@@ -234,6 +261,10 @@ export function useFileOperations() {
       setShowShareModal,
       shareFile,
       setShareFile,
+      showDetailsPanel,
+      setShowDetailsPanel,
+      detailsFileId,
+      setDetailsFileId,
     },
   };
 }

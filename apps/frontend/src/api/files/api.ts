@@ -64,6 +64,11 @@ export const filesApi = {
     return response.data;
   },
 
+  async getFileDetails(fileId: string) {
+    const response = await axiosClient.get(`/files/details/${fileId}`);
+    return response.data;
+  },
+
   async moveFiles(sourceIds: string[], destinationFolderId: string, destinationPath?: string) {
     const payload: any = { sourceIds };
     

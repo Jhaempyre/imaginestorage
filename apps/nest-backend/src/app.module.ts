@@ -13,6 +13,7 @@ import { ApiKeysModule } from "./modules/api-keys/api-keys.module";
 import { UploadModule } from "./modules/upload/upload.module";
 import { validateEnv } from "src/common/utils/validate-env";
 import { LoggerModule } from "./common/utils/logger";
+import { EmailModule } from "./modules/email/email.module";
 
 const isDevelopment = process.env.NODE_ENV !== "production";
 
@@ -51,6 +52,7 @@ const isDevelopment = process.env.NODE_ENV !== "production";
     ShellModule,
     ApiKeysModule,
     UploadModule,
+    EmailModule,
   ],
   controllers: [AppController],
   providers: [AppService],

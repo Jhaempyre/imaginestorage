@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { AlertCircle, CheckCircle, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 export default function VerifyEmail() {
   const { token } = useParams<{ token?: string }>();
@@ -18,7 +18,7 @@ export default function VerifyEmail() {
   const [verificationStatus, setVerificationStatus] = useState<
     "pending" | "success" | "error"
   >("pending");
-
+  
   // Mutations
   const verifyEmailMutation = useVerifyEmail({
     onSuccess: () => {
@@ -69,7 +69,10 @@ export default function VerifyEmail() {
               {verificationStatus === "pending" &&
                 "Please wait while we verify your email address."}
               {verificationStatus === "success" &&
-                "Your email has been verified. Redirecting you to complete your setup..."}
+                <>
+                  <p>Your email has been verified. Redirecting you to complete your setup...</p>
+                  <Link to="/auth/login" className="text-blue-500 underline mt-2 block">Go to Login Page</Link>
+                </>}
               {verificationStatus === "error" &&
                 "The verification link is invalid or has expired."}
             </CardDescription>

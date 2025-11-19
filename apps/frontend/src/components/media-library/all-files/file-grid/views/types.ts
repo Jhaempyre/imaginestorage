@@ -13,4 +13,5 @@ export interface ViewProps {
   onCopyFiles?: () => void;
   onDeleteFiles?: () => void;
   onShareFile?: (fileId: string) => void;
+  onShowDetails?: (fileId: string) => void;
 }
