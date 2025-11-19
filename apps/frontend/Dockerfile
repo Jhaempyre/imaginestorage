@@ -1,6 +1,9 @@
 # Step 1: Install dependencies
 FROM node:20-alpine AS deps
 WORKDIR /app
+
+# ---- INSTALL DEPENDENCIES ----
+FROM base AS deps
 COPY package*.json ./
 RUN npm install
 
@@ -11,7 +14,8 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
 
-# Step 3: Prepare frontend static files
-FROM alpine AS runner
+
+# ---- PRODUCTION DEPS ----
+FROM base AS prod-deps
 WORKDIR /app
 COPY --from=builder /app/dist ./dist
