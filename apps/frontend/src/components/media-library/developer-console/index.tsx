@@ -273,7 +273,7 @@ export function DeveloperConsolePage() {
                 </div>
               ) : (
                 <div className="space-y-4 max-h-96 overflow-y-auto">
-                  {historyData?.history?.map((key, index) => (
+                  {historyData?.history?.map((key) => (
                     <div
                       key={key.id}
                       className="border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow duration-200"
