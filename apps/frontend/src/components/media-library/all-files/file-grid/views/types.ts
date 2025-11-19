@@ -9,4 +9,8 @@ export interface ViewProps {
     e: React.ChangeEvent<HTMLInputElement>,
     item: MediaItem
   ) => void;
+  onMoveFiles?: () => void;
+  onCopyFiles?: () => void;
+  onDeleteFiles?: () => void;
+  onShareFile?: (fileId: string) => void;
 }

@@ -368,22 +368,38 @@ export class FilesService {
     }>
   > {
     const results: Array<any> = [];
-    // debugger;
-    // Validate destination folder
-    const destFolder = await this.fileModel.findOne({
-      _id: copyDto.destinationFolderId,
-      ownerId: new Types.ObjectId(userId),
-      type: "folder",
-      deletedAt: null,
-    });
-
-    if (!destFolder) {
-      throw new AppException({
-        statusCode: HttpStatus.BAD_REQUEST,
-        code: ERROR_CODES.FILE_NOT_FOUND,
-        message: "Files.copyObjects.destinationNotFound",
-        userMessage: "Destination folder not found",
+    
+    // Handle destination - either a specific folder ID or root
+    let destFolder: FileDocument | null = null;
+    let destinationPath: string;
+    
+    if (copyDto.destinationFolderId && copyDto.destinationFolderId !== 'root') {
+      // Moving to a specific folder
+      destFolder = await this.fileModel.findOne({
+        _id: copyDto.destinationFolderId,
+        ownerId: new Types.ObjectId(userId),
+        type: "folder",
+        deletedAt: null,
       });
+
+      if (!destFolder) {
+        throw new AppException({
+          statusCode: HttpStatus.BAD_REQUEST,
+          code: ERROR_CODES.FILE_NOT_FOUND,
+          message: "Files.copyObjects.destinationNotFound",
+          userMessage: "Destination folder not found",
+        });
+      }
+      destinationPath = destFolder.fullPath;
+    } else {
+      // Moving to root folder
+      destinationPath = "_rt/";
+      // Create a virtual root folder object for compatibility
+      destFolder = {
+        _id: null,
+        fullPath: "_rt/",
+        type: "folder",
+      } as any;
     }
 
     // Iterate over each source id
@@ -752,21 +768,37 @@ export class FilesService {
   ): Promise<Array<{ sourceId: string; newId?: string; error?: string }>> {
     const results: any[] = [];
 
-    // Validate destination folder
-    const destFolder = await this.fileModel.findOne({
-      _id: moveDto.destinationFolderId,
-      ownerId: new Types.ObjectId(userId),
-      type: "folder",
-      deletedAt: null,
-    });
-
-    if (!destFolder) {
-      throw new AppException({
-        statusCode: HttpStatus.BAD_REQUEST,
-        code: ERROR_CODES.FILE_NOT_FOUND,
-        message: "Files.moveObjects.destinationNotFound",
-        userMessage: "Destination folder not found",
+    // Handle destination - either a specific folder ID or root
+    let destFolder: FileDocument | null = null;
+    let destinationPath: string;
+    
+    if (moveDto.destinationFolderId && moveDto.destinationFolderId !== 'root') {
+      // Moving to a specific folder
+      destFolder = await this.fileModel.findOne({
+        _id: moveDto.destinationFolderId,
+        ownerId: new Types.ObjectId(userId),
+        type: "folder",
+        deletedAt: null,
       });
+
+      if (!destFolder) {
+        throw new AppException({
+          statusCode: HttpStatus.BAD_REQUEST,
+          code: ERROR_CODES.FILE_NOT_FOUND,
+          message: "Files.moveObjects.destinationNotFound",
+          userMessage: "Destination folder not found",
+        });
+      }
+      destinationPath = destFolder.fullPath;
+    } else {
+      // Moving to root folder
+      destinationPath = "_rt/";
+      // Create a virtual root folder object for compatibility
+      destFolder = {
+        _id: null,
+        fullPath: "_rt/",
+        type: "folder",
+      } as any;
     }
 
     // Validate source list

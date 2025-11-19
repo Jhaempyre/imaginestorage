@@ -1,9 +1,14 @@
 import { cn } from "@/lib/utils";
 import { getFileIcon } from "../get-file-icon";
 import type { ViewProps } from "./types";
-import { FileItemContextMenu } from "./context-menu";
+import { MediaLibraryContextMenu } from "../context-menu";
 
-interface GridViewProps extends ViewProps {}
+interface GridViewProps extends ViewProps {
+  onMoveFiles?: () => void;
+  onCopyFiles?: () => void;
+  onDeleteFiles?: () => void;
+  onShareFile?: (fileId: string) => void;
+}
 
 export function GridView({
   items,
@@ -11,6 +16,10 @@ export function GridView({
   handleItemDoubleClick,
   // handleItemSelect,
   selectedItems,
+  onMoveFiles,
+  onCopyFiles,
+  onDeleteFiles,
+  onShareFile,
 }: GridViewProps) {
   return (
     <div
@@ -24,7 +33,13 @@ export function GridView({
         const isSelected = selectedItems.includes(item.id);
 
         return (
-          <FileItemContextMenu>
+          <MediaLibraryContextMenu
+            onMoveFiles={onMoveFiles}
+            onCopyFiles={onCopyFiles}
+            onDeleteFiles={onDeleteFiles}
+            onShareFile={() => onShareFile?.(item.id)}
+            item={{ id: item.id, name: item.name, type: item.type }}
+          >
             <div
               key={item.fullPath}
               className={cn(
@@ -72,7 +87,7 @@ export function GridView({
                 </span>
               </div>
             </div>
-          </FileItemContextMenu>
+          </MediaLibraryContextMenu>
         );
       })}
     </div>

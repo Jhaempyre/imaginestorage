@@ -63,4 +63,59 @@ export const filesApi = {
     const response = await axiosClient.get(`/files/${fileId}`);
     return response.data;
   },
+
+  async moveFiles(sourceIds: string[], destinationFolderId: string, destinationPath?: string) {
+    const payload: any = { sourceIds };
+    
+    if (destinationFolderId === 'root') {
+      payload.destinationFolderId = 'root';
+      payload.destinationPath = destinationPath || '/';
+    } else {
+      payload.destinationFolderId = destinationFolderId;
+    }
+    
+    const response = await axiosClient.post('/files/move', payload);
+    return response.data;
+  },
+
+  async copyFiles(sourceIds: string[], destinationFolderId: string, destinationPath?: string) {
+    const payload: any = { sourceIds };
+    
+    if (destinationFolderId === 'root') {
+      payload.destinationFolderId = 'root';
+      payload.destinationPath = destinationPath || '/';
+    } else {
+      payload.destinationFolderId = destinationFolderId;
+    }
+    
+    const response = await axiosClient.post('/files/copy', payload);
+    return response.data;
+  },
+
+  async deleteFiles(ids: string[]) {
+    const response = await axiosClient.post('/files/soft-delete', {
+      ids,
+    });
+    return response.data;
+  },
+
+  async permanentDeleteFiles(ids: string[]) {
+    const response = await axiosClient.post('/files/permanent-delete', {
+      ids,
+    });
+    return response.data;
+  },
+
+  async createSharingUrl(fileId: string, expiresAt?: Date, durationSeconds?: number) {
+    const payload: any = { fileId };
+    
+    if (expiresAt) {
+      payload.expiresAt = expiresAt;
+    } else if (durationSeconds) {
+      payload.durationSeconds = durationSeconds;
+    }
+    
+    const response = await axiosClient.post('/files/create-sharing-url', payload);
+    return response.data;
+  },
 };

@@ -9,6 +9,20 @@ run_database() {
   cd - > /dev/null
 }
 
+
+
+run_landing() {
+  echo "[LANDING] Starting landing..."
+  cd apps/landing-site
+  if [ ! -d "node_modules" ]; then
+      echo "[LANDING] Installing landing dependencies..."
+      npm install
+  fi
+  NO_CLEAR=1 npm run dev 2>&1 | while IFS= read -r line; do
+      echo "[LANDING] $line"
+  done
+}
+
 run_backend() {
   echo "[NEST_BACKEND] Starting nest-backend..."
   cd apps/nest-backend
@@ -66,11 +80,16 @@ PROXY_PID=$!
 run_backend &
 NEST_BACKEND_PID=$!
 
+run_landing &
+LANDING_PID=$!
+
 run_frontend &
 FRONTEND_PID=$!
 
 echo "Backend PID: $NEST_BACKEND_PID"
+echo "Proxy PID: $PROXY_PID"
+echo "Landing PID: $LANDING_PID"
 echo "Frontend PID: $FRONTEND_PID"
 echo "----------------------------------------"
 
-wait $PROXY_PID $NEST_BACKEND_PID $FRONTEND_PID
+wait $PROXY_PID $NEST_BACKEND_PID $LANDING_PID $FRONTEND_PID

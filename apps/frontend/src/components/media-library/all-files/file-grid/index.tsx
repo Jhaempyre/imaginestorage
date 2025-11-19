@@ -2,8 +2,9 @@ import {
   useMediaLibraryStore,
   type MediaItem,
 } from "@/stores/media-library.store";
-import { MediaLibraryContextMenu } from "./context-menu";
+import { FileOperations, useFileOperations } from "../../file-operations";
 import FileItem from "./file-item";
+import { useCallback } from "react";
 
 interface FileGridProps {
   items: MediaItem[];
@@ -17,6 +18,19 @@ export function FileGrid({ items }: FileGridProps) {
     navigateToFolder,
     selectItem,
   } = useMediaLibraryStore();
+
+  const { showMoveDialog, showCopyDialog, showDeleteConfirm, showShareFileDialog, dialogs } = useFileOperations();
+
+  // Get selected items data for file operations
+  const selectedItemsData = items.filter(item => selectedItems.includes(item.id));
+
+  // Handler for sharing files
+  const handleShareFile = useCallback((fileId: string) => {
+    const file = items.find(item => item.id === fileId && item.type === "file");
+    if (file) {
+      showShareFileDialog(file);
+    }
+  }, [items, showShareFileDialog]);
 
   const handleItemClick = (
     item: MediaItem,
@@ -67,7 +81,7 @@ export function FileGrid({ items }: FileGridProps) {
   };
 
   return (
-    <MediaLibraryContextMenu>
+    <>
       <FileItem
         viewMode={viewMode}
         items={items}
@@ -75,7 +89,25 @@ export function FileGrid({ items }: FileGridProps) {
         handleItemDoubleClick={handleItemDoubleClick}
         handleItemSelect={handleItemSelect}
         selectedItems={selectedItems}
+        onMoveFiles={showMoveDialog}
+        onCopyFiles={showCopyDialog}
+        onDeleteFiles={showDeleteConfirm}
+        onShareFile={handleShareFile}
       />
-    </MediaLibraryContextMenu>
+      
+      <FileOperations
+        selectedItems={selectedItemsData}
+        showMoveDialog={dialogs.showMoveDialog}
+        setShowMoveDialog={dialogs.setShowMoveDialog}
+        showCopyDialog={dialogs.showCopyDialog}
+        setShowCopyDialog={dialogs.setShowCopyDialog}
+        showDeleteConfirm={dialogs.showDeleteConfirm}
+        setShowDeleteConfirm={dialogs.setShowDeleteConfirm}
+        showShareModal={dialogs.showShareModal}
+        setShowShareModal={dialogs.setShowShareModal}
+        shareFile={dialogs.shareFile}
+        setShareFile={dialogs.setShareFile}
+      />
+    </>
   );
 }
