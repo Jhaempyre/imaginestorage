@@ -51,11 +51,26 @@ services:
     restart: unless-stopped
     networks:
       - app-network
+
+  frontend:
+    build:
+      context: ../apps/frontend
+      dockerfile: Dockerfile
+    container_name: imaginary_frontend
+    ports:
+      - "8081:80" 
+    networks:
+      - app-network
+    restart: unless-stopped    
   
   
 networks:
   app-network:
     driver: bridge
+
+
+
+
     
   # Frontend React Application
   # frontend:
