@@ -69,7 +69,7 @@ export function useDeleteFiles(
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ ids }) => filesApi.deleteFiles(ids),
+    mutationFn: ({ ids }) => filesApi.permanentDeleteFiles(ids),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: FILES_QUERY_KEYS.lists() });
     },

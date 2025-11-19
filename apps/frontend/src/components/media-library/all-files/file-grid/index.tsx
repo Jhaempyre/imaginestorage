@@ -1,10 +1,12 @@
+import { FILES_QUERY_KEYS } from "@/api/files";
 import {
   useMediaLibraryStore,
   type MediaItem,
 } from "@/stores/media-library.store";
+import { useQueryClient } from "@tanstack/react-query";
+import { useCallback } from "react";
 import { FileOperations, useFileOperations } from "../../file-operations";
 import FileItem from "./file-item";
-import { useCallback } from "react";
 
 interface FileGridProps {
   items: MediaItem[];
@@ -14,23 +16,36 @@ export function FileGrid({ items }: FileGridProps) {
   const {
     viewMode,
     selectedItems,
-    toggleItemSelection,
     navigateToFolder,
-    selectItem,
+    toggleItemSelection,
+    singleToggleSelectItem,
   } = useMediaLibraryStore();
 
-  const { showMoveDialog, showCopyDialog, showDeleteConfirm, showShareFileDialog, dialogs } = useFileOperations();
+  const {
+    showMoveDialog,
+    showCopyDialog,
+    showDeleteConfirm,
+    showShareFileDialog,
+    dialogs,
+  } = useFileOperations();
 
   // Get selected items data for file operations
-  const selectedItemsData = items.filter(item => selectedItems.includes(item.id));
+  const selectedItemsData = items.filter((item) =>
+    selectedItems.includes(item.id)
+  );
 
   // Handler for sharing files
-  const handleShareFile = useCallback((fileId: string) => {
-    const file = items.find(item => item.id === fileId && item.type === "file");
-    if (file) {
-      showShareFileDialog(file);
-    }
-  }, [items, showShareFileDialog]);
+  const handleShareFile = useCallback(
+    (fileId: string) => {
+      const file = items.find(
+        (item) => item.id === fileId && item.type === "file"
+      );
+      if (file) {
+        showShareFileDialog(file);
+      }
+    },
+    [items, showShareFileDialog]
+  );
 
   const handleItemClick = (
     item: MediaItem,
@@ -57,7 +72,7 @@ export function FileGrid({ items }: FileGridProps) {
     } else if (event.ctrlKey) {
       toggleItemSelection(item.id);
     } else {
-      selectItem(item.id);
+      singleToggleSelectItem(item.id);
     }
   };
 
@@ -80,6 +95,13 @@ export function FileGrid({ items }: FileGridProps) {
     toggleItemSelection(item.fullPath);
   };
 
+  const queryClient = useQueryClient();
+  // const getFilesState = useGetFilesCommon();
+
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: FILES_QUERY_KEYS.lists() });
+  };
+
   return (
     <>
       <FileItem
@@ -94,7 +116,7 @@ export function FileGrid({ items }: FileGridProps) {
         onDeleteFiles={showDeleteConfirm}
         onShareFile={handleShareFile}
       />
-      
+
       <FileOperations
         selectedItems={selectedItemsData}
         showMoveDialog={dialogs.showMoveDialog}
@@ -107,6 +129,7 @@ export function FileGrid({ items }: FileGridProps) {
         setShowShareModal={dialogs.setShowShareModal}
         shareFile={dialogs.shareFile}
         setShareFile={dialogs.setShareFile}
+        onOperationComplete={handleRefresh}
       />
     </>
   );
