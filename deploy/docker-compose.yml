@@ -33,7 +33,7 @@ services:
       - app-network
     volumes:
       - ../apps/frontend/dist:/usr/share/nginx/html:ro
-      - ../apps/landing/dist:/usr/share/nginx/landing:ro  # NEW: Landing site static files
+      - ../apps/landing/dist:/usr/share/nginx/landing:ro 
       - ./cdn:/cdn:ro
       - ./config/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro
@@ -69,7 +69,7 @@ services:
 
   landing:
     build:
-      context: ../apps/landing  # Adjust path to your landing site
+      context: ../apps/landing-site  
       dockerfile: Dockerfile
     container_name: imaginary_landing
     networks:
