@@ -9,6 +9,18 @@ run_database() {
   cd - > /dev/null
 }
 
+run_widget() {
+  echo "[WIDGET] Starting widget test server..."
+  cd apps/imaginary-widget
+  if [ ! -d "node_modules" ]; then
+      echo "[WIDGET] Installing widget dependencies..."
+      npm install
+      npm run build
+  fi
+  python3 -m http.server 9090 2>&1 | while IFS= read -r line; do
+      echo "[WIDGET] $line"
+  done
+}
 
 
 run_landing() {
@@ -83,13 +95,17 @@ NEST_BACKEND_PID=$!
 run_landing &
 LANDING_PID=$!
 
+run_widget &
+WIDGET_PID=$!
+
 run_frontend &
 FRONTEND_PID=$!
 
 echo "Backend PID: $NEST_BACKEND_PID"
 echo "Proxy PID: $PROXY_PID"
 echo "Landing PID: $LANDING_PID"
+echo "Widget PID: $WIDGET_PID"
 echo "Frontend PID: $FRONTEND_PID"
 echo "----------------------------------------"
 
-wait $PROXY_PID $NEST_BACKEND_PID $LANDING_PID $FRONTEND_PID
+wait $PROXY_PID $NEST_BACKEND_PID $LANDING_PID $WIDGET_PID $FRONTEND_PID

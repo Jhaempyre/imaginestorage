@@ -37,6 +37,7 @@ export interface MediaLibraryActions {
   setSortBy: (sortBy: "originalName" | "createdAt" | "fileSize") => void;
   setSortOrder: (order: "asc" | "desc") => void;
   setSearchQuery: (query: string) => void;
+  singleToggleSelectItem: (id: string) => void;
   setUploadStatus: (isUploading: boolean, progress?: number) => void;
   getBreadcrumbs: () => Array<{ name: string; path: string }>;
   showUploadStatusViewer: () => void;
@@ -84,14 +85,19 @@ export const useMediaLibraryStore = create<
     set({ selectedItems: id ? [id] : [] });
   },
 
-  toggleItemSelection: (itemPath: string) => {
+  singleToggleSelectItem: (id: string) => {
     const { selectedItems } = get();
-    const isSelected = selectedItems.includes(itemPath);
+    set({ selectedItems: selectedItems.includes(id) ? [] : [id] });
+  },
+
+  toggleItemSelection: (id: string) => {
+    const { selectedItems } = get();
+    const isSelected = selectedItems.includes(id);
 
     if (isSelected) {
-      set({ selectedItems: selectedItems.filter((path) => path !== itemPath) });
+      set({ selectedItems: selectedItems.filter((path) => path !== id) });
     } else {
-      set({ selectedItems: [...selectedItems, itemPath] });
+      set({ selectedItems: [...selectedItems, id] });
     }
   },
 
