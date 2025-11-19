@@ -31,3 +31,15 @@ export function useGetFileById(
     ...options,
   });
 }
+
+export function useGetFileDetails(
+  fileId: string | null,
+  options?: Omit<UseQueryOptions<any>, 'queryKey' | 'queryFn'>
+) {
+  return useQuery({
+    queryKey: FILES_QUERY_KEYS.detail(fileId!),
+    queryFn: () => filesApi.getFileDetails(fileId!),
+    enabled: !!fileId,
+    ...options,
+  });
+}

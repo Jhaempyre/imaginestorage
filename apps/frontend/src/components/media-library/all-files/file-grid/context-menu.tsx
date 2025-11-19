@@ -14,6 +14,7 @@ interface MediaLibraryContextMenuProps extends React.PropsWithChildren {
   onCopyFiles?: () => void;
   onDeleteFiles?: () => void;
   onShareFile?: () => void;
+  onShowDetails?: () => void;
   item?: { id: string; name: string; type: "file" | "folder" };
 }
 
@@ -23,6 +24,7 @@ export function MediaLibraryContextMenu({
   onCopyFiles,
   onDeleteFiles,
   onShareFile,
+  onShowDetails,
   item,
 }: MediaLibraryContextMenuProps) {
   const { selectedItems, selectItem } = useMediaLibraryStore();
@@ -67,7 +69,11 @@ export function MediaLibraryContextMenu({
         
         <ContextMenuSeparator />
         
-        <ContextMenuItem inset>
+        <ContextMenuItem 
+          inset
+          onClick={() => handleContextMenuAction(onShowDetails || (() => {}))}
+          disabled={selectedItems.length !== 1}
+        >
           Details
           <ContextMenuShortcut>⌘I</ContextMenuShortcut>
         </ContextMenuItem>

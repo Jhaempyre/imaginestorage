@@ -13,6 +13,8 @@ import { AppException } from '@/common/dto/app-exception';
 import { ERROR_CODES } from '@/common/constants/error-code.constansts';
 import { FRONTEND_ROUTES, NAVIGATION_TYPES } from '@/common/constants/routes.constants';
 import { NavigationControl } from '@/common/interfaces/navigation.interface';
+import { EmailService } from '../email/email.service';
+import { EnvironmentVariables } from '@/common/utils/validate-env';
 
 @Injectable()
 export class AuthService {
@@ -23,6 +25,7 @@ export class AuthService {
     private jwtService: JwtService,
     private configService: ConfigService,
     private navigationService: NavigationService,
+    private emailService: EmailService,
   ) { }
 
   async register(registerDto: RegisterDto): Promise<{ user: any; navigation: any }> {
@@ -68,6 +71,8 @@ export class AuthService {
     await user.save();
 
     this.logger.debug(`Mock email sent to ${user.email}, token: ${user.emailVerificationToken}`);
+    const url = new URL(`${this.configService.get<EnvironmentVariables>('FRONTEND_BASE_URL')}${FRONTEND_ROUTES.AUTH.VERIFY_EMAIL}/${user.emailVerificationToken}`);
+    this.emailService.sendVerificationEmail(user.email, url.toString(), user.firstName);
 
     // Remove sensitive data
     const userResponse = user.toObject();
@@ -306,7 +311,9 @@ export class AuthService {
 
     // TODO: Send email verification email
     // await this.emailService.sendVerificationEmail(user.email, user.emailVerificationToken);
-    this.logger.debug(`Mock email sent to ${user.email}, token: ${user.emailVerificationToken}`);
+    const url = new URL(`${this.configService.get<EnvironmentVariables>('FRONTEND_BASE_URL')}${FRONTEND_ROUTES.AUTH.VERIFY_EMAIL}/${user.emailVerificationToken}`);
+    this.logger.debug(`Mock email sent to ${user.email}, token: ${url.toString()}`);
+    this.emailService.sendVerificationEmail(user.email, url.toString(), user.firstName);
   }
 
   async forgotPassword(email: string): Promise<void> {

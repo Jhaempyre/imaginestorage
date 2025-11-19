@@ -26,6 +26,7 @@ export function FileGrid({ items }: FileGridProps) {
     showCopyDialog,
     showDeleteConfirm,
     showShareFileDialog,
+    showDetailsDialog,
     dialogs,
   } = useFileOperations();
 
@@ -45,6 +46,14 @@ export function FileGrid({ items }: FileGridProps) {
       }
     },
     [items, showShareFileDialog]
+  );
+
+  // Handler for showing file details
+  const handleShowDetails = useCallback(
+    (fileId: string) => {
+      showDetailsDialog(fileId);
+    },
+    [showDetailsDialog]
   );
 
   const handleItemClick = (
@@ -115,6 +124,7 @@ export function FileGrid({ items }: FileGridProps) {
         onCopyFiles={showCopyDialog}
         onDeleteFiles={showDeleteConfirm}
         onShareFile={handleShareFile}
+        onShowDetails={handleShowDetails}
       />
 
       <FileOperations
@@ -129,6 +139,10 @@ export function FileGrid({ items }: FileGridProps) {
         setShowShareModal={dialogs.setShowShareModal}
         shareFile={dialogs.shareFile}
         setShareFile={dialogs.setShareFile}
+        showDetailsPanel={dialogs.showDetailsPanel}
+        setShowDetailsPanel={dialogs.setShowDetailsPanel}
+        detailsFileId={dialogs.detailsFileId}
+        setDetailsFileId={dialogs.setDetailsFileId}
         onOperationComplete={handleRefresh}
       />
     </>

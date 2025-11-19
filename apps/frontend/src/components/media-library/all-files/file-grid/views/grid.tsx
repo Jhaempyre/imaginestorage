@@ -8,6 +8,7 @@ interface GridViewProps extends ViewProps {
   onCopyFiles?: () => void;
   onDeleteFiles?: () => void;
   onShareFile?: (fileId: string) => void;
+  onShowDetails?: (fileId: string) => void;
 }
 
 export function GridView({
@@ -20,6 +21,7 @@ export function GridView({
   onCopyFiles,
   onDeleteFiles,
   onShareFile,
+  onShowDetails,
 }: GridViewProps) {
   return (
     <div
@@ -38,6 +40,7 @@ export function GridView({
             onCopyFiles={onCopyFiles}
             onDeleteFiles={onDeleteFiles}
             onShareFile={() => onShareFile?.(item.id)}
+            onShowDetails={() => onShowDetails?.(item.id)}
             item={{ id: item.id, name: item.name, type: item.type }}
           >
             <div

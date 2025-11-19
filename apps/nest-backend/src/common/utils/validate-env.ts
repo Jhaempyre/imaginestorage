@@ -110,6 +110,10 @@ export class EnvironmentVariables {
   @IsNotEmpty()
   @IsString()
   SHARING_TOKEN_SECRET: string;
+
+  @IsNotEmpty()
+  @IsString()
+  FRONTEND_BASE_URL: string;
 }
 
 export function validateEnv(config: Record<string, unknown>) {

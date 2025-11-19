@@ -10,6 +10,7 @@ import { LocalStrategy } from './strategies/local.strategy';
 import { User, UserSchema } from '../../schemas/user.schema';
 import { UserStorageConfig, UserStorageConfigSchema } from '../../schemas/user-storage-config.schema';
 import { NavigationService } from '../../common/services/navigation.service';
+import { EmailModule } from '../email/email.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { NavigationService } from '../../common/services/navigation.service';
       { name: User.name, schema: UserSchema },
       { name: UserStorageConfig.name, schema: UserStorageConfigSchema },
     ]),
+    EmailModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, LocalStrategy, NavigationService, ConfigService],
