@@ -50,7 +50,11 @@ export default function Header() {
             ))}
             <Button 
               className="bg-blue-600 hover:bg-blue-700"
-              onClick={() => window.open('https://dashboard.imaginarystorage.com/auth/login', '_blank')}
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  window.open('https://dashboard.imaginarystorage.com/auth/login', '_blank');
+                }
+              }}
             >
               Get Started
             </Button>
@@ -85,7 +89,11 @@ export default function Header() {
               ))}
               <Button 
                 className="bg-blue-600 hover:bg-blue-700 w-full"
-                onClick={() => window.open('https://dashboard.imaginarystorage.com/auth/login', '_blank')}
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    window.open('https://dashboard.imaginarystorage.com/auth/login', '_blank');
+                  }
+                }}
               >
                 Get Started
               </Button>

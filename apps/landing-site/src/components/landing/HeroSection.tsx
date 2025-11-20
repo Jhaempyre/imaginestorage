@@ -39,7 +39,11 @@ export default function HeroSection() {
               <Button 
                 size="lg" 
                 className="bg-blue-600 hover:bg-blue-700 text-lg px-8 py-6 group"
-                onClick={() => window.open('https://dashboard.imaginarystorage.com/auth/login', '_blank')}
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    window.open('https://dashboard.imaginarystorage.com/auth/login', '_blank');
+                  }
+                }}
               >
                 Get Started
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
