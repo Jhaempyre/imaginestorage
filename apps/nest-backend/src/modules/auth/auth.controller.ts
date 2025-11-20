@@ -172,9 +172,24 @@ export class AuthController {
   ) {
     await this.authService.logout(request.user["_id"]);
 
-    // Clear cookies
-    response.clearCookie("refreshToken");
-    response.clearCookie("accessToken");
+    const isProduction = process.env.NODE_ENV === "production";
+
+    // Clear cookies with the same options used to set them
+    response.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
+      domain: isProduction ? ".imaginarystorage.com" : undefined,
+      path: "/",
+    });
+
+    response.clearCookie("accessToken", {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
+      domain: isProduction ? ".imaginarystorage.com" : undefined,
+      path: "/",
+    });
 
     return ApiResponseDto.success({
       message: "Auth.logout.success",
