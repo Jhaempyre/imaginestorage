@@ -48,7 +48,10 @@ export default function Header() {
                 {link.label}
               </a>
             ))}
-            <Button className="bg-blue-600 hover:bg-blue-700">
+            <Button 
+              className="bg-blue-600 hover:bg-blue-700"
+              onClick={() => window.open('https://dashboard.imaginarystorage.com/auth/login', '_blank')}
+            >
               Get Started
             </Button>
           </nav>
@@ -80,7 +83,10 @@ export default function Header() {
                   {link.label}
                 </a>
               ))}
-              <Button className="bg-blue-600 hover:bg-blue-700 w-full">
+              <Button 
+                className="bg-blue-600 hover:bg-blue-700 w-full"
+                onClick={() => window.open('https://dashboard.imaginarystorage.com/auth/login', '_blank')}
+              >
                 Get Started
               </Button>
             </nav>

@@ -36,7 +36,11 @@ export default function HeroSection() {
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-              <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-lg px-8 py-6 group">
+              <Button 
+                size="lg" 
+                className="bg-blue-600 hover:bg-blue-700 text-lg px-8 py-6 group"
+                onClick={() => window.open('https://dashboard.imaginarystorage.com/auth/login', '_blank')}
+              >
                 Get Started
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Button>
