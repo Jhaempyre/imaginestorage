@@ -10,7 +10,7 @@ export class CorsConfig {
    */
   private static readonly FULLY_OPEN_ROUTES = [
     "/api/upload*", // POST /api/upload (file upload)
-    "/api/api-keys/*",
+    "/api/api-keys*",
   ];
 
   /**
@@ -31,6 +31,7 @@ export class CorsConfig {
   static configureApp(app: INestApplication, configService: ConfigService) {
     // Middleware for both categories of permissive routes
     app.use((req, res, next) => {
+      // debugger;
       const isFullyOpen = this.matchesRoute(req.path, this.FULLY_OPEN_ROUTES);
       const isControllerManaged = this.matchesRoute(
         req.path,
@@ -94,9 +95,12 @@ export class CorsConfig {
   }
 
   private static setPermissiveHeaders(res: Response) {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", "*");
-    res.header("Access-Control-Allow-Methods", "*");
-    res.header("Access-Control-Allow-Credentials", "false");
+    const origin = res.req.headers.origin || "*";
+    res.header("Access-Control-Allow-Origin", origin);
+    // res.header("Access-Control-Allow-Headers", "*");
+    // res.header("Access-Control-Allow-Methods", "*");
+    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.header("Access-Control-Allow-Credentials", "true");
   }
 }
