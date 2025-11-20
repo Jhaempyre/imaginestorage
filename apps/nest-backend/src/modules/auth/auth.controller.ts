@@ -174,7 +174,7 @@ export class AuthController {
 
     const isProduction = process.env.NODE_ENV === "production";
 
-    // Clear cookies with the same options used to set them
+    // Clear cookies with the same options used to set them(thus logout fixed)
     response.clearCookie("refreshToken", {
       httpOnly: true,
       secure: isProduction,
