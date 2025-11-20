@@ -1,7 +1,22 @@
-import { Link, Outlet, useLocation } from "react-router";
+import { Link, Outlet, useLocation, useNavigate } from "react-router";
+import { useLogout, useCurrentUser } from "@/api";
 
 export function MediaLibraryLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { data: currentUserData } = useCurrentUser();
+  const logoutMutation = useLogout();
+
+  const handleLogout = async () => {
+    try {
+      await logoutMutation.mutateAsync();
+      navigate("/auth/login", { replace: true });
+    } catch (error) {
+      console.error("Logout error:", error);
+      // Even if logout fails, redirect to login
+      navigate("/auth/login", { replace: true });
+    }
+  };
   
   const getNavItemClass = (path: string) => {
     const isActive = location.pathname.startsWith(path);
@@ -116,6 +131,58 @@ export function MediaLibraryLayout() {
             Developer Console
           </Link>
         </nav>
+        
+        {/* User info and logout section at bottom */}
+        <div className="border-t border-gray-200 p-4 space-y-3">
+          {/* User info */}
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+              <svg
+                className="w-5 h-5 text-gray-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900 truncate">
+                {currentUserData?.data?.user?.firstName} {currentUserData?.data?.user?.lastName}
+              </p>
+              <p className="text-xs text-gray-500 truncate">
+                {currentUserData?.data?.user?.email}
+              </p>
+            </div>
+          </div>
+          
+          {/* Logout button */}
+          <button
+            onClick={handleLogout}
+            disabled={logoutMutation.isPending}
+            className="w-full flex items-center px-3 py-2 text-sm font-medium text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <svg
+              className="w-5 h-5 mr-3"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+              />
+            </svg>
+            {logoutMutation.isPending ? "Logging out..." : "Logout"}
+          </button>
+        </div>
       </div>
 
       <Outlet />

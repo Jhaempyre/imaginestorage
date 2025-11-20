@@ -116,7 +116,7 @@ async function bootstrap() {
 
   console.log(`🚀 Server is running on: http://localhost:${port}`);
   console.log(`📚 API Documentation: http://localhost:${port}/api/docs`);
-  console.log(`❤️  Health Check: http://localhost:${port}/api/health`);
+  console.log(`❤️  Health Check: http://localhost:${port}/api/health`);  
 }
 
 bootstrap();
