@@ -1,25 +1,80 @@
-// logger.ts
-import { Chalk } from "chalk";
+// // logger.ts
+// import { Chalk } from "chalk";
 
-const chalk  = new Chalk({ level: 3 });
+// const chalk  = new Chalk({ level: 3 });
+
+// export class Logger {
+//   constructor(private context?: string) {}
+
+//   private timestamp() {
+//     return chalk.gray(new Date().toISOString());
+//   }
+
+//   private ctx() {
+//     return this.context ? chalk.cyan(`[${this.context}]`) : "";
+//   }
+
+//   log(message: any, ...meta: any[]) {
+//     console.log(
+//       this.timestamp(),
+//       chalk.green("LOG"),
+//       this.ctx(),
+//       chalk.green(message),
+//       ...meta
+//     );
+//   }
+
+//   debug(message: any, ...meta: any[]) {
+//     console.log(
+//       this.timestamp(),
+//       chalk.magenta("DEBUG"),
+//       this.ctx(),
+//       chalk.magentaBright(message),
+//       ...meta
+//     );
+//   }
+
+//   warn(message: any, ...meta: any[]) {
+//     console.warn(
+//       this.timestamp(),
+//       chalk.yellow("WARN"),
+//       this.ctx(),
+//       chalk.yellow(message),
+//       ...meta
+//     );
+//   }
+
+//   error(message: any, trace?: any, ...meta: any[]) {
+//     console.error(
+//       this.timestamp(),
+//       chalk.red("ERROR"),
+//       this.ctx(),
+//       chalk.red(message),
+//       trace ?? "",
+//       ...meta
+//     );
+//   }
+// }
+
+// export const appLogger = new Logger("APP");
 
 export class Logger {
   constructor(private context?: string) {}
 
   private timestamp() {
-    return chalk.gray(new Date().toISOString());
+    return (new Date().toISOString());
   }
 
   private ctx() {
-    return this.context ? chalk.cyan(`[${this.context}]`) : "";
+    return this.context ? (`[${this.context}]`) : "";
   }
 
   log(message: any, ...meta: any[]) {
     console.log(
       this.timestamp(),
-      chalk.green("LOG"),
+      ("LOG"),
       this.ctx(),
-      chalk.green(message),
+      (message),
       ...meta
     );
   }
@@ -27,9 +82,9 @@ export class Logger {
   debug(message: any, ...meta: any[]) {
     console.log(
       this.timestamp(),
-      chalk.magenta("DEBUG"),
+      ("DEBUG"),
       this.ctx(),
-      chalk.magentaBright(message),
+      (message),
       ...meta
     );
   }
@@ -37,9 +92,9 @@ export class Logger {
   warn(message: any, ...meta: any[]) {
     console.warn(
       this.timestamp(),
-      chalk.yellow("WARN"),
+      ("WARN"),
       this.ctx(),
-      chalk.yellow(message),
+      (message),
       ...meta
     );
   }
@@ -47,9 +102,9 @@ export class Logger {
   error(message: any, trace?: any, ...meta: any[]) {
     console.error(
       this.timestamp(),
-      chalk.red("ERROR"),
+      ("ERROR"),
       this.ctx(),
-      chalk.red(message),
+      (message),
       trace ?? "",
       ...meta
     );
