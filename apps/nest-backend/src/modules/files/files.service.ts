@@ -25,6 +25,8 @@ import { JwtService } from "@nestjs/jwt";
 import { User, UserDocument } from "@/schemas/user.schema";
 import { UserStorageConfig } from "@/schemas/user-storage-config.schema";
 import { GetFileDetailsResponseDto } from "./dto/get-file-details-response.dto";
+import { RenameDto } from "./dto/rename.dto";
+import { ChangeVisibilityDto } from "./dto/toggle-visibility-dto";
 
 @Injectable()
 export class FilesService {
@@ -368,12 +370,12 @@ export class FilesService {
     }>
   > {
     const results: Array<any> = [];
-    
+
     // Handle destination - either a specific folder ID or root
     let destFolder: FileDocument | null = null;
     let destinationPath: string;
-    
-    if (copyDto.destinationFolderId && copyDto.destinationFolderId !== 'root') {
+
+    if (copyDto.destinationFolderId && copyDto.destinationFolderId !== "root") {
       // Moving to a specific folder
       destFolder = await this.fileModel.findOne({
         _id: copyDto.destinationFolderId,
@@ -771,8 +773,8 @@ export class FilesService {
     // Handle destination - either a specific folder ID or root
     let destFolder: FileDocument | null = null;
     let destinationPath: string;
-    
-    if (moveDto.destinationFolderId && moveDto.destinationFolderId !== 'root') {
+
+    if (moveDto.destinationFolderId && moveDto.destinationFolderId !== "root") {
       // Moving to a specific folder
       destFolder = await this.fileModel.findOne({
         _id: moveDto.destinationFolderId,
@@ -1206,6 +1208,143 @@ export class FilesService {
         code: ERROR_CODES.BAD_REQUEST,
         message: "Files.getDetails.failed",
         userMessage: "Failed to get file details",
+        details: error.message,
+      });
+    }
+  }
+
+  // only shallow rename not path change
+  // no name update in actual storage
+  public async renameObject(userId: string, dto: RenameDto) {
+    try {
+      const file = await this.fileModel.findOne({
+        ownerId: new Types.ObjectId(userId),
+        _id: new Types.ObjectId(dto.id),
+        deletedAt: null,
+      });
+
+      if (!file) {
+        throw new AppException({
+          statusCode: HttpStatus.NOT_FOUND,
+          code: ERROR_CODES.FILE_NOT_FOUND,
+          message: "Files.renameObject.fileNotFound",
+          userMessage: "File not found",
+        });
+      }
+
+      // Check for name collision in the same folder
+      const existing = await this.fileModel.findOne({
+        ownerId: new Types.ObjectId(userId),
+        parentPath: file.parentPath,
+        originalName: dto.newName,
+        deletedAt: null,
+      });
+
+      if (existing) {
+        throw new AppException({
+          statusCode: HttpStatus.BAD_REQUEST,
+          code: ERROR_CODES.BAD_REQUEST,
+          message: "Files.renameObject.nameCollision",
+          userMessage:
+            "An object with the same name already exists in the target folder",
+        });
+      }
+
+      // Perform shallow rename
+      file.originalName = dto.newName;
+
+      await file.save();
+      return file.toObject();
+    } catch (error) {
+      this.logger.error(`Rename object failed: ${error.message}`);
+      throw new AppException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        code: ERROR_CODES.BAD_REQUEST,
+        message: "Files.renameObject.failed",
+        userMessage: "Failed to rename object",
+        details: error.message,
+      });
+    }
+  }
+
+  public async changeVisibility(userId: string, dto: ChangeVisibilityDto) {
+    try {
+      const files = await this.fileModel.find({
+        ownerId: new Types.ObjectId(userId),
+        _id: { $in: dto.id.map((id) => new Types.ObjectId(id)) },
+        deletedAt: null,
+      });
+
+      if (!files || files.length === 0) {
+        throw new AppException({
+          statusCode: HttpStatus.NOT_FOUND,
+          code: ERROR_CODES.FILE_NOT_FOUND,
+          message: "Files.toggleVisibility.fileNotFound",
+          userMessage: "File not found",
+        });
+      }
+
+      const result = [];
+
+      files.forEach(async (file) => {
+        try {
+          if (file.type === "file") {
+            file.isPublic = dto.isPublic;
+            this.logger.debug(`Setting isPublic=${dto.isPublic} for ${file._id}`);
+            await file.save();
+            result.push({
+              fileId: file._id,
+              isPublic: file.isPublic,
+            });
+            // return file.toObject();
+          } else if (file.type === "folder") {
+            // make folder and all descendants private
+            const prefix = file.fullPath;
+            const descendants = await this.fileModel.find({
+              ownerId: new Types.ObjectId(userId),
+              deletedAt: null,
+              fullPath: { $regex: `^${this._escapeRegex(prefix)}` },
+            });
+            
+            for (const doc of descendants) {
+              doc.isPublic = dto.isPublic;
+              this.logger.debug(`Setting isPublic=${dto.isPublic} for ${doc._id}`);
+              result.push({
+                id: doc._id,
+                isPublic: doc.isPublic,
+              });
+              await doc.save();
+            }
+            
+            file.isPublic = dto.isPublic;
+            this.logger.debug(`Setting isPublic=${dto.isPublic} for folder ${file._id}`);
+            await file.save();
+            result.push({
+              folderId: file._id,
+              updatedCount: descendants.length + 1,
+              isPublic: file.isPublic,
+            });
+            // return file.toObject();
+          }
+        } catch (error) {
+          this.logger.error(
+            `Change visibility failed for ${file._id}: ${error.message}`,
+          );
+          result.push(error);
+        }
+      });
+
+      return {
+        success: result.length === 0,
+        result,
+      };
+    } catch (error) {
+      this.logger.error(`Toggle visibility failed: ${error.message}`);
+      throw new AppException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        code: ERROR_CODES.BAD_REQUEST,
+        message: "Files.toggleVisibility.failed",
+        userMessage: "Failed to toggle visibility",
         details: error.message,
       });
     }

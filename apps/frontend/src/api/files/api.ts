@@ -123,4 +123,17 @@ export const filesApi = {
     const response = await axiosClient.post('/files/create-sharing-url', payload);
     return response.data;
   },
+
+  async renameFile(id: string, newName: string) {
+    const response = await axiosClient.patch(`/files/rename/${id}`, { id, newName });
+    return response.data;
+  },
+
+  async changeVisibility(id: string[], isPublic: boolean) {
+    const response = await axiosClient.patch(`/files/change-visibility`, { 
+      id, 
+      isPublic 
+    });
+    return response.data;
+  },
 };

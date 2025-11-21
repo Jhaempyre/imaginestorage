@@ -3,13 +3,7 @@ import { getFileIcon } from "../get-file-icon";
 import type { ViewProps } from "./types";
 import { MediaLibraryContextMenu } from "../context-menu";
 
-interface GridViewProps extends ViewProps {
-  onMoveFiles?: () => void;
-  onCopyFiles?: () => void;
-  onDeleteFiles?: () => void;
-  onShareFile?: (fileId: string) => void;
-  onShowDetails?: (fileId: string) => void;
-}
+interface GridViewProps extends ViewProps {}
 
 export function GridView({
   items,
@@ -22,6 +16,8 @@ export function GridView({
   onDeleteFiles,
   onShareFile,
   onShowDetails,
+  onRenameItem,
+  onChangeVisibility,
 }: GridViewProps) {
   return (
     <div
@@ -41,6 +37,8 @@ export function GridView({
             onDeleteFiles={onDeleteFiles}
             onShareFile={() => onShareFile?.(item.id)}
             onShowDetails={() => onShowDetails?.(item.id)}
+            onRenameItem={() => onRenameItem?.(item.id)}
+            onChangeVisibility={onChangeVisibility}
             item={{ id: item.id, name: item.name, type: item.type }}
           >
             <div

@@ -3,7 +3,9 @@ import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { FolderSelectorDialog } from "./folder-selector-dialog";
 import { FileSharingModal } from "./file-sharing-modal";
 import { FileDetailsPanel } from "./file-details-panel";
-import { useMoveFiles, useCopyFiles, useDeleteFiles } from "@/api/files/mutations";
+import { RenameDialog } from "./rename-dialog";
+import { VisibilityDialog } from "./visibility-dialog";
+import { useMoveFiles, useCopyFiles, useDeleteFiles, useRenameFile, useChangeVisibility } from "@/api/files/mutations";
 import { useMediaLibraryStore } from "@/stores/media-library.store";
 import type { MediaItem } from "@/stores/media-library.store";
 
@@ -23,6 +25,14 @@ interface FileOperationsProps {
   setShowDetailsPanel: (show: boolean) => void;
   detailsFileId: string | null;
   setDetailsFileId: (fileId: string | null) => void;
+  showRenameDialog: boolean;
+  setShowRenameDialog: (show: boolean) => void;
+  renameItem: MediaItem | null;
+  setRenameItem: (item: MediaItem | null) => void;
+  showVisibilityDialog: boolean;
+  setShowVisibilityDialog: (show: boolean) => void;
+  visibilityItems: MediaItem[];
+  setVisibilityItems: (items: MediaItem[]) => void;
   onOperationComplete?: () => void;
 }
 
@@ -42,6 +52,14 @@ export function FileOperations({
   setShowDetailsPanel,
   detailsFileId,
   setDetailsFileId,
+  showRenameDialog,
+  setShowRenameDialog,
+  renameItem,
+  setRenameItem,
+  showVisibilityDialog,
+  setShowVisibilityDialog,
+  visibilityItems,
+  setVisibilityItems,
   onOperationComplete 
 }: FileOperationsProps) {
   
@@ -112,6 +130,31 @@ export function FileOperations({
     },
   });
 
+  const renameFileMutation = useRenameFile({
+    onSuccess: () => {
+      setShowRenameDialog(false);
+      setRenameItem(null);
+      onOperationComplete?.();
+    },
+    onError: (error) => {
+      console.error("Rename operation failed:", error);
+      // TODO: Show error notification
+    },
+  });
+
+  const changeVisibilityMutation = useChangeVisibility({
+    onSuccess: () => {
+      setShowVisibilityDialog(false);
+      setVisibilityItems([]);
+      onOperationComplete?.();
+    },
+    onError: (error) => {
+      console.error("Change visibility operation failed:", error);
+      // TODO: Show error notification
+    },
+  });
+
+
   const handleMoveFiles = (destinationFolderId: string, destinationPath: string) => {
     const sourceIds = selectedItems.map(item => item.id);
     
@@ -143,6 +186,19 @@ export function FileOperations({
   const handleDeleteFiles = () => {
     const ids = selectedItems.map(item => item.id);
     deleteFilesMutation.mutate({ ids });
+  };
+
+  const handleRenameFile = (newName: string) => {
+    if (renameItem) {
+      renameFileMutation.mutate({ id: renameItem.id, newName });
+    }
+  };
+
+  const handleChangeVisibility = (isPublic: boolean) => {
+    if (visibilityItems.length > 0) {
+      const ids = visibilityItems.map(item => item.id);
+      changeVisibilityMutation.mutate({ id: ids, isPublic });
+    }
   };
 
   const getSelectedItemsText = () => {
@@ -210,6 +266,30 @@ export function FileOperations({
         fileId={detailsFileId}
       />
 
+      {/* Rename Dialog */}
+      <RenameDialog
+        isOpen={showRenameDialog}
+        onClose={() => {
+          setShowRenameDialog(false);
+          setRenameItem(null);
+        }}
+        onRename={handleRenameFile}
+        item={renameItem}
+        isLoading={renameFileMutation.isPending}
+      />
+
+      {/* Visibility Dialog */}
+      <VisibilityDialog
+        isOpen={showVisibilityDialog}
+        onClose={() => {
+          setShowVisibilityDialog(false);
+          setVisibilityItems([]);
+        }}
+        onChangeVisibility={handleChangeVisibility}
+        items={visibilityItems}
+        isLoading={changeVisibilityMutation.isPending}
+      />
+
       {/* Expose functions to parent components */}
       <div style={{ display: 'none' }}>
         <button ref={(el) => {
@@ -233,6 +313,10 @@ export function useFileOperations() {
   const [shareFile, setShareFile] = React.useState<MediaItem | null>(null);
   const [showDetailsPanel, setShowDetailsPanel] = React.useState(false);
   const [detailsFileId, setDetailsFileId] = React.useState<string | null>(null);
+  const [showRenameDialog, setShowRenameDialog] = React.useState(false);
+  const [renameItem, setRenameItem] = React.useState<MediaItem | null>(null);
+  const [showVisibilityDialog, setShowVisibilityDialog] = React.useState(false);
+  const [visibilityItems, setVisibilityItems] = React.useState<MediaItem[]>([]);
 
   const showShareFileDialog = (file: MediaItem) => {
     setShareFile(file);
@@ -244,12 +328,24 @@ export function useFileOperations() {
     setShowDetailsPanel(true);
   };
 
+  const openRenameDialog = (item: MediaItem) => {
+    setRenameItem(item);
+    setShowRenameDialog(true);
+  };
+
+  const openVisibilityDialog = (items: MediaItem[]) => {
+    setVisibilityItems(items);
+    setShowVisibilityDialog(true);
+  };
+
   return {
     showMoveDialog: () => setShowMoveDialog(true),
     showCopyDialog: () => setShowCopyDialog(true),
     showDeleteConfirm: () => setShowDeleteConfirm(true),
     showShareFileDialog,
     showDetailsDialog,
+    openRenameDialog,
+    openVisibilityDialog,
     dialogs: {
       showMoveDialog,
       setShowMoveDialog,
@@ -265,6 +361,14 @@ export function useFileOperations() {
       setShowDetailsPanel,
       detailsFileId,
       setDetailsFileId,
+      showRenameDialog,
+      setShowRenameDialog,
+      renameItem,
+      setRenameItem,
+      showVisibilityDialog,
+      setShowVisibilityDialog,
+      visibilityItems,
+      setVisibilityItems,
     },
   };
 }

@@ -94,6 +94,52 @@ export function FileSharingModal({ isOpen, onClose, file }: FileSharingModalProp
 
   if (!isOpen || !file) return null;
 
+  // Show direct link for public files
+  if (file.isPublic) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center">
+        {/* Backdrop */}
+        <div className="fixed inset-0 bg-black/50" onClick={onClose} />
+        
+        {/* Modal */}
+        <div className="relative bg-white rounded-lg shadow-lg max-w-md w-full mx-4 p-6">
+          <h2 className="text-lg font-semibold mb-4">Share Public File</h2>
+          
+          <div className="mb-4">
+            <p className="text-sm text-gray-600 mb-2">
+              This file is public. Anyone with this link can access it:
+            </p>
+            <div className="flex gap-2">
+              <Input
+                value={file.openUrl || ''}
+                readOnly
+                className="flex-1 text-sm"
+                onClick={(e) => (e.target as HTMLInputElement).select()}
+              />
+              <Button
+                variant="outline"
+                onClick={() => {
+                  if (file.openUrl) {
+                    navigator.clipboard.writeText(file.openUrl);
+                  }
+                }}
+              >
+                Copy
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <Button onClick={onClose}>
+              Close
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show time-limited sharing for private files
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
@@ -101,7 +147,7 @@ export function FileSharingModal({ isOpen, onClose, file }: FileSharingModalProp
       
       {/* Modal */}
       <div className="relative bg-white rounded-lg shadow-lg max-w-md w-full mx-4 p-6">
-        <h2 className="text-lg font-semibold mb-4">Share File</h2>
+        <h2 className="text-lg font-semibold mb-4">Share Private File</h2>
         
         <div className="mb-4">
           <p className="text-sm text-gray-600 mb-2">File: <span className="font-medium">{file.name}</span></p>

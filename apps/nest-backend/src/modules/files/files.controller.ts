@@ -34,6 +34,8 @@ import { CreateFolderDto } from "./dto/create-folder.dto";
 import { CopyObjectsDto } from "./dto/copy-object.dto";
 import { MoveObjectsDto } from "./dto/move-object.dto";
 import { CreateSharingUrlDto } from "./dto/create-sharing-url.dto";
+import { RenameDto } from "./dto/rename.dto";
+import { ChangeVisibilityDto } from "./dto/toggle-visibility-dto";
 
 @ApiTags("Files")
 @Controller("files")
@@ -319,6 +321,46 @@ export class FilesController {
     return ApiResponseDto.success({
       message: "Files.getFileDetails.success",
       data: file,
+    });
+  }
+
+  @Patch("/rename/:id")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth("JWT-auth")
+  @ApiOperation({ summary: "Rename a file or folder" })
+  @ApiBody({ type: RenameDto })
+  @ApiResponse({
+    status: 200,
+    description: "File or folder renamed successfully",
+  })
+  @ApiResponse({ status: 404, description: "File or folder not found" })
+  async renameObject(@Body() renameDto: RenameDto, @Req() request: Request) {
+    const userId = request.user["_id"];
+    const renamedObject = await this.filesService.renameObject(
+      userId,
+      renameDto,
+    );
+
+    return ApiResponseDto.success({
+      message: "Files.renameObject.success",
+      data: { object: renamedObject },
+    });
+  }
+
+  @Patch("/change-visibility")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth("JWT-auth")
+  @ApiBody({ type: ChangeVisibilityDto })
+  @ApiOperation({ summary: "Change visibility of a file or folder" })
+  @ApiResponse({  status: 200, description: "Visibility changed successfully" })
+  @ApiResponse({ status: 404, description: "File or folder not found" })
+  async changeVisibility(@Req() request: Request, @Body() dto: ChangeVisibilityDto) {
+    const userId = request.user["_id"];
+    const updatedObject = await this.filesService.changeVisibility(userId, dto);
+
+    return ApiResponseDto.success({
+      message: "Files.changeVisibility.success",
+      data: { object: updatedObject },
     });
   }
 }

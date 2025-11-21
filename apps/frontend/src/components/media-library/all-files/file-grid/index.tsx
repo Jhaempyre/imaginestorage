@@ -27,6 +27,8 @@ export function FileGrid({ items }: FileGridProps) {
     showDeleteConfirm,
     showShareFileDialog,
     showDetailsDialog,
+    openRenameDialog,
+    openVisibilityDialog,
     dialogs,
   } = useFileOperations();
 
@@ -55,6 +57,22 @@ export function FileGrid({ items }: FileGridProps) {
     },
     [showDetailsDialog]
   );
+
+  // Handler for renaming items
+  const handleRenameItem = useCallback(
+    (itemId: string) => {
+      const item = items.find((i) => i.id === itemId);
+      if (item) {
+        openRenameDialog(item);
+      }
+    },
+    [items, openRenameDialog]
+  );
+
+  // Handler for opening visibility dialog
+  const handleOpenVisibilityDialog = useCallback(() => {
+    openVisibilityDialog(selectedItemsData);
+  }, [selectedItemsData, openVisibilityDialog]);
 
   const handleItemClick = (
     item: MediaItem,
@@ -125,6 +143,8 @@ export function FileGrid({ items }: FileGridProps) {
         onDeleteFiles={showDeleteConfirm}
         onShareFile={handleShareFile}
         onShowDetails={handleShowDetails}
+        onRenameItem={handleRenameItem}
+        onChangeVisibility={handleOpenVisibilityDialog}
       />
 
       <FileOperations
@@ -143,6 +163,14 @@ export function FileGrid({ items }: FileGridProps) {
         setShowDetailsPanel={dialogs.setShowDetailsPanel}
         detailsFileId={dialogs.detailsFileId}
         setDetailsFileId={dialogs.setDetailsFileId}
+        showRenameDialog={dialogs.showRenameDialog}
+        setShowRenameDialog={dialogs.setShowRenameDialog}
+        renameItem={dialogs.renameItem}
+        setRenameItem={dialogs.setRenameItem}
+        showVisibilityDialog={dialogs.showVisibilityDialog}
+        setShowVisibilityDialog={dialogs.setShowVisibilityDialog}
+        visibilityItems={dialogs.visibilityItems}
+        setVisibilityItems={dialogs.setVisibilityItems}
         onOperationComplete={handleRefresh}
       />
     </>

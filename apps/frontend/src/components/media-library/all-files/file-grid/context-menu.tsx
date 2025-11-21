@@ -15,6 +15,8 @@ interface MediaLibraryContextMenuProps extends React.PropsWithChildren {
   onDeleteFiles?: () => void;
   onShareFile?: () => void;
   onShowDetails?: () => void;
+  onRenameItem?: () => void;
+  onChangeVisibility?: () => void;
   item?: { id: string; name: string; type: "file" | "folder" };
 }
 
@@ -25,6 +27,8 @@ export function MediaLibraryContextMenu({
   onDeleteFiles,
   onShareFile,
   onShowDetails,
+  onRenameItem,
+  onChangeVisibility,
   item,
 }: MediaLibraryContextMenuProps) {
   const { selectedItems, selectItem } = useMediaLibraryStore();
@@ -78,9 +82,22 @@ export function MediaLibraryContextMenu({
           <ContextMenuShortcut>⌘I</ContextMenuShortcut>
         </ContextMenuItem>
         
-        <ContextMenuItem inset>
+        <ContextMenuItem 
+          inset
+          onClick={() => handleContextMenuAction(onRenameItem || (() => {}))}
+          disabled={selectedItems.length !== 1}
+        >
           Rename
           <ContextMenuShortcut>⌘R</ContextMenuShortcut>
+        </ContextMenuItem>
+
+        <ContextMenuItem 
+          inset
+          onClick={() => handleContextMenuAction(onChangeVisibility || (() => {}))}
+          disabled={selectedItems.length === 0}
+        >
+          Change Visibility
+          <ContextMenuShortcut>⌘V</ContextMenuShortcut>
         </ContextMenuItem>
         
         {/* Share option - only for single file selection */}

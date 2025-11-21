@@ -10,6 +10,7 @@ export interface MediaItem {
   previewUrl?: string;
   openUrl?: string;
   originalName?: string;
+  isPublic?: boolean;
 }
 
 export interface MediaLibraryState {

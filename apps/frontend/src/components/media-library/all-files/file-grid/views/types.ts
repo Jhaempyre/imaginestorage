@@ -14,4 +14,6 @@ export interface ViewProps {
   onDeleteFiles?: () => void;
   onShareFile?: (fileId: string) => void;
   onShowDetails?: (fileId: string) => void;
+  onRenameItem?: (itemId: string) => void;
+  onChangeVisibility?: () => void;
 }

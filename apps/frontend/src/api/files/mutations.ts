@@ -100,3 +100,31 @@ export function useCreateSharingUrl(
     ...options,
   });
 }
+
+export function useRenameFile(
+  options?: Omit<UseMutationOptions<any, Error, { id: string; newName: string }>, 'mutationFn'>
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, newName }) => filesApi.renameFile(id, newName),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: FILES_QUERY_KEYS.lists() });
+    },
+    ...options,
+  });
+}
+
+export function useChangeVisibility(
+  options?: Omit<UseMutationOptions<any, Error, { id: string[]; isPublic: boolean }>, 'mutationFn'>
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, isPublic }) => filesApi.changeVisibility(id, isPublic),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: FILES_QUERY_KEYS.lists() });
+    },
+    ...options,
+  });
+}
