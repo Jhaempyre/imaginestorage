@@ -9,6 +9,7 @@ export interface MediaItem {
   mimeType?: string;
   previewUrl?: string;
   openUrl?: string;
+  downloadUrl?: string;
   originalName?: string;
   isPublic?: boolean;
 }

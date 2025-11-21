@@ -67,7 +67,7 @@ export function FileDetailsPanel({ isOpen, onClose, fileId }: FileDetailsPanelPr
               className="max-w-full h-auto max-h-64 mx-auto rounded"
               preload="metadata"
             >
-              <source src={previewUrl} type={mimeType} />
+              <source src={openUrl} type={mimeType} />
               Your browser does not support the video tag.
             </video>
           </div>
@@ -78,7 +78,7 @@ export function FileDetailsPanel({ isOpen, onClose, fileId }: FileDetailsPanelPr
         return (
           <div className="bg-gray-50 rounded-lg p-4">
             <audio controls className="w-full">
-              <source src={previewUrl} type={mimeType} />
+              <source src={openUrl} type={mimeType} />
               Your browser does not support the audio tag.
             </audio>
           </div>

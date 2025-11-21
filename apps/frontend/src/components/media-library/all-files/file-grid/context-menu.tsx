@@ -17,6 +17,8 @@ interface MediaLibraryContextMenuProps extends React.PropsWithChildren {
   onShowDetails?: () => void;
   onRenameItem?: () => void;
   onChangeVisibility?: () => void;
+  onOpenFile?: () => void;
+  onDownloadFile?: () => void;
   item?: { id: string; name: string; type: "file" | "folder" };
 }
 
@@ -29,6 +31,8 @@ export function MediaLibraryContextMenu({
   onShowDetails,
   onRenameItem,
   onChangeVisibility,
+  onOpenFile,
+  onDownloadFile,
   item,
 }: MediaLibraryContextMenuProps) {
   const { selectedItems, selectItem } = useMediaLibraryStore();
@@ -48,6 +52,33 @@ export function MediaLibraryContextMenu({
     <ContextMenu>
       <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
       <ContextMenuContent className="w-52">
+        {/* Quick Actions - only for single file selection */}
+        {item?.type === "file" && selectedItems.length <= 1 && (
+          <>
+            {onOpenFile && (
+              <ContextMenuItem 
+                inset
+                onClick={() => handleContextMenuAction(onOpenFile)}
+              >
+                Open
+                <ContextMenuShortcut>⌘O</ContextMenuShortcut>
+              </ContextMenuItem>
+            )}
+            
+            {onDownloadFile && (
+              <ContextMenuItem 
+                inset
+                onClick={() => handleContextMenuAction(onDownloadFile)}
+              >
+                Download
+                <ContextMenuShortcut>⌘D</ContextMenuShortcut>
+              </ContextMenuItem>
+            )}
+            
+            {(onOpenFile || onDownloadFile) && <ContextMenuSeparator />}
+          </>
+        )}
+        
         <ContextMenuItem 
           inset
           disabled={!hasSelection}

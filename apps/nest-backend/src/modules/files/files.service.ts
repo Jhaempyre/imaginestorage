@@ -297,7 +297,7 @@ export class FilesService {
       .find(query)
       .sort(sort)
       .select(
-        "ownerId type originalName fullPath fileSize mimeType fileUrl metadata providerMetadata createdAt",
+        "ownerId type originalName fullPath fileSize mimeType fileUrl isPublic metadata providerMetadata createdAt",
       )
       .lean();
     this.logger.debug(`files.length => ${JSON.stringify(files.length)}`);
