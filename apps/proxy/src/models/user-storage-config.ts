@@ -23,6 +23,7 @@ export interface IUserStorageConfig extends Document {
   userId: Types.ObjectId;
   provider: StorageProvider;
   credentials: StorageCredentials;
+  encryptedCredentials: string;
 
   lastValidatedAt?: Date;
   validationError?: string;
@@ -47,7 +48,8 @@ const UserStorageConfigSchema = new Schema<IUserStorageConfig>(
       required: true,
     },
 
-    credentials: { type: Object, required: true, select: true },
+    credentials: { type: Object, required: true, select: false },
+    encryptedCredentials: { type: String, required: true, select: true },
     isValidated: { type: Boolean, default: false },
 
     isActive: { type: Boolean, default: true },

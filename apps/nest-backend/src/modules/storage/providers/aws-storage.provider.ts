@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import {
   S3Client,
   PutObjectCommand,
@@ -28,7 +28,9 @@ import {
 import {
   STORAGE_PROVIDER_METADATA,
   STORAGE_PROVIDERS,
+  STORAGE_VALIDATION_ERRORS,
 } from "@/common/constants/storage.constants";
+import { randomBytes } from "crypto";
 
 export interface AWSConfig extends StorageConfig {
   accessKeyId: string;
@@ -42,6 +44,7 @@ export interface AWSConfig extends StorageConfig {
 export class AWSStorageProvider implements IStorageProvider {
   readonly name = "AWS S3";
   readonly type = "aws" as const;
+  private readonly logger = new Logger(AWSStorageProvider.name);
 
   private s3Client?: S3Client;
   private config?: AWSConfig;
@@ -346,15 +349,138 @@ export class AWSStorageProvider implements IStorageProvider {
     }
   }
 
-  async validateCredentials() {
-    // mock implementation
-    return new Promise<StorageValidationResult>((resolve, reject) => {
-      setTimeout(() => {
-        resolve({
-          isValid: false,
-        });
+  async validateCredentials(
+    params: AWSConfig,
+  ): Promise<StorageValidationResult> {
+    let client;
+    try {
+      client = new S3Client({
+        region: params.region,
+        credentials: {
+          accessKeyId: params.accessKeyId,
+          secretAccessKey: params.secretAccessKey,
+        },
+        ...(params.endpoint && { endpoint: params.endpoint }),
       });
-    });
+    } catch (error) {
+      return {
+        isValid: false,
+        error: {
+          code: STORAGE_VALIDATION_ERRORS.INVALID_CREDENTIALS,
+          message: "Failed to create S3 client with provided credentials.",
+          details: (error as Error).message,
+          suggestions: [
+            "Verify Access Key ID and Secret Access Key.",
+            "Ensure the user/role is active and not deleted.",
+          ],
+        },
+      };
+    }
+
+    const bucket = params.bucketName;
+    const testKey = `.imaginary/_validator/${randomBytes(16).toString("hex")}.txt`;
+
+    const latency = {
+      headBucket: 0,
+      writeTest: 0,
+      deleteTest: 0,
+    };
+    try {
+      // ---- Step 1: HEAD Bucket ----
+      let start = performance.now();
+      await client.send(new HeadBucketCommand({ Bucket: bucket }));
+      latency.headBucket = performance.now() - start;
+    } catch (err: any) {
+      this.logger.error(
+        `AWS S3 credential validation: head bucket failed: ${err?.message}`,
+      );
+      console.error(err);
+      const errorCode = err?.name || err?.Code || "Unknown";
+
+      return {
+        isValid: false,
+        error: {
+          code: "BUCKET_NOT_FOUND",
+          message: "Failed to access the specified bucket.",
+          details: "Unable to perform HeadBucket operation.",
+          suggestions: [
+            "Confirm the bucket name.",
+            "Ensure the bucket exists in the selected region.",
+            "Verify the AWS credentials have s3:ListBucket permission.",
+          ],
+        },
+      };
+    }
+
+    // ---- Step 2: Write Test ----
+    try {
+      const start = performance.now();
+      await client.send(
+        new PutObjectCommand({
+          Bucket: bucket,
+          Key: testKey,
+          Body: "ok",
+          ContentType: "text/plain",
+        }),
+      );
+      latency.writeTest = performance.now() - start;
+    } catch (err: any) {
+      this.logger.error(
+        `AWS S3 credential validation: write test failed: ${err?.message}`,
+      );
+      return {
+        isValid: false,
+        error: {
+          code: STORAGE_VALIDATION_ERRORS.INSUFFICIENT_PERMISSIONS,
+          message: "Bucket exists but write permission is denied.",
+          details: err?.message,
+          suggestions: [
+            "Grant s3:PutObject to your IAM role.",
+            "Ensure the bucket policy allows this principal.",
+            "Check if the bucket uses object-lock or retention.",
+          ],
+        },
+      };
+    }
+
+    // ---- Step 3: Delete Test ----
+    try {
+      const start = performance.now();
+      await client.send(
+        new DeleteObjectCommand({
+          Bucket: bucket,
+          Key: testKey,
+        }),
+      );
+      latency.deleteTest = performance.now() - start;
+    } catch (err: any) {
+      this.logger.error(
+        `AWS S3 credential validation: delete test failed: ${err?.message}`,
+      );
+      return {
+        isValid: false,
+        error: {
+          code: STORAGE_VALIDATION_ERRORS.INSUFFICIENT_PERMISSIONS,
+          message: "Write is allowed but delete permission is denied.",
+          details: err?.message,
+          suggestions: [
+            "Grant s3:DeleteObject.",
+            "Check object-lock or retention policies.",
+          ],
+        },
+      };
+    }
+
+    // ---- All checks passed ----
+    return {
+      isValid: true,
+      storageInfo: {
+        bucketName: bucket,
+        region: params.region,
+        permissions: ["s3:ListBucket", "s3:PutObject", "s3:DeleteObject"],
+        latency,
+      },
+    };
   }
 
   async healthCheck(): Promise<boolean> {

@@ -201,7 +201,7 @@ export interface IStorageProvider {
 
   getDownloadUrl(params: DownloadUrlParams): Promise<string>;
   deleteFile(params: DeleteParams): Promise<void>;
-  validateCredentials(): Promise<StorageValidationResult>;
+  validateCredentials(params: StorageCredentials): Promise<StorageValidationResult>;
   healthCheck(): Promise<boolean>;
   isConfigured(): boolean;
   getProviderInfo(): StorageProviderMetadata;

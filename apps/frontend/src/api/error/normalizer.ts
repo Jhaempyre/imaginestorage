@@ -128,6 +128,8 @@ export class ErrorNormalizer {
       statusCode: error?.status || error.response?.status || 500,
       message: responseData?.message,
       userFriendlyMessage: responseData?.error?.userMessage || '',
+      details: responseData?.error?.details,
+      suggestions: responseData?.error?.suggestions,
       navigation,
       shouldRetry: false,
       shouldRefresh: false,

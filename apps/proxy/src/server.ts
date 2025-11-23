@@ -11,6 +11,7 @@ import { UserModel } from "./models/user";
 import { UserStorageConfigModel } from "./models/user-storage-config";
 import { appLogger } from "./common/logger";
 import cookieParser from "cookie-parser";
+import { EncryptionService } from "./common/encryption.service";
 
 EnvSetup.loadDev();
 EnvSetup.validateRequiredEnvVars();
@@ -19,6 +20,8 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 app.use(requestLogger);
+
+const encryptionService = new EncryptionService();
 
 // Simple middleware to populate req.user for demo.
 // Replace with your real auth middleware.
@@ -57,12 +60,15 @@ app.get("/:userId/:fileId", async (req, res) => {
     }
 
     // 4. Fetch user storage config
-    const config = await UserStorageConfigModel.findOne({ userId: user._id });
+    const config = await UserStorageConfigModel.findOne({
+      userId: user._id,
+    }).select("provider encryptedCredentials");
+    console.log("User Storage Config:", config);
     if (!config)
       return res.status(400).json({ error: "No storage config found" });
-    const creds = config.credentials;
+    const creds = encryptionService.decrypt(config.encryptedCredentials);
     appLogger.log(`Using provider: ${config.provider}`);
-    appLogger.debug(`config: ${JSON.stringify(creds)}`);
+    // appLogger.debug(`config: ${JSON.stringify(creds)}`);
 
     // 5. Get storage stream
     const rangeHeader = req.headers.range as string | undefined;

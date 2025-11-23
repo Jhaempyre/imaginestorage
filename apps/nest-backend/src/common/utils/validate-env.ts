@@ -114,6 +114,10 @@ export class EnvironmentVariables {
   @IsNotEmpty()
   @IsString()
   FRONTEND_BASE_URL: string;
+  
+  @IsNotEmpty()
+  @IsString()
+  ENCRYPTION_MASTER_KEY: string;
 }
 
 export function validateEnv(config: Record<string, unknown>) {

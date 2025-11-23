@@ -18,7 +18,7 @@ export default function VerifyEmail() {
   const [verificationStatus, setVerificationStatus] = useState<
     "pending" | "success" | "error"
   >("pending");
-  
+
   // Mutations
   const verifyEmailMutation = useVerifyEmail({
     onSuccess: () => {
@@ -68,11 +68,20 @@ export default function VerifyEmail() {
             <CardDescription>
               {verificationStatus === "pending" &&
                 "Please wait while we verify your email address."}
-              {verificationStatus === "success" &&
+              {verificationStatus === "success" && (
                 <>
-                  <p>Your email has been verified. Redirecting you to complete your setup...</p>
-                  <Link to="/auth/login" className="text-blue-500 underline mt-2 block">Go to Login Page</Link>
-                </>}
+                  <p>
+                    Your email has been verified. Redirecting you to complete
+                    your setup...
+                  </p>
+                  <Link
+                    to="/auth/login"
+                    className="text-blue-500 underline mt-2 block"
+                  >
+                    Go to Login Page
+                  </Link>
+                </>
+              )}
               {verificationStatus === "error" &&
                 "The verification link is invalid or has expired."}
             </CardDescription>
@@ -83,8 +92,9 @@ export default function VerifyEmail() {
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  {verifyEmailMutation.error?.message ||
-                    "Please try requesting a new verification email."}
+                  {(verifyEmailMutation.error as any)?.error?.userMessage ||
+                    "Please try requesting a new verification email."}{" "}
+                  <p>code: {verifyEmailMutation.error?.message}</p>
                 </AlertDescription>
               </Alert>
               <div className="mt-4 text-center">

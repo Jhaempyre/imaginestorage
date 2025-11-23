@@ -75,7 +75,7 @@ function ConfigureCredentials({
       setError("root", {
         type: "manual",
         message:
-          (error as unknown as NormalizedError).userFriendlyMessage ??
+          JSON.stringify(error as unknown as NormalizedError) ??
           "Failed to save credentials. Please check your information and try again.",
       });
       setTimeout(() => {
@@ -246,6 +246,40 @@ function ConfigureCredentials({
     }
   };
 
+  const renderServerError = (data: string) => {
+    const parsedError: NormalizedError = JSON.parse(data);
+    return (
+      <>
+        <div className="flex items-center gap-2">
+          {/* <p>{data}</p> */}
+          <Shield className="h-4 w-4" />
+          {parsedError.userFriendlyMessage ||
+            "An unexpected error occurred. Please try again."}
+        </div>
+        {parsedError.details && parsedError.details?.split(";").length > 0 && (
+          <div className="mt-2 md:pl-6 text-red-700">
+            <p className="">Details:</p>
+            <ul className="list-disc list-inside text-sm">
+              {parsedError.details.split(";").map((detail, index) => (
+                <li key={index}>{detail.trim()}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {parsedError?.suggestions && parsedError?.suggestions?.length > 0 && (
+          <div className="mt-2 md:pl-6 text-red-700">
+            <p className="">Suggestions:</p>
+            <ul className="list-disc list-inside text-sm">
+              {parsedError?.suggestions?.map?.((detail, index) => (
+                <li key={index}>{detail.trim()}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </>
+    );
+  };
+
   if (
     (isStatusLoading && !statusData) ||
     (isStorageProviderFieldsLoading && !storageProviderFields)
@@ -318,10 +352,7 @@ function ConfigureCredentials({
                 className="text-sm text-red-600 bg-red-50 p-3 rounded-md border border-red-200"
                 id="root-error-box"
               >
-                <div className="flex items-center gap-2">
-                  <Shield className="h-4 w-4" />
-                  {errors.root.message}
-                </div>
+                {renderServerError(errors.root.message!)}
               </div>
             )}
 
@@ -363,7 +394,7 @@ function ConfigureCredentials({
       <Card className="bg-blue-50 border-blue-200">
         <CardContent>
           <div className="flex items-start gap-3">
-            <Shield className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+            <Shield className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
             <div className="text-sm text-blue-800">
               <div className="font-medium mb-1">Security Notice</div>
               <p className="text-blue-700">

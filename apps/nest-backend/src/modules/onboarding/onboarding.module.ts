@@ -5,6 +5,8 @@ import { OnboardingService } from './onboarding.service';
 import { User, UserSchema } from '../../schemas/user.schema';
 import { UserStorageConfig, UserStorageConfigSchema } from '../../schemas/user-storage-config.schema';
 import { NavigationService } from '../../common/services/navigation.service';
+import { EncryptionService } from '@/common/services/encription.service';
+import { StorageModule } from '../storage/storage.module';
 
 @Module({
   imports: [
@@ -12,9 +14,10 @@ import { NavigationService } from '../../common/services/navigation.service';
       { name: User.name, schema: UserSchema },
       { name: UserStorageConfig.name, schema: UserStorageConfigSchema },
     ]),
+    StorageModule,
   ],
   controllers: [OnboardingController],
-  providers: [OnboardingService, NavigationService],
+  providers: [OnboardingService, NavigationService, EncryptionService],
   exports: [OnboardingService],
 })
 export class OnboardingModule {}

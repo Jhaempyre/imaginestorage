@@ -10,6 +10,8 @@ import {
   DownloadUrlParams,
   ListObjectsResult,
   MoveObjectParams,
+  StorageCredentials,
+  StorageValidationResult,
   UploadResult,
 } from "src/common/interfaces/storage.interface";
 import { AWSStorageProvider } from "./providers/aws-storage.provider";
@@ -22,6 +24,7 @@ import {
   UploadParams,
 } from "@/common/interfaces/storage.interface";
 import { STORAGE_PROVIDERS } from "@/common/constants/storage.constants";
+import { EncryptionService } from "@/common/services/encription.service";
 
 export type SupportedProviders =
   (typeof STORAGE_PROVIDERS)[keyof typeof STORAGE_PROVIDERS];
@@ -36,6 +39,7 @@ export class StorageService {
     private awsProvider: AWSStorageProvider,
     @InjectModel(UserStorageConfig.name)
     private userStorageConfigModel: Model<UserStorageConfigDocument>,
+    private encryptionService: EncryptionService,
   ) {
     this.registerProvider("aws", this.awsProvider);
   }
@@ -61,7 +65,7 @@ export class StorageService {
     }
     const userConfig = await this.userStorageConfigModel
       .findOne({ userId, isActive: true })
-      .select("provider credentials");
+      .select("provider encryptedCredentials");
 
     console.log("User Storage Config:", userConfig);
     if (!userConfig) {
@@ -69,7 +73,8 @@ export class StorageService {
     }
 
     const provider = this.providers.get(userConfig.provider);
-    await provider.initialize(userConfig.credentials);
+    const decryptedCredentials = this.getDecryptedCredentials(userConfig);
+    await provider.initialize(decryptedCredentials);
 
     // Check if provider is configured
     if (!provider.isConfigured()) {
@@ -207,6 +212,29 @@ export class StorageService {
   async deleteFile(userId: string, params: DeleteParams): Promise<void> {
     const provider = await this._getActiveProviderForUser(userId);
     return provider.deleteFile(params);
+  }
+
+  async validateCredentials(
+    provider: SupportedProviders,
+    params: any,
+  ): Promise<StorageValidationResult> {
+    const providerService = this.providers.get(provider);
+    return providerService.validateCredentials(params);
+  }
+
+  /**
+   * Get decrypted credentials from a config document
+   */
+  getDecryptedCredentials(
+    config: UserStorageConfigDocument,
+  ): StorageCredentials {
+    if (!config.encryptedCredentials) {
+      throw new Error("No credentials found in config");
+    }
+
+    return this.encryptionService.decrypt<StorageCredentials>(
+      config.encryptedCredentials,
+    );
   }
 
   async healthCheck(
