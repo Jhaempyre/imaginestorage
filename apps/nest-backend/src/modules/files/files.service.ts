@@ -27,6 +27,7 @@ import { UserStorageConfig } from "@/schemas/user-storage-config.schema";
 import { GetFileDetailsResponseDto } from "./dto/get-file-details-response.dto";
 import { RenameDto } from "./dto/rename.dto";
 import { ChangeVisibilityDto } from "./dto/toggle-visibility-dto";
+import { ImageFileDto } from "./dto/image-file.dto";
 
 @Injectable()
 export class FilesService {
@@ -1290,7 +1291,9 @@ export class FilesService {
         try {
           if (file.type === "file") {
             file.isPublic = dto.isPublic;
-            this.logger.debug(`Setting isPublic=${dto.isPublic} for ${file._id}`);
+            this.logger.debug(
+              `Setting isPublic=${dto.isPublic} for ${file._id}`,
+            );
             await file.save();
             result.push({
               fileId: file._id,
@@ -1305,19 +1308,23 @@ export class FilesService {
               deletedAt: null,
               fullPath: { $regex: `^${this._escapeRegex(prefix)}` },
             });
-            
+
             for (const doc of descendants) {
               doc.isPublic = dto.isPublic;
-              this.logger.debug(`Setting isPublic=${dto.isPublic} for ${doc._id}`);
+              this.logger.debug(
+                `Setting isPublic=${dto.isPublic} for ${doc._id}`,
+              );
               result.push({
                 id: doc._id,
                 isPublic: doc.isPublic,
               });
               await doc.save();
             }
-            
+
             file.isPublic = dto.isPublic;
-            this.logger.debug(`Setting isPublic=${dto.isPublic} for folder ${file._id}`);
+            this.logger.debug(
+              `Setting isPublic=${dto.isPublic} for folder ${file._id}`,
+            );
             await file.save();
             result.push({
               folderId: file._id,
@@ -1348,6 +1355,92 @@ export class FilesService {
         details: error.message,
       });
     }
+  }
+
+  public async getImageFiles(userId: string) {
+    // Implement logic to retrieve image files for the user
+    // This is a placeholder implementation
+    const ownerId = new Types.ObjectId(userId);
+
+    const result = await this.fileModel.aggregate([
+      // 1️⃣ Filter relevant docs
+      {
+        $match: {
+          ownerId,
+          type: "file",
+          mimeType: { $regex: "^image/" },
+          "metadata.isPreview": { $ne: true },
+          deletedAt: null,
+        },
+      },
+
+      // 2️⃣ Create year-month grouping fields
+      {
+        $addFields: {
+          year: { $year: "$createdAt" },
+          month: { $month: "$createdAt" },
+        },
+      },
+
+      // 3️⃣ Group by (year, month)
+      {
+        $group: {
+          _id: { year: "$year", month: "$month" },
+          files: {
+            $push: {
+              _id: "$_id",
+              originalName: "$originalName",
+              ownerId: "$ownerId",
+              metadata: "$metadata",
+              isPublic: "$isPublic",
+              fullPath: "$fullPath",
+              fileSize: "$fileSize",
+              mimeType: "$mimeType",
+              createdAt: "$createdAt",
+            },
+          },
+        },
+      },
+
+      // 4️⃣ Sort each month's files by date DESC
+      {
+        $addFields: {
+          files: {
+            $sortArray: {
+              input: "$files",
+              sortBy: { createdAt: -1 },
+            },
+          },
+        },
+      },
+
+      // 5️⃣ Sort months DESC (newest first)
+      {
+        $sort: {
+          "_id.year": -1,
+          "_id.month": -1,
+        },
+      },
+
+      // 6️⃣ Format response cleanly
+      {
+        $project: {
+          _id: 0,
+          year: "$_id.year",
+          month: "$_id.month",
+          files: 1,
+        },
+      },
+    ]);
+
+    return result.map((group) => {
+      return {
+        ...group,
+        files: group.files.map((f: any) =>
+          new ImageFileDto().fromFileObj(f, this.config.get("PROXY_URL")),
+        ),
+      };
+    });
   }
 
   /**

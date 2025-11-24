@@ -1,5 +1,5 @@
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
-import { filesApi, type GetFilesParams, type GetFilesResponse } from './api';
+import { filesApi, type GetFilesParams, type GetFilesResponse, type GetImageFilesResponse } from './api';
 
 export const FILES_QUERY_KEYS = {
   all: ['files'] as const,
@@ -40,6 +40,16 @@ export function useGetFileDetails(
     queryKey: FILES_QUERY_KEYS.detail(fileId!),
     queryFn: () => filesApi.getFileDetails(fileId!),
     enabled: !!fileId,
+    ...options,
+  });
+}
+
+export function useGetImageFiles(
+  options?: Omit<UseQueryOptions<GetImageFilesResponse>, 'queryKey' | 'queryFn'>
+) {
+  return useQuery({
+    queryKey: [...FILES_QUERY_KEYS.all, 'images'] as const,
+    queryFn: () => filesApi.getImageFiles(),
     ...options,
   });
 }

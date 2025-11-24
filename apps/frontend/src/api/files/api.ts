@@ -33,6 +33,32 @@ export interface CreateFolderResponse {
   };
 }
 
+export interface ImageFile {
+  id: string;
+  name: string;
+  fullPath: string;
+  fileSize: number;
+  mimeType: string;
+  createdAt: string;
+  isPublic: boolean;
+  openUrl: string;
+  downloadUrl: string;
+  previewUrl: string;
+}
+
+export interface MonthlyImages {
+  files: ImageFile[];
+  year: number;
+  month: number;
+}
+
+export interface GetImageFilesResponse {
+  success: boolean;
+  statusCode: number;
+  message: string;
+  data: MonthlyImages[];
+}
+
 export const filesApi = {
   async getFiles(params: GetFilesParams): Promise<GetFilesResponse> {
     const response = await axiosClient.get<GetFilesResponse>('/files', { params });
@@ -134,6 +160,11 @@ export const filesApi = {
       id, 
       isPublic 
     });
+    return response.data;
+  },
+
+  async getImageFiles(): Promise<GetImageFilesResponse> {
+    const response = await axiosClient.get('/files/images');
     return response.data;
   },
 };

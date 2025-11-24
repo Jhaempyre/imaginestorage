@@ -12,6 +12,7 @@ export interface MediaItem {
   downloadUrl?: string;
   originalName?: string;
   isPublic?: boolean;
+  createdAt?: string;
 }
 
 export interface MediaLibraryState {

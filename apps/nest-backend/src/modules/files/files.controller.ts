@@ -107,6 +107,24 @@ export class FilesController {
     });
   }
 
+  @Get("/images")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth("JWT-auth")
+  @ApiOperation({ summary: "Get all image files" })
+  @ApiResponse({
+    status: 200,
+    description: "Image files retrieved successfully",
+  })
+  async getImageFiles(@Req() request: Request) {
+    const userId = request.user["_id"];
+    const images = await this.filesService.getImageFiles(userId);
+
+    return ApiResponseDto.success({
+      message: "Files.getImageFiles.success",
+      data: images,
+    });
+  }
+
   @Get(":id")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth("JWT-auth")
@@ -352,9 +370,12 @@ export class FilesController {
   @ApiBearerAuth("JWT-auth")
   @ApiBody({ type: ChangeVisibilityDto })
   @ApiOperation({ summary: "Change visibility of a file or folder" })
-  @ApiResponse({  status: 200, description: "Visibility changed successfully" })
+  @ApiResponse({ status: 200, description: "Visibility changed successfully" })
   @ApiResponse({ status: 404, description: "File or folder not found" })
-  async changeVisibility(@Req() request: Request, @Body() dto: ChangeVisibilityDto) {
+  async changeVisibility(
+    @Req() request: Request,
+    @Body() dto: ChangeVisibilityDto,
+  ) {
     const userId = request.user["_id"];
     const updatedObject = await this.filesService.changeVisibility(userId, dto);
 
