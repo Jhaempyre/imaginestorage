@@ -143,6 +143,24 @@ export class FilesController {
     });
   }
 
+  @Get("/documents")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth("JWT-auth")
+  @ApiOperation({ summary: "Get all document files" })
+  @ApiResponse({
+    status: 200,
+    description: "Document files retrieved successfully",
+  })
+  async getDocumentFiles(@Req() request: Request) {
+    const userId = request.user["_id"];
+    const documents = await this.filesService.getDocumentFiles(userId);
+
+    return ApiResponseDto.success({
+      message: "Files.getDocumentFiles.success",
+      data: documents,
+    });
+  }
+
   @Get(":id")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth("JWT-auth")

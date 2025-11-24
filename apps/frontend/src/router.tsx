@@ -6,7 +6,7 @@ import VerifyEmail from "./components/auth/verify-email";
 import EmailVerificationStatus from "./components/auth/email-verification-status";
 import ChooseProviderPage from "./components/onboarding/choose-provider";
 import ConfigureCredentialsPage from "./components/onboarding/configure-credentials";
-import { AllFilesPage, MediaLibraryLayout, DeveloperConsolePage, PhotosPage, VideosPage } from "./components/media-library";
+import { AllFilesPage, MediaLibraryLayout, DeveloperConsolePage, PhotosPage, VideosPage, DocumentsPage } from "./components/media-library";
 
 function RouterContent() {
   // Initialize global error handling
@@ -25,6 +25,9 @@ function RouterContent() {
         </Route>
         <Route path="videos/*" element={<MediaLibraryLayout />}>
           <Route index element={<VideosPage />} />
+        </Route>
+        <Route path="documents/*" element={<MediaLibraryLayout />}>
+          <Route index element={<DocumentsPage />} />
         </Route>
         <Route path="developer-console/*" element={<MediaLibraryLayout />}>
           <Route index element={<DeveloperConsolePage />} />

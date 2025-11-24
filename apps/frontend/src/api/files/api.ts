@@ -172,4 +172,9 @@ export const filesApi = {
     const response = await axiosClient.get('/files/videos');
     return response.data;
   },
+
+  async getDocumentFiles(): Promise<GetImageFilesResponse> {
+    const response = await axiosClient.get('/files/documents');
+    return response.data;
+  },
 };

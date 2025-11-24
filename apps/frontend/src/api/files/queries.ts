@@ -63,3 +63,13 @@ export function useGetVideoFiles(
     ...options,
   });
 }
+
+export function useGetDocumentFiles(
+  options?: Omit<UseQueryOptions<GetImageFilesResponse>, 'queryKey' | 'queryFn'>
+) {
+  return useQuery({
+    queryKey: [...FILES_QUERY_KEYS.all, 'documents'] as const,
+    queryFn: () => filesApi.getDocumentFiles(),
+    ...options,
+  });
+}
