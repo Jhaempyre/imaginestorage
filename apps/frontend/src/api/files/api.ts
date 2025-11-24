@@ -167,4 +167,9 @@ export const filesApi = {
     const response = await axiosClient.get('/files/images');
     return response.data;
   },
+
+  async getVideoFiles(): Promise<GetImageFilesResponse> {
+    const response = await axiosClient.get('/files/videos');
+    return response.data;
+  },
 };

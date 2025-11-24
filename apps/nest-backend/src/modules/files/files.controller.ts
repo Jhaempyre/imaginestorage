@@ -125,6 +125,24 @@ export class FilesController {
     });
   }
 
+  @Get("/videos")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth("JWT-auth")
+  @ApiOperation({ summary: "Get all video files" })
+  @ApiResponse({
+    status: 200,
+    description: "Video files retrieved successfully",
+  })
+  async getVideoFiles(@Req() request: Request) {
+    const userId = request.user["_id"];
+    const videos = await this.filesService.getVideoFiles(userId);
+
+    return ApiResponseDto.success({
+      message: "Files.getVideoFiles.success",
+      data: videos,
+    });
+  }
+
   @Get(":id")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth("JWT-auth")

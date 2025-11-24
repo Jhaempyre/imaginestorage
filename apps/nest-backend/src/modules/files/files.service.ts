@@ -1443,6 +1443,91 @@ export class FilesService {
     });
   }
 
+  public async getVideoFiles(userId: string) {
+    // Implement logic to retrieve video files for the user
+    const ownerId = new Types.ObjectId(userId);
+
+    const result = await this.fileModel.aggregate([
+      // 1️⃣ Filter relevant docs
+      {
+        $match: {
+          ownerId,
+          type: "file",
+          mimeType: { $regex: "^video/" },
+          "metadata.isPreview": { $ne: true },
+          deletedAt: null,
+        },
+      },
+
+      // 2️⃣ Create year-month grouping fields
+      {
+        $addFields: {
+          year: { $year: "$createdAt" },
+          month: { $month: "$createdAt" },
+        },
+      },
+
+      // 3️⃣ Group by (year, month)
+      {
+        $group: {
+          _id: { year: "$year", month: "$month" },
+          files: {
+            $push: {
+              _id: "$_id",
+              originalName: "$originalName",
+              ownerId: "$ownerId",
+              metadata: "$metadata",
+              isPublic: "$isPublic",
+              fullPath: "$fullPath",
+              fileSize: "$fileSize",
+              mimeType: "$mimeType",
+              createdAt: "$createdAt",
+            },
+          },
+        },
+      },
+
+      // 4️⃣ Sort each month's files by date DESC
+      {
+        $addFields: {
+          files: {
+            $sortArray: {
+              input: "$files",
+              sortBy: { createdAt: -1 },
+            },
+          },
+        },
+      },
+
+      // 5️⃣ Sort months DESC (newest first)
+      {
+        $sort: {
+          "_id.year": -1,
+          "_id.month": -1,
+        },
+      },
+
+      // 6️⃣ Format response cleanly
+      {
+        $project: {
+          _id: 0,
+          year: "$_id.year",
+          month: "$_id.month",
+          files: 1,
+        },
+      },
+    ]);
+
+    return result.map((group) => {
+      return {
+        ...group,
+        files: group.files.map((f: any) =>
+          new ImageFileDto().fromFileObj(f, this.config.get("PROXY_URL")),
+        ),
+      };
+    });
+  }
+
   /**
    * Generate a unique file name inside a folder to avoid collisions.
    * This tries originalName, then originalName (copy), originalName (copy 2), etc.

@@ -74,8 +74,8 @@ export function MediaLibraryLayout() {
             Photos
           </Link>
           <Link
-            to="#"
-            className={getNavItemClass("#")}
+            to="/documents"
+            className={getNavItemClass("/documents")}
           >
             <svg
               className="w-5 h-5 mr-3"
@@ -93,8 +93,8 @@ export function MediaLibraryLayout() {
             Documents
           </Link>
           <Link
-            to="#"
-            className={getNavItemClass("#")}
+            to="/videos"
+            className={getNavItemClass("/videos")}
           >
             <svg
               className="w-5 h-5 mr-3"
