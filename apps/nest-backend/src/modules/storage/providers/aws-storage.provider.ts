@@ -394,8 +394,6 @@ export class AWSStorageProvider implements IStorageProvider {
       this.logger.error(
         `AWS S3 credential validation: head bucket failed: ${err?.message}`,
       );
-      console.error(err);
-      const errorCode = err?.name || err?.Code || "Unknown";
 
       return {
         isValid: false,

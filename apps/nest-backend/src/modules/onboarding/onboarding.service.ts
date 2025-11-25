@@ -256,7 +256,7 @@ export class OnboardingService {
     storageConfig.encryptedCredentials = this.encryptionService.encrypt(
       JSON.stringify(formattedCredentials), // pass as plain string
     );
-    debugger;
+    // debugger;
     try {
       // Validate credentials with the actual provider
       const validationResult = await this.validateCredentialsWithProvider(
@@ -284,6 +284,8 @@ export class OnboardingService {
           suggestions: validationResult.error?.suggestions || [],
         });
       }
+
+      // debugger;
 
       // Mark as validated and complete onboarding
       storageConfig.isValidated = true;

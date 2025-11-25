@@ -1,0 +1,25 @@
+// conf.toml
+
+provider="aws"
+key=""
+secret_key=""
+region="us-east-1"
+bucket_name=""
+
+org: org1
+  mount: /org1
+
+  users:
+    - avinash:String$4
+    - ashish:String$5
+
+  folers:
+    - org/public
+    - org/common
+    - org/avinash
+    - org/ashish 
+
+  mapping:
+    avinash: org/avinash: rw
+    avinash: org/common: r
+    public: org/public: r
