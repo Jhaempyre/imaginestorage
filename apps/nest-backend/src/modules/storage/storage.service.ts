@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model, Types } from "mongoose";
@@ -25,23 +25,27 @@ import {
 } from "@/common/interfaces/storage.interface";
 import { STORAGE_PROVIDERS } from "@/common/constants/storage.constants";
 import { EncryptionService } from "@/common/services/encription.service";
+import { GCPStorageProvider } from "./providers/gcp-storage.provider";
 
 export type SupportedProviders =
   (typeof STORAGE_PROVIDERS)[keyof typeof STORAGE_PROVIDERS];
 
 @Injectable()
 export class StorageService {
+  private readonly logger = new Logger(StorageService.name);
   private providers: Map<SupportedProviders, IStorageProvider> = new Map();
   // private activeProvider?: IStorageProviderService;
 
   constructor(
     private configService: ConfigService,
     private awsProvider: AWSStorageProvider,
+    private gcpProvider: GCPStorageProvider,
     @InjectModel(UserStorageConfig.name)
     private userStorageConfigModel: Model<UserStorageConfigDocument>,
     private encryptionService: EncryptionService,
   ) {
     this.registerProvider("aws", this.awsProvider);
+    this.registerProvider("gcp", this.gcpProvider);
   }
 
   async onModuleInit() {
@@ -74,6 +78,9 @@ export class StorageService {
 
     const provider = this.providers.get(userConfig.provider);
     const decryptedCredentials = this.getDecryptedCredentials(userConfig);
+    this.logger.log(
+      `Decrypted credentials for user ${userId}: ${JSON.stringify(decryptedCredentials)}`,
+    );
     await provider.initialize(decryptedCredentials);
 
     // Check if provider is configured
@@ -219,6 +226,9 @@ export class StorageService {
     params: any,
   ): Promise<StorageValidationResult> {
     const providerService = this.providers.get(provider);
+    if (!providerService) {
+      throw new Error("Unsupported storage provider");
+    }
     return providerService.validateCredentials(params);
   }
 

@@ -5,6 +5,7 @@ import { AWSStorageProvider } from './providers/aws-storage.provider';
 import { MongooseModule } from '@nestjs/mongoose';
 import { UserStorageConfig, UserStorageConfigSchema } from '@/schemas/user-storage-config.schema';
 import { EncryptionService } from '@/common/services/encription.service';
+import { GCPStorageProvider } from './providers/gcp-storage.provider';
 
 @Module({
   imports: [
@@ -13,7 +14,7 @@ import { EncryptionService } from '@/common/services/encription.service';
     ]),
   ],
   controllers: [StorageController],
-  providers: [StorageService, AWSStorageProvider, EncryptionService],
+  providers: [StorageService, AWSStorageProvider, GCPStorageProvider, EncryptionService],
   exports: [StorageService],
 })
 export class StorageModule { }

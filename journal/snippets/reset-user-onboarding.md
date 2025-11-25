@@ -1,5 +1,5 @@
 ```js
-let user = db.users.findOne({email: "dmldome918@gmail.com"});
+let user = db.users.findOne({email: "avinash2002a@gmail.com"});
 db.users.updateOne({_id: user._id}, {$set: {isOnboardingComplete: false}});
 db.userstorageconfigs.updateOne(
   {userId: user._id},

@@ -1,14 +1,37 @@
 // src/adapters/gcp.ts
 import { Storage } from "@google-cloud/storage";
 
-export async function gcpGetStream(creds: any, file: any, range?: string) {
+export interface GCPConfig {
+  type: string;
+  project_id: string;
+  private_key_id: string;
+  private_key: string;
+  client_email: string;
+  client_id: string;
+  universe_domain: string;
+  bucket: string;
+}
+
+export async function gcpGetStream(
+  creds: GCPConfig,
+  file: any,
+  range?: string
+) {
   const storage = new Storage({
-    projectId: creds.projectId,
-    credentials: JSON.parse(creds.keyFile),
+    projectId: creds.project_id,
+    credentials: {
+      type: creds.type,
+      private_key: creds.private_key,
+      client_email: creds.client_email,
+      client_id: creds.client_id,
+      universe_domain: creds.universe_domain,
+    },
   });
 
-  const bucket = storage.bucket(creds.bucketName);
-  const gFile = bucket.file(file.providerMetadata.path);
+  console.log("GCP Get Stream - File Path:", file);
+
+  const bucket = storage.bucket(creds.bucket);
+  const gFile = bucket.file(file.fullPath.slice(4));
 
   const metadata = (await gFile.getMetadata())[0];
 

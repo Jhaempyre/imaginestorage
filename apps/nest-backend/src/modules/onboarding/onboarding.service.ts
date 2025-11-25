@@ -31,6 +31,7 @@ import {
 } from "@/common/constants/routes.constants";
 import { EncryptionService } from "@/common/services/encription.service";
 import { StorageService } from "../storage/storage.service";
+import { GCPConfig } from "../storage/providers/gcp-storage.provider";
 
 @Injectable()
 export class OnboardingService {
@@ -243,14 +244,19 @@ export class OnboardingService {
     // Validate credentials format based on provider
     this.validateCredentialsFormat(storageConfig.provider, credentials);
 
+    const formattedCredentials: StorageCredentials = this.formatCredential(
+      storageConfig.provider,
+      credentials,
+    );
+
     // Update storage config with credentials
     storageConfig.isValidated = false;
     storageConfig.validationError = null;
     storageConfig.credentials = {};
     storageConfig.encryptedCredentials = this.encryptionService.encrypt(
-      JSON.stringify(credentials), // pass as plain string
+      JSON.stringify(formattedCredentials), // pass as plain string
     );
-
+    debugger;
     try {
       // Validate credentials with the actual provider
       const validationResult = await this.validateCredentialsWithProvider(
@@ -487,5 +493,25 @@ export class OnboardingService {
     return (
       suggestions[provider] || ["Please check your credentials and try again"]
     );
+  }
+
+  private formatCredential(
+    provider: StorageProvider,
+    credentials: StorageCredentials,
+  ): StorageCredentials {
+    if (provider === "gcp") {
+      const parsedKeyFile = JSON.parse(credentials.keyFile);
+      return {
+        type: parsedKeyFile.type,
+        project_id: parsedKeyFile.project_id,
+        private_key_id: parsedKeyFile.private_key_id,
+        private_key: parsedKeyFile.private_key,
+        client_email: parsedKeyFile.client_email,
+        client_id: parsedKeyFile.client_id,
+        universe_domain: parsedKeyFile.universe_domain,
+        bucket: credentials.bucketName,
+      } as GCPConfig
+    }
+    return credentials;
   }
 }
