@@ -30,17 +30,34 @@ export async function gcpGetStream(
 
   console.log("GCP Get Stream - File Path:", file);
 
+  // Parse the Range header ("bytes=start-end")
+  let start: number | undefined;
+  let end: number | undefined;
+
+  if (range) {
+    const match = range.match(/bytes=(\d+)-(\d*)/);
+    if (match) {
+      start = parseInt(match[1], 10);
+      end = match[2] ? parseInt(match[2], 10) : undefined;
+    }
+  }
+
   const bucket = storage.bucket(creds.bucket);
   const gFile = bucket.file(file.fullPath.slice(4));
 
   const metadata = (await gFile.getMetadata())[0];
 
+  const stream = gFile.createReadStream(
+    start !== undefined ? { start, end } : {}
+  );
+
   return {
-    stream: gFile.createReadStream(),
+    stream: stream,
     meta: {
       mime: metadata.contentType,
       length: Number(metadata.size),
-      range: null,
+      // range: metadata.contentRange,
+      range: `bytes ${start}-${end ?? (metadata.size - 1)}/${metadata.size}`,
     },
   };
 }
