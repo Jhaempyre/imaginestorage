@@ -1,1 +1,1 @@
-kuch kuch theek hae
+kuch nhi
