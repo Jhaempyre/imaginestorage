@@ -1,36 +1,34 @@
-import { Injectable, Logger } from "@nestjs/common";
-import {
-  S3Client,
-  PutObjectCommand,
-  GetObjectCommand,
-  DeleteObjectCommand,
-  HeadBucketCommand,
-  ListObjectsV2Command,
-  CreateBucketCommand,
-  CopyObjectCommand,
-} from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import * as fs from "fs";
-import * as path from "path";
-import {
-  IStorageProvider,
-  UploadParams,
-  UploadResult,
-  DownloadUrlParams,
-  DeleteParams,
-  StorageConfig,
-  GetFilesParams,
-  StorageProviderMetadata,
-  StorageValidationResult,
-  CreateFolderParams,
-  CreateFolderResults,
-} from "@/common/interfaces/storage.interface";
 import {
   STORAGE_PROVIDER_METADATA,
   STORAGE_PROVIDERS,
   STORAGE_VALIDATION_ERRORS,
 } from "@/common/constants/storage.constants";
+import {
+  CreateFolderParams,
+  CreateFolderResults,
+  DeleteParams,
+  DownloadUrlParams,
+  GetFilesParams,
+  IStorageProvider,
+  StorageConfig,
+  StorageProviderMetadata,
+  StorageValidationResult,
+  UploadParams,
+  UploadResult,
+} from "@/common/interfaces/storage.interface";
+import {
+  CopyObjectCommand,
+  DeleteObjectCommand,
+  GetObjectCommand,
+  HeadBucketCommand,
+  ListObjectsV2Command,
+  PutObjectCommand,
+  S3Client
+} from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { Injectable, Logger } from "@nestjs/common";
 import { randomBytes } from "crypto";
+import * as fs from "fs";
 
 export interface AWSConfig extends StorageConfig {
   accessKeyId: string;
@@ -51,6 +49,7 @@ export class AWSStorageProvider implements IStorageProvider {
   private isInitialized = false;
 
   async initialize(config: AWSConfig): Promise<void> {
+
     this.config = config;
 
     this.s3Client = new S3Client({
@@ -544,5 +543,21 @@ export class AWSStorageProvider implements IStorageProvider {
 
     await Promise.all(executing);
     return ret;
+  }
+
+  private _validateKeys(config: AWSConfig): boolean {
+    const requiredKeys = [
+      "region",
+      "bucketName",
+      "accessKeyId",
+      "secretAccessKey",
+    ];
+
+    for (const key of requiredKeys) {
+      if (!(key in config) || !config[key as keyof AWSConfig]) {
+        throw new Error(`AWS Storage configuration error: Missing key ${key}`);
+      }
+    }
+    return true;
   }
 }
