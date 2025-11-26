@@ -1,1 +1,1 @@
-sab barbaad
+kuch kuch theek hae
