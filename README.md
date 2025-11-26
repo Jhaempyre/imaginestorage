@@ -1,1 +1,1 @@
-kuch bhi se sab kuch 
+sab barbaad
