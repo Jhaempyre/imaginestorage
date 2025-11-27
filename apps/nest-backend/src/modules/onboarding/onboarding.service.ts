@@ -223,6 +223,8 @@ export class OnboardingService {
     userId: string,
     configureCredentialsDto: ConfigureCredentialsDto,
   ) {
+    console.log("----------------configureCredentials called----------------");
+    // debugger;
     const { credentials } = configureCredentialsDto;
 
     // Get user's storage config
@@ -261,7 +263,7 @@ export class OnboardingService {
       // Validate credentials with the actual provider
       const validationResult = await this.validateCredentialsWithProvider(
         storageConfig.provider,
-        credentials,
+        formattedCredentials,
       );
 
       this.logger.debug(
@@ -512,7 +514,7 @@ export class OnboardingService {
         client_id: parsedKeyFile.client_id,
         universe_domain: parsedKeyFile.universe_domain,
         bucket: credentials.bucketName,
-      } as GCPConfig
+      } as GCPConfig;
     }
     return credentials;
   }

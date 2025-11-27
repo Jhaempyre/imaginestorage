@@ -1,0 +1,225 @@
+# Installation
+
+Choose the installation method that best fits your project setup and requirements.
+
+## Option A: CDN Integration (Recommended for Quick Setup)
+
+The fastest way to get started is by including the widget directly from our CDN.
+
+### Basic CDN Setup
+
+Add the script tag to your HTML:
+
+```html
+<script src="https://cdn.imaginarystore.com/widget/v1/widget.js"></script>
+```
+
+### Version-Specific CDN
+
+For production applications, pin to a specific version:
+
+```html
+<script src="https://cdn.imaginarystore.com/widget/v1.0.0/widget.js"></script>
+```
+
+### CDN with Integrity Check
+
+For enhanced security, include the integrity hash:
+
+```html
+<script 
+    src="https://cdn.imaginarystore.com/widget/v1.0.0/widget.js"
+    integrity="sha384-..."
+    crossorigin="anonymous">
+</script>
+```
+
+### CDN Example
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My App</title>
+</head>
+<body>
+    <!-- Your content -->
+    
+    <!-- Load ImaginaryWidget from CDN -->
+    <script src="https://cdn.imaginarystore.com/widget/v1/widget.js"></script>
+    
+    <script>
+        // Widget is now available as window.ImaginaryWidget
+        const widget = new ImaginaryWidget();
+        
+        widget.init({
+            apiKey: 'your-api-key',
+            apiUrl: 'https://your-api.com'
+        });
+    </script>
+</body>
+</html>
+```
+
+### CDN Advantages
+
+- ✅ **Quick setup** - No build process required
+- ✅ **Global CDN** - Fast loading worldwide
+- ✅ **Automatic caching** - Better performance
+- ✅ **Version control** - Pin to specific versions
+
+## Option B: NPM Package (Not Available Yet)
+
+*This option will be available in a future release.*
+
+Once available, you'll be able to install via npm:
+
+```bash
+# Future release
+npm install @imaginarystore/widget
+```
+
+```javascript
+// Future usage
+import ImaginaryWidget from '@imaginarystore/widget';
+
+const widget = new ImaginaryWidget();
+```
+
+## Option C: Self-hosted (Build from Source)
+
+For organizations that require self-hosting or custom modifications.
+
+### Prerequisites
+
+Ensure you have the following installed:
+
+- **Node.js** 16+ 
+- **npm** 7+
+- **Git**
+
+### Step 1: Clone the Repository
+
+```bash
+# Clone the repository
+git clone https://github.com/your-org/imaginary-store.git
+
+# Navigate to widget directory
+cd imaginary-store/apps/imaginary-widget
+```
+
+### Step 2: Install Dependencies
+
+```bash
+npm install
+```
+
+### Step 3: Build the Widget
+
+```bash
+# Production build
+npm run build
+
+# Development build with watching
+npm run dev
+```
+
+### Step 4: Deploy the Built Files
+
+After building, you'll find the distribution files in the `dist/` directory:
+
+| File | Description | Use Case |
+|------|-------------|----------|
+| `widget.js` | Development build | Development and debugging |
+| `widget.min.js` | Minified production build | Production deployment |
+| `widget.js.map` | Source map | Error tracking and debugging |
+
+### Step 5: Host the Files
+
+Upload the built files to your CDN or web server:
+
+```html
+<!-- Include from your own server -->
+<script src="https://your-cdn.com/path/to/widget.js"></script>
+```
+
+## Testing Your Installation
+
+### Quick Test
+
+Create a test HTML file to verify your installation:
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Installation Test</title>
+</head>
+<body>
+    <h1>ImaginaryWidget Installation Test</h1>
+    <button id="test-btn">Test Widget</button>
+    
+    <!-- Include widget (adjust path for your installation method) -->
+    <script src="https://cdn.imaginarystore.com/widget/v1/widget.js"></script>
+    
+    <script>
+        // Test if widget is available
+        if (typeof ImaginaryWidget !== 'undefined') {
+            console.log('✅ ImaginaryWidget loaded successfully');
+            
+            document.getElementById('test-btn').addEventListener('click', () => {
+                const widget = new ImaginaryWidget();
+                console.log('✅ Widget instance created');
+                alert('Installation successful!');
+            });
+        } else {
+            console.error('❌ ImaginaryWidget not found');
+            alert('Installation failed!');
+        }
+    </script>
+</body>
+</html>
+```
+
+### Browser Console Test
+
+Open your browser's developer tools and run:
+
+```javascript
+// Check if widget is available
+console.log(typeof ImaginaryWidget); // Should output: "function"
+
+// Create test instance
+const testWidget = new ImaginaryWidget();
+console.log(testWidget); // Should show widget object
+```
+
+## Environment-Specific Setup
+
+### Development Environment
+
+For development, use the non-minified version for easier debugging:
+
+```html
+<script src="https://cdn.imaginarystore.com/widget/v1/widget.js"></script>
+```
+
+### Production Environment
+
+Use the minified version with integrity checking:
+
+```html
+<script 
+    src="https://cdn.imaginarystore.com/widget/v1.0.0/widget.min.js"
+    integrity="sha384-..."
+    crossorigin="anonymous">
+</script>
+```
+
+## Next Steps
+
+Once you've installed ImaginaryWidget, proceed to:
+
+1. **[Configuration](/docs/upload-widget/configuration)** - Set up your widget with API keys and options
+2. **[API Reference](/docs/upload-widget/api-reference)** - Learn about all available methods
+3. **[Quick Start](/docs/upload-widget/quick-start)** - Get your first upload working

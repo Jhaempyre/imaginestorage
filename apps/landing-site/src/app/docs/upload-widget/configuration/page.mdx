@@ -1,0 +1,231 @@
+# Configuration
+
+Learn how to configure ImaginaryWidget for your specific needs with comprehensive options and examples.
+
+## Required Configuration
+
+Every ImaginaryWidget instance requires these essential configuration options.
+
+### API Key Setup
+
+Your API key authenticates requests to the ImaginaryStore backend:
+
+```javascript
+const widget = new ImaginaryWidget();
+
+await widget.init({
+    apiKey: 'pk_live_1234567890abcdef',  // Your public API key
+    apiUrl: 'https://api.yoursite.com'   // Your backend API URL
+});
+```
+
+### Getting Your API Key
+
+1. Log into your ImaginaryStore dashboard
+2. Navigate to **Settings** → **API Keys**
+3. Copy your **Public Key** (starts with `pk_`)
+4. Never use your secret key in client-side code
+
+### Backend API URL
+
+The API URL should point to your ImaginaryStore backend:
+
+```javascript
+// Development
+apiUrl: 'http://localhost:3000/api'
+
+// Staging
+apiUrl: 'https://staging-api.yoursite.com/api'
+
+// Production
+apiUrl: 'https://api.yoursite.com/api'
+```
+
+## Optional Configuration
+
+Customize the widget behavior with these optional settings.
+
+### Mount Target Customization
+
+Control where the widget modal appears in your DOM:
+
+```javascript
+await widget.init({
+    apiKey: 'your-key',
+    apiUrl: 'your-url',
+    
+    // Mount options
+    mount: '#upload-container',     // CSS selector
+    // or
+    mount: document.getElementById('container'), // DOM element
+    // or
+    mount: null  // Default: appends to document.body
+});
+```
+
+### Event Handlers
+
+Set up event callbacks during initialization:
+
+```javascript
+await widget.init({
+    apiKey: 'your-key',
+    apiUrl: 'your-url',
+    
+    // Upload events
+    onSuccess: (files) => {
+        console.log('Upload completed:', files);
+        showNotification('Files uploaded successfully!');
+    },
+    
+    onError: (error) => {
+        console.error('Upload failed:', error);
+        showNotification('Upload failed: ' + error.message, 'error');
+    },
+    
+    onProgress: (progress) => {
+        console.log(`Upload progress: ${progress.percent}%`);
+        updateProgressBar(progress.percent);
+    },
+    
+    onComplete: (result) => {
+        console.log('All uploads finished:', result);
+        refreshFileList();
+    }
+});
+```
+
+### UI Customization Options
+
+*Note: Advanced UI customization is not available in the current version but is planned for future releases.*
+
+Currently available UI options:
+
+```javascript
+await widget.init({
+    apiKey: 'your-key',
+    apiUrl: 'your-url',
+    
+    // UI options (future)
+    theme: 'light',              // 'light' | 'dark' (planned)
+    primaryColor: '#3b82f6',     // Custom primary color (planned)
+    showProgress: true,          // Show progress indicators
+    allowMultiple: true,         // Allow multiple file selection
+    dragAndDrop: true           // Enable drag & drop
+});
+```
+
+## Complete Configuration Example
+
+Here's a comprehensive configuration example with all available options:
+
+```javascript
+const widget = new ImaginaryWidget();
+
+try {
+    await widget.init({
+        // Required
+        apiKey: 'pk_live_1234567890abcdef',
+        apiUrl: 'https://api.yoursite.com/api',
+        
+        // Optional
+        mount: '#upload-modal-container',
+        
+        // Event handlers
+        onSuccess: (files) => {
+            console.log('✅ Upload successful:', files);
+            
+            // Update UI with uploaded files
+            files.forEach(file => {
+                addFileToList(file);
+            });
+            
+            // Show success message
+            showNotification(`Successfully uploaded ${files.length} file(s)`, 'success');
+            
+            // Close widget
+            widget.close();
+        },
+        
+        onError: (error) => {
+            console.error('❌ Upload failed:', error);
+            
+            // Show user-friendly error message
+            showNotification(getErrorMessage(error), 'error');
+            
+            // Log for debugging
+            logErrorToService(error);
+        },
+        
+        onProgress: (progress) => {
+            console.log(`📤 Upload progress: ${progress.percent}%`);
+            
+            // Update progress bar
+            updateProgressBar(progress.percent, progress.loaded, progress.total);
+            
+            // Show file-specific progress if available
+            if (progress.file) {
+                updateFileProgress(progress.file.name, progress.percent);
+            }
+        },
+        
+        onComplete: (result) => {
+            console.log('🎉 All uploads completed:', result);
+            
+            // Refresh file listings
+            refreshFileList();
+            
+            // Analytics tracking
+            trackEvent('upload_completed', {
+                fileCount: result.successful?.length || 0,
+                totalSize: result.totalSize,
+                duration: result.duration
+            });
+            
+            // Reset form if needed
+            resetUploadForm();
+        }
+    });
+    
+    console.log('✅ ImaginaryWidget initialized successfully');
+    
+} catch (error) {
+    console.error('❌ Failed to initialize widget:', error);
+    showNotification('Failed to initialize upload widget', 'error');
+}
+```
+
+## Configuration Validation
+
+The widget validates your configuration and provides helpful error messages:
+
+### Invalid API Key
+
+```javascript
+// ❌ Invalid API key format
+await widget.init({
+    apiKey: 'invalid-key',  // Should start with 'pk_'
+    apiUrl: 'https://api.example.com'
+});
+// Throws: "Invalid API key format. API key must start with 'pk_'"
+```
+
+### Missing Required Options
+
+```javascript
+// ❌ Missing required configuration
+await widget.init({
+    apiKey: 'pk_valid_key'
+    // Missing apiUrl
+});
+// Throws: "apiUrl is required"
+```
+
+## Next Steps
+
+Now that you've configured your widget:
+
+1. **[API Reference](/docs/upload-widget/api-reference)** - Learn about all available methods
+2. **[Events & Callbacks](/docs/upload-widget/events-callbacks)** - Deep dive into event handling
+3. **[File Validation](/docs/upload-widget/file-validation)** - Set up file restrictions
+4. **[Examples](/docs/upload-widget/examples)** - See real-world implementations

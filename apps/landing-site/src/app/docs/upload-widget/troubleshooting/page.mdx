@@ -1,0 +1,538 @@
+"use client"
+
+# Troubleshooting
+
+Common issues and solutions when working with ImaginaryWidget.
+
+## Common Integration Issues
+
+### Widget Not Loading
+
+**Problem:** `ImaginaryWidget is not defined` error
+
+**Solutions:**
+
+1. **Check script loading order:**
+```html
+<!-- ❌ Wrong: Widget script after your code -->
+<script>
+    const widget = new ImaginaryWidget(); // Error: not defined
+</script>
+<script src="https://cdn.imaginarystore.com/widget/v1/widget.js"></script>
+
+<!-- ✅ Correct: Widget script before your code -->
+<script src="https://cdn.imaginarystore.com/widget/v1/widget.js"></script>
+<script>
+    const widget = new ImaginaryWidget(); // Works correctly
+</script>
+```
+
+2. **Verify CDN URL is correct:**
+```html
+<!-- Check that the URL is accessible and returns JavaScript content -->
+<script src="https://cdn.imaginarystore.com/widget/v1/widget.js"></script>
+```
+
+3. **Check network connectivity:**
+```javascript
+// Test if script loaded successfully
+if (typeof ImaginaryWidget === 'undefined') {
+    console.error('Failed to load ImaginaryWidget. Check network connectivity.');
+    // Show fallback UI or error message
+}
+```
+
+### Initialization Failures
+
+**Problem:** Widget initialization fails with various errors
+
+**Common Causes & Solutions:**
+
+#### Invalid API Key
+
+```javascript
+// ❌ Common mistakes
+await widget.init({
+    apiKey: 'sk_secret_key',          // Wrong: using secret key
+    apiKey: 'invalid-format',         // Wrong: invalid format
+    apiKey: '',                       // Wrong: empty key
+});
+
+// ✅ Correct format
+await widget.init({
+    apiKey: 'pk_live_1234567890abcdef', // Correct: public key format
+    apiUrl: 'https://api.yoursite.com'
+});
+```
+
+#### Backend Connection Issues
+
+```javascript
+// Debug connection issues
+try {
+    await widget.init({
+        apiKey: 'pk_live_1234567890abcdef',
+        apiUrl: 'https://api.yoursite.com/api'
+    });
+} catch (error) {
+    console.error('Initialization failed:', error);
+    
+    if (error.message.includes('network') || error.message.includes('fetch')) {
+        console.error('Backend connection failed. Check:');
+        console.error('1. Backend URL is correct');
+        console.error('2. Backend is running and accessible');
+        console.error('3. CORS is properly configured');
+    }
+}
+```
+
+## CORS Problems
+
+**Problem:** Cross-origin requests blocked
+
+**Error Messages:**
+```
+Access to fetch at 'https://api.yoursite.com' from origin 'https://yoursite.com' 
+has been blocked by CORS policy
+```
+
+**Solutions:**
+
+### Backend CORS Configuration
+
+**Express.js Example:**
+```javascript
+const cors = require('cors');
+
+app.use(cors({
+    origin: [
+        'https://yoursite.com',
+        'https://www.yoursite.com',
+        'http://localhost:3000'  // For development
+    ],
+    credentials: true
+}));
+```
+
+**NestJS Example:**
+```typescript
+// main.ts
+app.enableCors({
+    origin: [
+        'https://yoursite.com',
+        'https://www.yoursite.com',
+        /^http:\/\/localhost:\d+$/  // All localhost ports
+    ],
+    credentials: true
+});
+```
+
+### Development CORS Issues
+
+**Problem:** CORS errors in local development
+
+**Solutions:**
+
+1. **Configure development server:**
+```javascript
+// If using Webpack dev server
+module.exports = {
+    devServer: {
+        proxy: {
+            '/api': {
+                target: 'http://localhost:3000',
+                changeOrigin: true
+            }
+        }
+    }
+};
+```
+
+2. **Use development backend URL:**
+```javascript
+const isDev = window.location.hostname === 'localhost';
+const apiUrl = isDev 
+    ? 'http://localhost:3000/api'  // Development backend
+    : 'https://api.yoursite.com/api';  // Production backend
+```
+
+## API Key Issues
+
+### Invalid API Key Format
+
+**Problem:** API key validation errors
+
+**Common Issues:**
+
+```javascript
+// ❌ Common API key mistakes
+'sk_secret_1234'     // Wrong: secret key instead of public
+'pk_test_'           // Wrong: incomplete key
+'1234567890'         // Wrong: not a proper API key format
+```
+
+**Solution:**
+```javascript
+function validateApiKey(apiKey) {
+    if (!apiKey) {
+        throw new Error('API key is required');
+    }
+    
+    if (!apiKey.startsWith('pk_')) {
+        throw new Error('API key must start with "pk_" (public key)');
+    }
+    
+    if (apiKey.length < 20) {
+        throw new Error('API key appears to be incomplete');
+    }
+    
+    return true;
+}
+
+// Use before initializing widget
+try {
+    validateApiKey(yourApiKey);
+    await widget.init({ apiKey: yourApiKey, apiUrl: yourApiUrl });
+} catch (error) {
+    console.error('API key validation failed:', error.message);
+}
+```
+
+### Expired or Revoked API Keys
+
+**Problem:** API returns 401 Unauthorized errors
+
+**Debug Steps:**
+
+1. **Test API key manually:**
+```bash
+curl -H "Authorization: Bearer pk_your_api_key" \
+     https://api.yoursite.com/api/auth/verify
+```
+
+2. **Check API key status in dashboard:**
+   - Log into your ImaginaryStore dashboard
+   - Navigate to Settings → API Keys
+   - Verify key is active and not revoked
+
+3. **Handle auth errors gracefully:**
+```javascript
+widget.on('upload:error', (error) => {
+    if (error.code === 'AUTH_ERROR') {
+        console.error('Authentication failed. API key may be invalid or expired.');
+        
+        // Show user-friendly message
+        showErrorMessage('Upload service unavailable. Please contact support.');
+        
+        // Log for admin attention
+        logAuthError(error);
+    }
+});
+```
+
+## File Upload Failures
+
+### File Size Limits
+
+**Problem:** Files rejected due to size constraints
+
+**Solutions:**
+
+1. **Check constraints before upload:**
+```javascript
+function validateFileSize(file) {
+    const constraints = widget.getConstraints();
+    if (!constraints) return true;
+    
+    if (file.size > constraints.maxFileSize) {
+        const maxSizeMB = Math.round(constraints.maxFileSize / (1024 * 1024));
+        throw new Error(`File "${file.name}" is too large. Maximum size: ${maxSizeMB}MB`);
+    }
+    
+    return true;
+}
+
+// Validate before opening widget
+document.getElementById('file-input').addEventListener('change', (event) => {
+    const files = Array.from(event.target.files);
+    
+    try {
+        files.forEach(validateFileSize);
+        widget.open();
+    } catch (error) {
+        alert(error.message);
+    }
+});
+```
+
+2. **Display file size limits to users:**
+```javascript
+widget.on('core:initialized', () => {
+    const constraints = widget.getConstraints();
+    if (constraints) {
+        const maxSizeMB = Math.round(constraints.maxFileSize / (1024 * 1024));
+        document.getElementById('size-limit').textContent = 
+            `Maximum file size: ${maxSizeMB}MB`;
+    }
+});
+```
+
+### File Type Restrictions
+
+**Problem:** Files rejected due to MIME type restrictions
+
+**Solutions:**
+
+1. **Show supported file types:**
+```javascript
+function displaySupportedTypes() {
+    const constraints = widget.getConstraints();
+    if (!constraints) return;
+    
+    const types = constraints.allowedMimeTypes;
+    const friendlyTypes = types.map(type => {
+        const extensions = {
+            'image/jpeg': 'JPEG',
+            'image/png': 'PNG', 
+            'image/gif': 'GIF',
+            'application/pdf': 'PDF',
+            'text/plain': 'TXT'
+        };
+        return extensions[type] || type;
+    });
+    
+    document.getElementById('supported-types').textContent = 
+        `Supported types: ${friendlyTypes.join(', ')}`;
+}
+```
+
+2. **Validate file types client-side:**
+```javascript
+function validateFileType(file) {
+    const constraints = widget.getConstraints();
+    if (!constraints) return true;
+    
+    if (!constraints.allowedMimeTypes.includes(file.type)) {
+        throw new Error(`File type "${file.type}" is not supported`);
+    }
+    
+    return true;
+}
+```
+
+## Network and Connectivity Issues
+
+### Slow Upload Performance
+
+**Problem:** Uploads are extremely slow or timing out
+
+**Diagnostic Steps:**
+
+1. **Check network speed:**
+```javascript
+// Simple network speed test
+async function testNetworkSpeed() {
+    const startTime = Date.now();
+    const testImage = new Image();
+    
+    return new Promise((resolve) => {
+        testImage.onload = () => {
+            const duration = Date.now() - startTime;
+            console.log(`Network test completed in ${duration}ms`);
+            resolve(duration < 5000); // Consider good if < 5 seconds
+        };
+        
+        testImage.onerror = () => resolve(false);
+        testImage.src = 'https://httpbin.org/delay/1?' + Math.random();
+    });
+}
+
+// Use before large uploads
+const networkOk = await testNetworkSpeed();
+if (!networkOk) {
+    console.warn('Network connection appears slow');
+}
+```
+
+2. **Monitor upload progress:**
+```javascript
+let uploadStartTime;
+
+widget.on('upload:progress', (progress) => {
+    if (!uploadStartTime) uploadStartTime = Date.now();
+    
+    const elapsed = (Date.now() - uploadStartTime) / 1000;
+    const speed = progress.loaded / elapsed; // bytes per second
+    
+    if (speed < 10000) { // Less than 10KB/s
+        console.warn('Upload speed is very slow:', Math.round(speed), 'bytes/s');
+    }
+});
+```
+
+### Upload Interruptions
+
+**Problem:** Uploads fail due to network interruptions
+
+**Solutions:**
+
+1. **Implement retry logic:**
+```javascript
+let retryCount = 0;
+const maxRetries = 3;
+
+widget.on('upload:error', async (error) => {
+    if (error.code === 'NETWORK_ERROR' && retryCount < maxRetries) {
+        retryCount++;
+        console.log(`Network error, retrying (${retryCount}/${maxRetries})...`);
+        
+        // Wait before retry
+        await new Promise(resolve => setTimeout(resolve, 2000 * retryCount));
+        
+        // Retry upload
+        widget.open();
+    } else {
+        console.error('Upload failed after retries:', error);
+        showErrorMessage('Upload failed. Please check your connection and try again.');
+    }
+});
+
+widget.on('upload:success', () => {
+    retryCount = 0; // Reset on success
+});
+```
+
+2. **Handle connection status:**
+```javascript
+// Monitor online/offline status
+window.addEventListener('online', () => {
+    console.log('Connection restored');
+    showInfoMessage('Connection restored. You can resume uploading.');
+});
+
+window.addEventListener('offline', () => {
+    console.log('Connection lost');
+    showWarningMessage('Connection lost. Uploads will resume when connection is restored.');
+});
+```
+
+## Browser Compatibility Issues
+
+### Outdated Browser Features
+
+**Problem:** Widget fails in older browsers
+
+**Detection & Handling:**
+
+```javascript
+function checkBrowserCompatibility() {
+    const requiredFeatures = {
+        'Fetch API': 'fetch' in window,
+        'ES6 Classes': (function() {
+            try { eval('class Test {}'); return true; }
+            catch(e) { return false; }
+        })(),
+        'File API': 'FileReader' in window,
+        'Drag and Drop': 'ondragstart' in document.createElement('div')
+    };
+    
+    const unsupported = Object.entries(requiredFeatures)
+        .filter(([feature, supported]) => !supported)
+        .map(([feature]) => feature);
+    
+    if (unsupported.length > 0) {
+        console.error('Browser compatibility issues:', unsupported);
+        showErrorMessage(
+            `Your browser doesn't support required features: ${unsupported.join(', ')}. ` +
+            'Please update your browser or use a modern browser like Chrome, Firefox, or Safari.'
+        );
+        return false;
+    }
+    
+    return true;
+}
+
+// Check before initializing widget
+if (checkBrowserCompatibility()) {
+    const widget = new ImaginaryWidget();
+    // ... continue with initialization
+}
+```
+
+## Debugging Tools and Techniques
+
+### Enable Debug Mode
+
+```javascript
+// Enable detailed logging
+localStorage.setItem('imaginary-widget-debug', 'true');
+
+// Widget will now log detailed information to console
+const widget = new ImaginaryWidget();
+```
+
+### Network Inspection
+
+1. **Open Browser DevTools** (F12)
+2. **Go to Network tab**
+3. **Reproduce the issue**
+4. **Look for failed requests** (red entries)
+5. **Check request/response details**
+
+### Console Debugging
+
+```javascript
+// Log all widget events
+const allEvents = [
+    'upload:progress', 'upload:success', 'upload:error', 'upload:complete',
+    'widget:open', 'widget:close', 'core:initialized'
+];
+
+allEvents.forEach(event => {
+    widget.on(event, (data) => {
+        console.log(`[Widget Event] ${event}:`, data);
+    });
+});
+```
+
+## Getting Additional Help
+
+### Information to Provide
+
+When reporting issues, include:
+
+1. **Browser and version**
+2. **Error messages from console**
+3. **Network tab screenshots**
+4. **Widget configuration (without API keys)**
+5. **Steps to reproduce**
+
+### Diagnostic Script
+
+```javascript
+// Run this script to gather diagnostic information
+function gatherDiagnostics() {
+    const info = {
+        userAgent: navigator.userAgent,
+        timestamp: new Date().toISOString(),
+        widgetVersion: typeof ImaginaryWidget !== 'undefined' ? '1.0.0' : 'not loaded',
+        features: {
+            fetch: 'fetch' in window,
+            fileAPI: 'FileReader' in window,
+            dragDrop: 'ondragstart' in document.createElement('div')
+        },
+        constraints: widget?.getConstraints() || null,
+        isInitialized: widget?.isInitialized || false
+    };
+    
+    console.log('Diagnostic Information:', JSON.stringify(info, null, 2));
+    return info;
+}
+
+// Copy diagnostic info to clipboard
+function copyDiagnostics() {
+    const diagnostics = gatherDiagnostics();
+    navigator.clipboard.writeText(JSON.stringify(diagnostics, null, 2));
+    console.log('Diagnostic information copied to clipboard');
+}
+```

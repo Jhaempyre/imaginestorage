@@ -1,0 +1,72 @@
+# Backend Integration
+
+Learn how to integrate ImaginaryWidget with your backend API endpoints.
+
+## Required API Endpoints
+
+Your backend must implement these endpoints for the widget to function properly.
+
+### GET /api-keys/constraints/:publicKey
+
+Get upload constraints for the provided API key.
+
+**Response:**
+```json
+{
+  "maxFileSize": 10485760,
+  "allowedMimeTypes": ["image/jpeg", "image/png", "application/pdf"],
+  "maxFiles": 10,
+  "allowedDomains": ["yoursite.com"]
+}
+```
+
+### POST /upload/token
+
+Request an upload token for secure file uploads.
+
+**Request:**
+```json
+{
+  "fileName": "document.pdf",
+  "fileSize": 2500000,
+  "mimeType": "application/pdf"
+}
+```
+
+**Response:**
+```json
+{
+  "token": "upload_token_abc123",
+  "uploadUrl": "https://api.yoursite.com/upload",
+  "expiresAt": "2024-01-15T11:00:00Z"
+}
+```
+
+### POST /upload
+
+Handle file uploads with token authentication.
+
+**Request:** Multipart form data with file and token.
+
+**Response:**
+```json
+{
+  "id": "file-uuid-1234",
+  "name": "document.pdf", 
+  "url": "https://cdn.yoursite.com/files/document.pdf",
+  "size": 2500000,
+  "uploadedAt": "2024-01-15T10:30:00Z"
+}
+```
+
+## API Response Formats
+
+All endpoints should return consistent JSON responses with proper error handling.
+
+## Authentication & Security
+
+Use API key authentication and implement proper security measures for file uploads.
+
+## CORS Configuration
+
+Configure your backend to allow cross-origin requests from your frontend domains.

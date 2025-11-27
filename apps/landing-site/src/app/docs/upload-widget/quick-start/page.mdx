@@ -1,0 +1,222 @@
+# Quick Start Guide
+
+Get ImaginaryWidget up and running in your web application in just a few minutes.
+
+## Prerequisites
+
+Before you begin, ensure you have:
+
+- ✅ A modern web browser (Chrome 60+, Firefox 55+, Safari 12+, Edge 79+)
+- ✅ An ImaginaryStore backend API running
+- ✅ A valid API key from your ImaginaryStore dashboard
+- ✅ Basic knowledge of HTML and JavaScript
+
+## Basic Installation Steps
+
+### Step 1: Include the Widget Script
+
+Add the ImaginaryWidget script to your HTML page:
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My App with File Upload</title>
+</head>
+<body>
+    <!-- Your page content -->
+    <button id="upload-btn">Upload Files</button>
+    
+    <!-- Include ImaginaryWidget -->
+    <script src="https://cdn.imaginarystore.com/widget/v1/widget.js"></script>
+</body>
+</html>
+```
+
+### Step 2: Initialize the Widget
+
+Create a new widget instance and configure it:
+
+```javascript
+// Initialize the widget
+const widget = new ImaginaryWidget();
+
+// Configure and initialize
+widget.init({
+    apiKey: 'your-public-api-key-here',
+    apiUrl: 'https://your-backend.com/api',
+    onSuccess: (files) => {
+        console.log('Upload successful:', files);
+        alert('Files uploaded successfully!');
+    },
+    onError: (error) => {
+        console.error('Upload failed:', error);
+        alert('Upload failed: ' + error.message);
+    }
+});
+```
+
+### Step 3: Add Upload Trigger
+
+Connect the widget to a button or event:
+
+```javascript
+// Get the upload button
+const uploadButton = document.getElementById('upload-btn');
+
+// Open widget when button is clicked
+uploadButton.addEventListener('click', () => {
+    widget.open();
+});
+```
+
+## Simple Integration Example
+
+Here's a complete working example:
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ImaginaryWidget Quick Start</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .upload-btn {
+            background-color: #3b82f6;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .upload-btn:hover {
+            background-color: #2563eb;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success { background-color: #dcfce7; color: #166534; }
+        .error { background-color: #fee2e2; color: #991b1b; }
+    </style>
+</head>
+<body>
+    <h1>File Upload Demo</h1>
+    <p>Click the button below to upload files to your ImaginaryStore.</p>
+    
+    <button id="upload-btn" class="upload-btn">
+        📁 Upload Files
+    </button>
+    
+    <div id="status"></div>
+
+    <!-- ImaginaryWidget Script -->
+    <script src="https://cdn.imaginarystore.com/widget/v1/widget.js"></script>
+    
+    <script>
+        // Initialize widget
+        const widget = new ImaginaryWidget();
+        const statusDiv = document.getElementById('status');
+        
+        // Configure widget
+        widget.init({
+            apiKey: 'your-public-api-key-here',
+            apiUrl: 'https://your-backend.com/api',
+            
+            onSuccess: (files) => {
+                console.log('Upload successful:', files);
+                statusDiv.innerHTML = `
+                    <div class="status success">
+                        ✅ Successfully uploaded ${files.length} file(s)!
+                    </div>
+                `;
+            },
+            
+            onError: (error) => {
+                console.error('Upload failed:', error);
+                statusDiv.innerHTML = `
+                    <div class="status error">
+                        ❌ Upload failed: ${error.message}
+                    </div>
+                `;
+            },
+            
+            onProgress: (progress) => {
+                statusDiv.innerHTML = `
+                    <div class="status">
+                        📤 Uploading... ${Math.round(progress.percent)}%
+                    </div>
+                `;
+            }
+        });
+        
+        // Setup upload button
+        document.getElementById('upload-btn').addEventListener('click', () => {
+            widget.open();
+        });
+    </script>
+</body>
+</html>
+```
+
+## First Upload Test
+
+### 1. Replace Configuration Values
+
+Update the example above with your actual values:
+
+```javascript
+{
+    apiKey: 'pk_your_actual_api_key',           // Your public API key
+    apiUrl: 'https://api.yoursite.com/api',    // Your backend URL
+    // ... rest of configuration
+}
+```
+
+### 2. Test the Upload
+
+1. Open your HTML file in a web browser
+2. Click the "Upload Files" button
+3. Select one or more files from your computer
+4. Watch the upload progress
+5. Verify the success message appears
+
+### 3. Verify Backend
+
+Check your ImaginaryStore dashboard or backend logs to confirm the files were uploaded successfully.
+
+## What's Next?
+
+🎉 **Congratulations!** You've successfully integrated ImaginaryWidget.
+
+### Explore More Features:
+
+- **[Installation Options](/docs/upload-widget/installation)** - Learn about CDN, npm, and self-hosted setups
+- **[Configuration](/docs/upload-widget/configuration)** - Discover all available options and settings
+- **[API Reference](/docs/upload-widget/api-reference)** - Dive deep into methods and events
+- **[Examples](/docs/upload-widget/examples)** - See real-world integration examples
+
+### Common Next Steps:
+
+1. **Customize the UI** - Learn about styling and theming options
+2. **Add file validation** - Set up file type and size restrictions
+3. **Handle events** - Implement custom success/error handling
+4. **Secure your setup** - Configure proper API key management
+
+## Need Help?
+
+If you run into any issues:
+
+1. Check the [Troubleshooting Guide](/docs/upload-widget/troubleshooting)
+2. Verify your API key and backend URL
+3. Check browser console for error messages
+4. Ensure your backend is running and accessible

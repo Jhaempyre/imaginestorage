@@ -1,0 +1,203 @@
+# Deployment
+
+Deploy ImaginaryWidget to production environments with best practices.
+
+## Production Build Process
+
+Create optimized builds for production deployment.
+
+### Building the Widget
+
+```bash
+# Navigate to widget directory
+cd apps/imaginary-widget
+
+# Install production dependencies only
+npm ci --production
+
+# Create production build
+npm run build
+
+# Output files will be in dist/
+ls dist/
+# widget.js
+# widget.js.map  
+# widget.min.js
+```
+
+### Build Outputs
+
+| File | Description | Use Case |
+|------|-------------|----------|
+| `widget.js` | Development build | Development and debugging |
+| `widget.min.js` | Minified production build | Production deployment |
+| `widget.js.map` | Source map | Error tracking and debugging |
+
+## CDN Deployment
+
+Deploy widget files to a Content Delivery Network for optimal performance.
+
+### Recommended CDN Setup
+
+```bash
+# Upload built files to your CDN
+aws s3 cp dist/widget.min.js s3://your-cdn-bucket/widget/v1/
+aws s3 cp dist/widget.js.map s3://your-cdn-bucket/widget/v1/
+
+# Set appropriate cache headers
+aws s3api put-object-acl --bucket your-cdn-bucket --key widget/v1/widget.min.js --cache-control "max-age=31536000"
+```
+
+### CDN Configuration
+
+Configure your CDN with appropriate headers:
+
+```
+Cache-Control: max-age=31536000
+Content-Type: application/javascript  
+Access-Control-Allow-Origin: *
+```
+
+## Version Management
+
+Implement proper versioning for production deployments.
+
+### Versioning Strategy
+
+```
+/widget/
+  ├── v1/
+  │   ├── widget.js
+  │   └── widget.min.js
+  ├── v1.0.0/
+  │   ├── widget.js  
+  │   └── widget.min.js
+  └── latest/
+      ├── widget.js
+      └── widget.min.js
+```
+
+### Version Pinning
+
+```html
+<!-- Pin to specific version for stability -->
+<script src="https://cdn.yoursite.com/widget/v1.0.0/widget.min.js"></script>
+
+<!-- Use latest for automatic updates (not recommended for production) -->
+<script src="https://cdn.yoursite.com/widget/latest/widget.min.js"></script>
+```
+
+## Performance Considerations
+
+Optimize widget performance for production environments.
+
+### File Size Optimization
+
+The production build includes:
+- Minification and compression
+- Dead code elimination  
+- Optimized bundle size (~50KB minified)
+
+### Loading Performance
+
+```html
+<!-- Preload widget script for better performance -->
+<link rel="preload" href="https://cdn.yoursite.com/widget/v1/widget.min.js" as="script">
+
+<!-- Load widget script asynchronously -->
+<script async src="https://cdn.yoursite.com/widget/v1/widget.min.js"></script>
+```
+
+### Caching Strategy
+
+- **Static assets:** Long-term caching (1 year)
+- **Widget files:** Version-specific URLs for cache busting
+- **API responses:** Short-term caching for constraints
+
+## Environment Configuration
+
+Configure the widget for different deployment environments.
+
+### Production Configuration
+
+```javascript
+// Production widget configuration
+await widget.init({
+    apiKey: process.env.IMAGINARY_API_KEY,
+    apiUrl: 'https://api.yoursite.com/api',
+    
+    // Production-specific options
+    onError: (error) => {
+        // Send errors to monitoring service
+        errorTracker.captureException(error);
+        
+        // Show user-friendly message
+        showUserError('Upload failed. Please try again.');
+    }
+});
+```
+
+### Staging Configuration
+
+```javascript
+// Staging environment
+await widget.init({
+    apiKey: process.env.IMAGINARY_STAGING_API_KEY,
+    apiUrl: 'https://staging-api.yoursite.com/api',
+    
+    // Enable debug mode for staging
+    onError: (error) => {
+        console.error('Staging error:', error);
+        errorTracker.captureException(error);
+    }
+});
+```
+
+## Monitoring and Analytics
+
+Implement monitoring for production widget usage.
+
+### Error Tracking
+
+```javascript
+widget.on('upload:error', (error) => {
+    // Track errors in production
+    analytics.track('upload_error', {
+        error_code: error.code,
+        error_message: error.message,
+        user_agent: navigator.userAgent,
+        timestamp: new Date().toISOString()
+    });
+});
+```
+
+### Usage Analytics
+
+```javascript
+widget.on('upload:success', (files) => {
+    analytics.track('upload_success', {
+        file_count: files.length,
+        total_size: files.reduce((sum, f) => sum + f.size, 0),
+        file_types: [...new Set(files.map(f => f.type))]
+    });
+});
+```
+
+## Security Considerations
+
+Ensure secure deployment practices.
+
+### Content Security Policy
+
+```html
+<meta http-equiv="Content-Security-Policy" 
+      content="script-src 'self' https://cdn.yoursite.com;">
+```
+
+### Subresource Integrity
+
+```html
+<script src="https://cdn.yoursite.com/widget/v1/widget.min.js"
+        integrity="sha384-oqVuAfXRKap7fdgcCY5uykM6+R9GqQ8K/uxy9rx7HNQlGYl1kPzQho1wx4JwY8wC"
+        crossorigin="anonymous"></script>
+```

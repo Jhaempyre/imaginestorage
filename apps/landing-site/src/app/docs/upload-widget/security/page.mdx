@@ -1,0 +1,430 @@
+# Security Considerations
+
+Implement secure file upload practices with ImaginaryWidget to protect your application and users.
+
+## API Key Management
+
+Proper API key management is crucial for secure widget implementation.
+
+### Public vs Secret Keys
+
+**Always use public keys in client-side code:**
+
+```javascript
+// ✅ Correct: Use public key in frontend
+await widget.init({
+    apiKey: 'pk_live_1234567890abcdef', // Public key - safe for client-side
+    apiUrl: 'https://api.yoursite.com/api'
+});
+
+// ❌ Never do this: Secret key exposed in frontend
+await widget.init({
+    apiKey: 'sk_secret_1234567890abcdef', // Secret key - server-side only!
+    apiUrl: 'https://api.yoursite.com/api'
+});
+```
+
+### Environment-Based Key Management
+
+```javascript
+// Use environment variables for different deployments
+const getApiKey = () => {
+    const env = process.env.NODE_ENV;
+    
+    switch (env) {
+        case 'development':
+            return 'pk_test_dev_key_1234';
+        case 'staging': 
+            return 'pk_test_staging_key_5678';
+        case 'production':
+            return 'pk_live_production_key_9012';
+        default:
+            throw new Error('Invalid environment');
+    }
+};
+
+await widget.init({
+    apiKey: getApiKey(),
+    apiUrl: getApiUrl()
+});
+```
+
+### Key Rotation and Revocation
+
+- Regularly rotate API keys (recommended: every 90 days)
+- Immediately revoke compromised keys
+- Monitor API key usage in your dashboard
+- Use different keys for different environments
+
+## File Validation Security
+
+Implement comprehensive file validation to prevent security vulnerabilities.
+
+### MIME Type Validation
+
+```javascript
+// Strict MIME type checking
+const SAFE_MIME_TYPES = [
+    'image/jpeg',
+    'image/png', 
+    'image/gif',
+    'application/pdf',
+    'text/plain'
+];
+
+function validateMimeType(file) {
+    if (!SAFE_MIME_TYPES.includes(file.type)) {
+        throw new Error(`Unsafe file type: ${file.type}`);
+    }
+    
+    // Additional check: verify file signature matches declared type
+    return verifyFileSignature(file);
+}
+
+async function verifyFileSignature(file) {
+    const buffer = await file.arrayBuffer();
+    const uint8Array = new Uint8Array(buffer.slice(0, 8));
+    
+    // Check file signatures (magic numbers)
+    const signatures = {
+        'image/jpeg': [0xFF, 0xD8, 0xFF],
+        'image/png': [0x89, 0x50, 0x4E, 0x47],
+        'application/pdf': [0x25, 0x50, 0x44, 0x46]
+    };
+    
+    const signature = signatures[file.type];
+    if (!signature) return true; // Skip check for unknown types
+    
+    const matches = signature.every((byte, index) => uint8Array[index] === byte);
+    
+    if (!matches) {
+        throw new Error('File signature does not match declared MIME type');
+    }
+    
+    return true;
+}
+```
+
+### File Size Limits
+
+```javascript
+// Enforce strict file size limits
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_TOTAL_SIZE = 100 * 1024 * 1024; // 100MB total
+
+function validateFileSize(files) {
+    let totalSize = 0;
+    
+    for (const file of files) {
+        if (file.size > MAX_FILE_SIZE) {
+            throw new Error(`File too large: ${file.name} (${formatBytes(file.size)})`);
+        }
+        
+        totalSize += file.size;
+    }
+    
+    if (totalSize > MAX_TOTAL_SIZE) {
+        throw new Error(`Total upload size too large: ${formatBytes(totalSize)}`);
+    }
+    
+    return true;
+}
+```
+
+### File Name Sanitization
+
+```javascript
+function sanitizeFileName(fileName) {
+    // Remove dangerous characters
+    const sanitized = fileName
+        .replace(/[<>:"/\\|?*]/g, '') // Remove prohibited characters
+        .replace(/\.\./g, '')          // Remove directory traversal
+        .replace(/^\./, '')            // Remove leading dots
+        .substring(0, 255);            // Limit length
+    
+    if (!sanitized.trim()) {
+        throw new Error('Invalid file name');
+    }
+    
+    return sanitized;
+}
+```
+
+## XSS Prevention
+
+Prevent cross-site scripting attacks through secure file handling.
+
+### Content-Type Headers
+
+Ensure your backend sets appropriate content-type headers:
+
+```javascript
+// Backend: Set secure headers for uploaded files
+app.get('/files/:fileId', (req, res) => {
+    const file = getFileById(req.params.fileId);
+    
+    // Force download for potentially dangerous files
+    const dangerousTypes = [
+        'text/html',
+        'application/javascript',
+        'text/javascript'
+    ];
+    
+    if (dangerousTypes.includes(file.mimeType)) {
+        res.setHeader('Content-Disposition', 'attachment');
+        res.setHeader('Content-Type', 'application/octet-stream');
+    } else {
+        res.setHeader('Content-Type', file.mimeType);
+    }
+    
+    // Security headers
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Content-Security-Policy', "default-src 'none'");
+    
+    res.send(file.data);
+});
+```
+
+### Safe File Display
+
+```javascript
+// Frontend: Safely display uploaded files
+function displayUploadedFile(file) {
+    const container = document.createElement('div');
+    
+    // Escape file name to prevent XSS
+    const safeName = escapeHtml(file.name);
+    
+    if (file.type.startsWith('image/')) {
+        // Safe image display
+        const img = document.createElement('img');
+        img.src = file.url;
+        img.alt = safeName;
+        container.appendChild(img);
+    } else {
+        // Safe file link
+        const link = document.createElement('a');
+        link.href = file.url;
+        link.textContent = safeName;
+        link.download = safeName;
+        container.appendChild(link);
+    }
+    
+    return container;
+}
+
+function escapeHtml(unsafe) {
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+```
+
+## Upload Token Security
+
+Secure upload token implementation prevents unauthorized file uploads.
+
+### Token Validation
+
+```javascript
+// Backend: Generate secure upload tokens
+const crypto = require('crypto');
+
+function generateUploadToken(userId, fileName, fileSize) {
+    const payload = {
+        userId,
+        fileName,
+        fileSize,
+        timestamp: Date.now(),
+        nonce: crypto.randomBytes(16).toString('hex')
+    };
+    
+    // Sign token with secret key
+    const signature = crypto
+        .createHmac('sha256', process.env.UPLOAD_SECRET)
+        .update(JSON.stringify(payload))
+        .digest('hex');
+    
+    return {
+        token: Buffer.from(JSON.stringify(payload)).toString('base64'),
+        signature,
+        expiresAt: new Date(Date.now() + 15 * 60 * 1000) // 15 minutes
+    };
+}
+
+function validateUploadToken(token, signature) {
+    try {
+        const payload = JSON.parse(Buffer.from(token, 'base64').toString());
+        
+        // Verify signature
+        const expectedSignature = crypto
+            .createHmac('sha256', process.env.UPLOAD_SECRET)
+            .update(JSON.stringify(payload))
+            .digest('hex');
+        
+        if (signature !== expectedSignature) {
+            throw new Error('Invalid token signature');
+        }
+        
+        // Check expiration
+        if (Date.now() > payload.timestamp + 15 * 60 * 1000) {
+            throw new Error('Token expired');
+        }
+        
+        return payload;
+    } catch (error) {
+        throw new Error('Invalid upload token');
+    }
+}
+```
+
+### Rate Limiting
+
+```javascript
+// Backend: Implement rate limiting for uploads
+const rateLimit = require('express-rate-limit');
+
+const uploadLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 50, // Limit each IP to 50 uploads per windowMs
+    message: 'Too many upload attempts, please try again later',
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
+app.post('/upload', uploadLimiter, (req, res) => {
+    // Handle upload
+});
+```
+
+## Content Security Policy
+
+Implement CSP headers to prevent code injection attacks.
+
+### CSP Configuration
+
+```html
+<meta http-equiv="Content-Security-Policy" 
+      content="
+        default-src 'self';
+        script-src 'self' https://cdn.imaginarystore.com;
+        connect-src 'self' https://api.yoursite.com;
+        img-src 'self' https://cdn.yoursite.com data:;
+        style-src 'self' 'unsafe-inline';
+        font-src 'self';
+        object-src 'none';
+        frame-src 'none';
+      ">
+```
+
+### CSP for Widget Integration
+
+```javascript
+// Ensure widget works with strict CSP
+const cspConfig = {
+    'script-src': [
+        "'self'",
+        'https://cdn.imaginarystore.com'
+    ],
+    'connect-src': [
+        "'self'",
+        'https://api.yoursite.com'
+    ],
+    'img-src': [
+        "'self'", 
+        'https://cdn.yoursite.com',
+        'data:' // For file previews
+    ]
+};
+```
+
+## Secure Communication
+
+Ensure all communication between client and server is secure.
+
+### HTTPS Requirements
+
+```javascript
+// Enforce HTTPS in production
+function enforceHttps() {
+    if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+        console.error('ImaginaryWidget requires HTTPS in production');
+        throw new Error('Secure connection required');
+    }
+}
+
+// Check before widget initialization
+enforceHttps();
+await widget.init({ /* ... */ });
+```
+
+### API Endpoint Security
+
+```javascript
+// Backend: Secure API endpoints
+app.use((req, res, next) => {
+    // Security headers
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    
+    next();
+});
+```
+
+## Privacy and Data Protection
+
+Implement privacy-conscious file upload practices.
+
+### Data Minimization
+
+```javascript
+// Only collect necessary file metadata
+const fileMetadata = {
+    name: file.name,
+    size: file.size,
+    type: file.type,
+    uploadedAt: new Date().toISOString()
+    // Avoid collecting: user IP, browser fingerprints, etc.
+};
+```
+
+### Secure File Storage
+
+```javascript
+// Backend: Secure file storage configuration
+const storageConfig = {
+    encryption: 'AES-256-GCM',
+    accessControl: 'private',
+    versioning: true,
+    lifecyclePolicy: {
+        deleteAfter: '7 years' // Comply with data retention policies
+    }
+};
+```
+
+## Security Checklist
+
+### Pre-deployment Security Review
+
+- [ ] **API Keys:** Public keys only in frontend code
+- [ ] **File Validation:** Comprehensive MIME type and size checking  
+- [ ] **Upload Tokens:** Secure token generation and validation
+- [ ] **Rate Limiting:** Protection against abuse
+- [ ] **HTTPS:** All communication encrypted
+- [ ] **CSP Headers:** Content Security Policy implemented
+- [ ] **File Sanitization:** Safe file name handling
+- [ ] **Error Handling:** No sensitive data in error messages
+- [ ] **Logging:** Security events properly logged
+- [ ] **Dependencies:** All packages up to date
+
+### Runtime Security Monitoring
+
+- Monitor for unusual upload patterns
+- Track failed authentication attempts
+- Log security-related errors
+- Regular security audits and penetration testing

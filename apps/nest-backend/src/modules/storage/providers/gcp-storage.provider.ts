@@ -21,10 +21,13 @@ import {
   STORAGE_VALIDATION_ERRORS,
 } from "@/common/constants/storage.constants";
 import { Storage } from "@google-cloud/storage";
-import { Injectable, Logger } from "@nestjs/common";
+import { HttpCode, HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { randomBytes } from "crypto";
 import * as fs from "fs";
 import * as path from "path";
+import { AppException } from "@/common/dto/app-exception";
+import { ERROR_CODES } from "@/common/constants/error-code.constansts";
+import { STATUS_CODES } from "http";
 
 export interface GCPConfig extends StorageConfig {
   type: string;
@@ -49,6 +52,7 @@ export class GCPStorageProvider implements IStorageProvider {
   private bucketName?: string;
 
   async initialize(config: GCPConfig): Promise<void> {
+    this._validateKeys(config);
     this.config = config;
     this.storage = new Storage({
       projectId: config.project_id,
@@ -94,7 +98,7 @@ export class GCPStorageProvider implements IStorageProvider {
       });
 
       return {
-        Contents: files.map(file => ({
+        Contents: files.map((file) => ({
           Key: file.name,
           Size: file.metadata.size,
           LastModified: file.metadata.updated,
@@ -173,11 +177,11 @@ export class GCPStorageProvider implements IStorageProvider {
     try {
       const bucket = this.storage!.bucket(this.bucketName!);
       const file = bucket.file(key);
-      
+
       // Create an empty "folder" object
-      await file.save('', {
+      await file.save("", {
         metadata: {
-          contentType: 'application/x-directory',
+          contentType: "application/x-directory",
         },
       });
 
@@ -202,7 +206,7 @@ export class GCPStorageProvider implements IStorageProvider {
         maxResults: maxKeys,
       });
 
-      const keys = files.map(file => file.name);
+      const keys = files.map((file) => file.name);
       return { keys };
     } catch (error) {
       throw new Error(`Failed to list objects from GCP Storage: ${error}`);
@@ -224,7 +228,7 @@ export class GCPStorageProvider implements IStorageProvider {
       const destFile = bucket.file(destKey);
 
       const copyOptions: any = {};
-      
+
       if (replaceMetadata && metadata) {
         copyOptions.metadata = {
           metadata: metadata,
@@ -243,7 +247,7 @@ export class GCPStorageProvider implements IStorageProvider {
     }
 
     const { from, to, metadata, replaceMetadata = false } = params;
-    
+
     // 1) Copy
     await this.copyObject({ from, to, metadata, replaceMetadata });
 
@@ -264,7 +268,7 @@ export class GCPStorageProvider implements IStorageProvider {
     if (!this.isConfigured()) {
       throw new Error("GCP Storage provider not configured");
     }
-    
+
     if (!mappings || mappings.length === 0) return;
 
     await this.asyncPool(concurrency, mappings, async (m) => {
@@ -369,6 +373,7 @@ export class GCPStorageProvider implements IStorageProvider {
     // debugger;
 
     try {
+      this._validateKeys(params);
       storage = new Storage({
         projectId: params.project_id,
         credentials: {
@@ -390,7 +395,8 @@ export class GCPStorageProvider implements IStorageProvider {
         error: {
           code: STORAGE_VALIDATION_ERRORS.INVALID_CREDENTIALS,
           message: "GCPStorageProvider.validateCredentials.Failed",
-          details: "Failed to create GCP Storage client with provided credentials.",
+          details:
+            "Failed to create GCP Storage client with provided credentials.",
           suggestions: [
             "Verify the project ID is correct.",
             "Ensure the service account credentials are valid.",
@@ -433,7 +439,7 @@ export class GCPStorageProvider implements IStorageProvider {
       this.logger.error(
         `GCP Storage credential validation: bucket check failed: ${err?.message}`,
       );
-      
+
       return {
         isValid: false,
         error: {
@@ -453,9 +459,9 @@ export class GCPStorageProvider implements IStorageProvider {
     try {
       const start = performance.now();
       const file = bucket.file(testKey);
-      await file.save('ok', {
+      await file.save("ok", {
         metadata: {
-          contentType: 'text/plain',
+          contentType: "text/plain",
         },
       });
       latency.writeTest = performance.now() - start;
@@ -463,7 +469,7 @@ export class GCPStorageProvider implements IStorageProvider {
       this.logger.error(
         `GCP Storage credential validation: write test failed: ${err?.message}`,
       );
-      
+
       return {
         isValid: false,
         error: {
@@ -489,7 +495,7 @@ export class GCPStorageProvider implements IStorageProvider {
       this.logger.error(
         `GCP Storage credential validation: delete test failed: ${err?.message}`,
       );
-      
+
       return {
         isValid: false,
         error: {
@@ -512,8 +518,8 @@ export class GCPStorageProvider implements IStorageProvider {
         projectId: params.project_id,
         permissions: [
           "storage.buckets.get",
-          "storage.objects.create", 
-          "storage.objects.delete"
+          "storage.objects.create",
+          "storage.objects.delete",
         ],
         latency,
       },
@@ -555,5 +561,35 @@ export class GCPStorageProvider implements IStorageProvider {
 
     await Promise.all(executing);
     return ret;
+  }
+
+  private _validateKeys(config: GCPConfig): boolean {
+    const requiredKeys = [
+      "type",
+      "project_id",
+      "private_key_id",
+      "private_key",
+      "client_email",
+      "client_id",
+      "universe_domain",
+      "bucket",
+    ];
+
+    for (const key of requiredKeys) {
+      if (!(key in config) || !config[key as keyof GCPConfig]) {
+        throw new AppException({
+          code: ERROR_CODES.BAD_REQUEST,
+          statusCode: HttpStatus.BAD_REQUEST,
+          message: `GCP Storage configuration error: Missing key ${key}`,
+          details: `The key '${key}' is required for GCP Storage configuration but was not provided.`,
+          suggestions: [
+            `Ensure that the '${key}' field is included in the configuration.`,
+            "Double-check the spelling and casing of the key.",
+            "Refer to the GCP Storage documentation for required configuration fields.",
+          ],
+        });
+      }
+    }
+    return true;
   }
 }

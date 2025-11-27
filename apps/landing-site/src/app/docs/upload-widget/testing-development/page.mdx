@@ -1,0 +1,166 @@
+# Testing & Development
+
+Set up your development environment and test ImaginaryWidget integration.
+
+## Development Setup
+
+### Local Build Process
+
+Clone and build the widget from source:
+
+```bash
+# Clone repository
+git clone https://github.com/your-org/imaginary-store.git
+cd imaginary-store/apps/imaginary-widget
+
+# Install dependencies
+npm install
+
+# Development build with watching
+npm run dev
+
+# Production build
+npm run build
+```
+
+### Development Server
+
+Start a local server for testing:
+
+```bash
+# Start development server
+npm run serve
+
+# Server will run on http://localhost:8080
+```
+
+## Testing with Mock Server
+
+Use the included mock server for development testing.
+
+### Starting Mock Server
+
+```bash
+# Navigate to widget directory
+cd apps/imaginary-widget
+
+# Start mock server
+node mock-server.js
+
+# Server runs on http://localhost:3001
+```
+
+### Mock Server Features
+
+The mock server provides:
+- Simulated API key validation
+- File upload token generation
+- File upload handling with progress simulation
+- Configurable constraints and responses
+
+### Using Mock Server
+
+```javascript
+// Configure widget to use mock server
+await widget.init({
+    apiKey: 'pk_test_mock_key',
+    apiUrl: 'http://localhost:3001/api'
+});
+```
+
+## Testing with Real Backend
+
+Connect to your actual ImaginaryStore backend for integration testing.
+
+### Development Configuration
+
+```javascript
+const isDevelopment = process.env.NODE_ENV === 'development';
+
+await widget.init({
+    apiKey: isDevelopment ? 'pk_test_dev_key' : 'pk_live_prod_key',
+    apiUrl: isDevelopment ? 'http://localhost:3000/api' : 'https://api.yoursite.com/api'
+});
+```
+
+## Testing Tools
+
+### Automated Testing Script
+
+Use the included test script for automated validation:
+
+```bash
+# Run automated tests
+./test-widget.sh
+
+# This script:
+# 1. Starts mock server
+# 2. Opens test page in browser
+# 3. Runs basic functionality tests
+# 4. Reports results
+```
+
+### Manual Testing Checklist
+
+- [ ] Widget loads without errors
+- [ ] Modal opens and closes correctly  
+- [ ] File selection works
+- [ ] Upload progress displays
+- [ ] Success/error handling works
+- [ ] Multiple file uploads
+- [ ] File validation functions
+- [ ] Browser compatibility testing
+
+## Browser Testing
+
+Test across different browsers and devices.
+
+### Desktop Browsers
+- Chrome (latest)
+- Firefox (latest) 
+- Safari (latest)
+- Edge (latest)
+
+### Mobile Testing
+- iOS Safari
+- Android Chrome
+- Mobile responsiveness
+
+### Testing Tools
+```bash
+# Use BrowserStack, Sauce Labs, or similar for cross-browser testing
+# Local testing with different browsers
+```
+
+## Mock Server Usage
+
+The mock server simulates backend behavior for development.
+
+### Mock Server API
+
+```javascript
+// Mock constraints endpoint
+GET http://localhost:3001/api/api-keys/constraints/pk_test_mock_key
+
+// Mock token request
+POST http://localhost:3001/api/upload/token
+
+// Mock file upload  
+POST http://localhost:3001/api/upload
+```
+
+### Configuring Mock Responses
+
+Edit `mock-server.js` to customize responses:
+
+```javascript
+// Customize file size limits
+const mockConstraints = {
+    maxFileSize: 5 * 1024 * 1024, // 5MB
+    allowedMimeTypes: ['image/jpeg', 'image/png'],
+    maxFiles: 5
+};
+
+// Simulate upload delays
+const uploadDelay = 2000; // 2 seconds
+```

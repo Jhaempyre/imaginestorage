@@ -1,0 +1,114 @@
+# Customization
+
+Customize ImaginaryWidget's appearance and behavior to match your application.
+
+## UI Styling and Theming
+
+*Note: Advanced UI customization features are planned for future releases.*
+
+Currently, the widget uses a default theme that works well with most applications.
+
+### Future Customization Options
+
+The following customization features are planned:
+
+- Custom color schemes
+- Font family options  
+- Border radius and spacing
+- Custom CSS overrides
+- Dark/light theme variants
+
+## Custom Mount Targets
+
+Control where the widget modal appears in your DOM structure.
+
+### Default Mounting
+
+```javascript
+// Default: mounts to document.body
+await widget.init({
+    apiKey: 'your-key',
+    apiUrl: 'your-url'
+    // mount option not specified
+});
+```
+
+### Custom Mount Element
+
+```javascript
+// Mount to specific container
+await widget.init({
+    apiKey: 'your-key',
+    apiUrl: 'your-url',
+    mount: '#upload-container'  // CSS selector
+});
+
+// Or use DOM element directly
+const container = document.getElementById('upload-modal-container');
+await widget.init({
+    apiKey: 'your-key', 
+    apiUrl: 'your-url',
+    mount: container
+});
+```
+
+## Event Handler Customization
+
+Customize widget behavior through comprehensive event handling.
+
+### Custom Upload Flow
+
+```javascript
+await widget.init({
+    apiKey: 'your-key',
+    apiUrl: 'your-url',
+    
+    onSuccess: (files) => {
+        // Custom success handling
+        updateUserInterface(files);
+        sendAnalytics('upload_success', files);
+    },
+    
+    onError: (error) => {
+        // Custom error handling  
+        showCustomErrorModal(error);
+        logToErrorService(error);
+    },
+    
+    onProgress: (progress) => {
+        // Custom progress display
+        updateCustomProgressBar(progress);
+    }
+});
+```
+
+## Progress Tracking Customization
+
+Implement custom progress indicators and user feedback.
+
+### Custom Progress Components
+
+```javascript
+function updateCustomProgressBar(progress) {
+    const progressBar = document.getElementById('custom-progress');
+    const progressText = document.getElementById('progress-text');
+    const speedIndicator = document.getElementById('upload-speed');
+    
+    // Update progress bar
+    progressBar.style.width = `${progress.percent}%`;
+    
+    // Custom progress text
+    progressText.innerHTML = `
+        <div class="upload-status">
+            <span class="file-name">${progress.file?.name || 'Uploading...'}</span>
+            <span class="percentage">${Math.round(progress.percent)}%</span>
+        </div>
+    `;
+    
+    // Calculate and show upload speed
+    if (progress.loaded && progress.total) {
+        const speed = calculateUploadSpeed(progress.loaded);
+        speedIndicator.textContent = `Speed: ${formatSpeed(speed)}`;
+    }
+}
+```

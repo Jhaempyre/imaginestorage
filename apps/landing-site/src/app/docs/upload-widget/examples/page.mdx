@@ -1,0 +1,267 @@
+# Examples
+
+Real-world examples of ImaginaryWidget integration for different use cases and frameworks.
+
+## Basic Integration - Minimal Setup
+
+The simplest possible integration with just the essential features.
+
+### HTML + JavaScript
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Basic Upload Widget</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .upload-btn { 
+            background: #3b82f6; 
+            color: white; 
+            padding: 12px 24px; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+        }
+        .upload-btn:hover { background: #2563eb; }
+    </style>
+</head>
+<body>
+    <h1>File Upload</h1>
+    <button id="upload-btn" class="upload-btn">Upload Files</button>
+    
+    <script src="https://cdn.imaginarystore.com/widget/v1/widget.js"></script>
+    <script>
+        const widget = new ImaginaryWidget();
+        
+        widget.init({
+            apiKey: 'pk_test_1234567890',
+            apiUrl: 'https://api.example.com/api'
+        }).then(() => {
+            document.getElementById('upload-btn').onclick = () => widget.open();
+        });
+    </script>
+</body>
+</html>
+```
+
+## Advanced Integration - With All Event Handlers
+
+Complete implementation with comprehensive event handling and UI feedback.
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Upload Widget</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .upload-section { background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        .upload-btn { 
+            background: #3b82f6; color: white; padding: 12px 24px; 
+            border: none; border-radius: 6px; cursor: pointer; font-size: 16px;
+        }
+        .upload-btn:hover { background: #2563eb; }
+        .upload-btn:disabled { background: #94a3b8; cursor: not-allowed; }
+        .progress { background: #e2e8f0; border-radius: 4px; height: 8px; margin: 10px 0; }
+        .progress-bar { background: #3b82f6; height: 100%; border-radius: 4px; transition: width 0.3s; }
+        .status { padding: 10px; border-radius: 4px; margin: 10px 0; }
+        .success { background: #dcfce7; color: #166534; }
+        .error { background: #fee2e2; color: #991b1b; }
+        .info { background: #dbeafe; color: #1e40af; }
+        .file-list { background: white; border: 1px solid #e2e8f0; border-radius: 6px; margin: 20px 0; }
+        .file-item { padding: 12px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; }
+        .file-item:last-child { border-bottom: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Advanced File Upload Demo</h1>
+        
+        <div class="upload-section">
+            <h2>Upload Files</h2>
+            <button id="upload-btn" class="upload-btn">
+                📁 Choose Files to Upload
+            </button>
+            
+            <div id="progress-container" style="display: none;">
+                <div class="progress">
+                    <div id="progress-bar" class="progress-bar" style="width: 0%"></div>
+                </div>
+                <div id="progress-text">Preparing upload...</div>
+            </div>
+            
+            <div id="status"></div>
+        </div>
+        
+        <div id="files-section" style="display: none;">
+            <h2>Uploaded Files</h2>
+            <div id="file-list" class="file-list"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.imaginarystore.com/widget/v1/widget.js"></script>
+    <script>
+        // State management
+        let uploadedFiles = [];
+        let isUploading = false;
+        
+        // DOM elements
+        const uploadBtn = document.getElementById('upload-btn');
+        const progressContainer = document.getElementById('progress-container');
+        const progressBar = document.getElementById('progress-bar');
+        const progressText = document.getElementById('progress-text');
+        const status = document.getElementById('status');
+        const filesSection = document.getElementById('files-section');
+        const fileList = document.getElementById('file-list');
+        
+        // Initialize widget
+        const widget = new ImaginaryWidget();
+        
+        widget.init({
+            apiKey: 'pk_test_1234567890',
+            apiUrl: 'https://api.example.com/api',
+            
+            onSuccess: (files) => {
+                console.log('✅ Upload successful:', files);
+                
+                // Add files to our list
+                uploadedFiles.push(...files);
+                updateFileList();
+                
+                // Show success message
+                showStatus('success', `Successfully uploaded ${files.length} file(s)!`);
+                
+                // Hide progress
+                hideProgress();
+                
+                // Re-enable upload button
+                setUploadButtonState(false);
+            },
+            
+            onError: (error) => {
+                console.error('❌ Upload failed:', error);
+                showStatus('error', `Upload failed: ${error.message}`);
+                hideProgress();
+                setUploadButtonState(false);
+            },
+            
+            onProgress: (progress) => {
+                console.log(`📤 Upload progress: ${progress.percent}%`);
+                
+                showProgress();
+                updateProgress(progress.percent, progress.file?.name);
+            },
+            
+            onComplete: (result) => {
+                console.log('🎉 Upload complete:', result);
+                
+                const { successful, failed } = result;
+                
+                if (failed.length > 0) {
+                    showStatus('error', 
+                        `Upload completed with ${failed.length} failure(s). ` +
+                        `${successful.length} file(s) uploaded successfully.`
+                    );
+                } else {
+                    showStatus('success', 
+                        `All ${successful.length} file(s) uploaded successfully!`
+                    );
+                }
+            }
+        }).then(() => {
+            console.log('Widget initialized successfully');
+            uploadBtn.onclick = () => widget.open();
+        }).catch((error) => {
+            console.error('Failed to initialize widget:', error);
+            showStatus('error', 'Failed to initialize upload widget');
+            uploadBtn.disabled = true;
+        });
+        
+        // UI helper functions
+        function setUploadButtonState(uploading) {
+            isUploading = uploading;
+            uploadBtn.disabled = uploading;
+            uploadBtn.textContent = uploading ? '⏳ Uploading...' : '📁 Choose Files to Upload';
+        }
+        
+        function showProgress() {
+            progressContainer.style.display = 'block';
+            setUploadButtonState(true);
+        }
+        
+        function hideProgress() {
+            progressContainer.style.display = 'none';
+            progressBar.style.width = '0%';
+            progressText.textContent = 'Preparing upload...';
+        }
+        
+        function updateProgress(percent, fileName) {
+            progressBar.style.width = `${percent}%`;
+            if (fileName) {
+                progressText.textContent = `Uploading ${fileName}... ${Math.round(percent)}%`;
+            } else {
+                progressText.textContent = `Upload progress: ${Math.round(percent)}%`;
+            }
+        }
+        
+        function showStatus(type, message) {
+            status.innerHTML = `<div class="status ${type}">${message}</div>`;
+            
+            // Auto-hide success messages after 5 seconds
+            if (type === 'success') {
+                setTimeout(() => {
+                    status.innerHTML = '';
+                }, 5000);
+            }
+        }
+        
+        function updateFileList() {
+            if (uploadedFiles.length === 0) {
+                filesSection.style.display = 'none';
+                return;
+            }
+            
+            filesSection.style.display = 'block';
+            fileList.innerHTML = uploadedFiles.map(file => `
+                <div class="file-item">
+                    <div>
+                        <strong>${file.name}</strong><br>
+                        <small>${formatFileSize(file.size)} • ${new Date(file.uploadedAt).toLocaleString()}</small>
+                    </div>
+                    <div>
+                        <a href="${file.url}" target="_blank" style="color: #3b82f6;">View</a>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        // Additional event listeners for more granular control
+        widget.on('widget:open', () => {
+            console.log('Widget opened');
+            showStatus('info', 'Select files to upload...');
+        });
+        
+        widget.on('widget:close', () => {
+            console.log('Widget closed');
+            if (!isUploading) {
+                status.innerHTML = '';
+            }
+        });
+    </script>
+</body>
+</html>
+```

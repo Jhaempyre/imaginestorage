@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
+import createMDX from '@next/mdx'
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Clean configuration without MDX for now
+  pageExtensions: ['js', 'jsx', 'md', 'mdx', 'ts', 'tsx'],
   reactCompiler: true,
   output: 'export',  // Export as static HTML
   images: {
@@ -9,4 +11,11 @@ const nextConfig: NextConfig = {
   }
 };
 
-export default nextConfig;
+// export default nextConfig;
+
+const withMDX = createMDX({
+  // Add markdown plugins here, as desired
+})
+ 
+// Merge MDX config with Next.js config
+export default withMDX(nextConfig)
