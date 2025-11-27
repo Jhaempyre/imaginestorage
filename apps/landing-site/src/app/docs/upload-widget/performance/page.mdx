@@ -1,0 +1,531 @@
+# Performance & Best Practices
+
+Optimize ImaginaryWidget for the best user experience and performance.
+
+## Optimization Tips
+
+### Lazy Loading the Widget
+
+Load the widget only when needed to improve initial page load times:
+
+```javascript
+// Load widget on demand
+async function loadWidget() {
+    if (!window.ImaginaryWidget) {
+        // Dynamically load widget script
+        await loadScript('https://cdn.imaginarystore.com/widget/v1/widget.min.js');
+    }
+    
+    const widget = new ImaginaryWidget();
+    await widget.init({
+        apiKey: 'your-api-key',
+        apiUrl: 'your-api-url'
+    });
+    
+    return widget;
+}
+
+// Load widget when user clicks upload button
+document.getElementById('upload-btn').addEventListener('click', async () => {
+    const widget = await loadWidget();
+    widget.open();
+});
+
+function loadScript(src) {
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+    });
+}
+```
+
+### Preloading for Better UX
+
+For critical upload functionality, preload the widget:
+
+```html
+<!-- Preload widget script -->
+<link rel="preload" href="https://cdn.imaginarystore.com/widget/v1/widget.min.js" as="script">
+
+<!-- Load widget asynchronously -->
+<script async src="https://cdn.imaginarystore.com/widget/v1/widget.min.js"></script>
+```
+
+### Resource Hints
+
+Use resource hints to improve loading performance:
+
+```html
+<!-- DNS prefetch for faster connection -->
+<link rel="dns-prefetch" href="//cdn.imaginarystore.com">
+<link rel="dns-prefetch" href="//api.yoursite.com">
+
+<!-- Preconnect for critical resources -->
+<link rel="preconnect" href="https://api.yoursite.com">
+```
+
+## Memory Management
+
+### Proper Widget Cleanup
+
+Always clean up widget instances to prevent memory leaks:
+
+```javascript
+class UploadManager {
+    constructor() {
+        this.widget = null;
+    }
+    
+    async initialize() {
+        this.widget = new ImaginaryWidget();
+        await this.widget.init({
+            apiKey: 'your-api-key',
+            apiUrl: 'your-api-url'
+        });
+    }
+    
+    destroy() {
+        if (this.widget) {
+            this.widget.destroy(); // Important: cleanup widget
+            this.widget = null;
+        }
+    }
+}
+
+// In React components
+useEffect(() => {
+    const uploadManager = new UploadManager();
+    uploadManager.initialize();
+    
+    return () => {
+        uploadManager.destroy(); // Cleanup on unmount
+    };
+}, []);
+```
+
+### Event Listener Management
+
+Remove event listeners to prevent memory leaks:
+
+```javascript
+// Store references to callback functions
+const progressCallback = (progress) => console.log(progress);
+const successCallback = (files) => console.log(files);
+
+// Add listeners
+widget.on('upload:progress', progressCallback);
+widget.on('upload:success', successCallback);
+
+// Important: Remove listeners when done
+function cleanup() {
+    widget.off('upload:progress', progressCallback);
+    widget.off('upload:success', successCallback);
+    widget.destroy();
+}
+```
+
+### File Object Management
+
+Handle file objects efficiently to avoid memory issues:
+
+```javascript
+// Release file object URLs when done
+const fileUrls = [];
+
+function createFilePreview(file) {
+    const url = URL.createObjectURL(file);
+    fileUrls.push(url); // Track for cleanup
+    
+    const img = document.createElement('img');
+    img.src = url;
+    return img;
+}
+
+// Cleanup file URLs
+function cleanupFileUrls() {
+    fileUrls.forEach(url => URL.revokeObjectURL(url));
+    fileUrls.length = 0;
+}
+
+// Call cleanup after upload or on component unmount
+widget.on('upload:complete', cleanupFileUrls);
+```
+
+## Large File Handling
+
+### Chunked Upload Strategy
+
+For large files, implement progress monitoring and user feedback:
+
+```javascript
+let uploadStartTime;
+let lastProgressUpdate = 0;
+
+widget.on('upload:progress', (progress) => {
+    if (!uploadStartTime) {
+        uploadStartTime = Date.now();
+    }
+    
+    // Throttle progress updates for better performance
+    const now = Date.now();
+    if (now - lastProgressUpdate < 100) return; // Update max every 100ms
+    lastProgressUpdate = now;
+    
+    // Calculate upload metrics
+    const elapsed = (now - uploadStartTime) / 1000;
+    const speed = progress.loaded / elapsed;
+    const remainingBytes = progress.total - progress.loaded;
+    const eta = remainingBytes / speed;
+    
+    updateProgressUI({
+        percent: progress.percent,
+        speed: formatSpeed(speed),
+        eta: formatTime(eta),
+        file: progress.file
+    });
+});
+
+function formatSpeed(bytesPerSecond) {
+    if (bytesPerSecond < 1024) return `${Math.round(bytesPerSecond)} B/s`;
+    if (bytesPerSecond < 1024 * 1024) return `${Math.round(bytesPerSecond / 1024)} KB/s`;
+    return `${Math.round(bytesPerSecond / (1024 * 1024))} MB/s`;
+}
+
+function formatTime(seconds) {
+    if (seconds < 60) return `${Math.round(seconds)}s`;
+    const minutes = Math.floor(seconds / 60);
+    return `${minutes}m ${Math.round(seconds % 60)}s`;
+}
+```
+
+### File Size Warnings
+
+Warn users about large files and potential wait times:
+
+```javascript
+function validateFileSize(file) {
+    const LARGE_FILE_THRESHOLD = 50 * 1024 * 1024; // 50MB
+    const HUGE_FILE_THRESHOLD = 200 * 1024 * 1024; // 200MB
+    
+    if (file.size > HUGE_FILE_THRESHOLD) {
+        const confirm = window.confirm(
+            `"${file.name}" is very large (${formatBytes(file.size)}). ` +
+            'This may take several minutes to upload. Continue?'
+        );
+        if (!confirm) return false;
+    } else if (file.size > LARGE_FILE_THRESHOLD) {
+        showNotification(
+            `Large file detected: ${file.name} (${formatBytes(file.size)}). ` +
+            'Upload may take some time.',
+            'warning'
+        );
+    }
+    
+    return true;
+}
+```
+
+## Network Considerations
+
+### Connection Quality Detection
+
+Adapt behavior based on network conditions:
+
+```javascript
+// Detect network quality
+async function detectNetworkQuality() {
+    if ('connection' in navigator) {
+        const connection = navigator.connection;
+        return {
+            effectiveType: connection.effectiveType,
+            downlink: connection.downlink,
+            rtt: connection.rtt
+        };
+    }
+    
+    // Fallback: measure download speed
+    const startTime = Date.now();
+    try {
+        await fetch('https://httpbin.org/bytes/1024', { mode: 'cors' });
+        const endTime = Date.now();
+        const duration = endTime - startTime;
+        
+        return {
+            effectiveType: duration < 1000 ? 'fast' : 'slow',
+            estimated: true
+        };
+    } catch {
+        return { effectiveType: 'unknown' };
+    }
+}
+
+// Adapt upload strategy based on network
+async function optimizeForNetwork() {
+    const network = await detectNetworkQuality();
+    
+    if (network.effectiveType === 'slow-2g' || network.effectiveType === '2g') {
+        // Limit file sizes for slow connections
+        showNetworkWarning('Slow connection detected. Consider smaller files.');
+        return { maxFileSize: 5 * 1024 * 1024 }; // 5MB limit
+    } else if (network.effectiveType === '3g') {
+        // Moderate restrictions
+        return { maxFileSize: 25 * 1024 * 1024 }; // 25MB limit
+    }
+    
+    return {}; // No restrictions for fast connections
+}
+```
+
+### Retry Strategy for Failed Uploads
+
+Implement smart retry logic for network failures:
+
+```javascript
+class UploadRetryManager {
+    constructor(maxRetries = 3) {
+        this.maxRetries = maxRetries;
+        this.retryDelays = [1000, 2000, 5000]; // Progressive delays
+        this.retryCount = new Map();
+    }
+    
+    async handleUploadError(error, file) {
+        const fileId = file.name + file.size;
+        const currentRetries = this.retryCount.get(fileId) || 0;
+        
+        if (error.code === 'NETWORK_ERROR' && currentRetries < this.maxRetries) {
+            const delay = this.retryDelays[currentRetries] || 5000;
+            
+            console.log(`Retrying upload for ${file.name} in ${delay}ms (attempt ${currentRetries + 1})`);
+            
+            this.retryCount.set(fileId, currentRetries + 1);
+            
+            await new Promise(resolve => setTimeout(resolve, delay));
+            
+            // Trigger retry (implementation depends on your setup)
+            return this.retryUpload(file);
+        }
+        
+        // Max retries exceeded or non-retryable error
+        this.retryCount.delete(fileId);
+        throw error;
+    }
+    
+    onUploadSuccess(file) {
+        const fileId = file.name + file.size;
+        this.retryCount.delete(fileId); // Clear retry count on success
+    }
+}
+
+const retryManager = new UploadRetryManager();
+
+widget.on('upload:error', (error) => {
+    retryManager.handleUploadError(error, error.file);
+});
+
+widget.on('upload:success', (files) => {
+    files.forEach(file => retryManager.onUploadSuccess(file));
+});
+```
+
+## UI Performance
+
+### Efficient Progress Updates
+
+Optimize progress bar updates for smooth animations:
+
+```javascript
+class ProgressBarOptimizer {
+    constructor(element) {
+        this.element = element;
+        this.lastUpdate = 0;
+        this.animationFrame = null;
+        this.targetPercent = 0;
+        this.currentPercent = 0;
+    }
+    
+    updateProgress(percent) {
+        this.targetPercent = percent;
+        
+        if (!this.animationFrame) {
+            this.animationFrame = requestAnimationFrame(() => {
+                this.animate();
+            });
+        }
+    }
+    
+    animate() {
+        const diff = this.targetPercent - this.currentPercent;
+        
+        if (Math.abs(diff) < 0.1) {
+            this.currentPercent = this.targetPercent;
+            this.element.style.width = `${this.currentPercent}%`;
+            this.animationFrame = null;
+            return;
+        }
+        
+        this.currentPercent += diff * 0.1; // Smooth easing
+        this.element.style.width = `${this.currentPercent}%`;
+        
+        this.animationFrame = requestAnimationFrame(() => {
+            this.animate();
+        });
+    }
+}
+
+// Usage
+const progressOptimizer = new ProgressBarOptimizer(
+    document.getElementById('progress-bar')
+);
+
+widget.on('upload:progress', (progress) => {
+    progressOptimizer.updateProgress(progress.percent);
+});
+```
+
+### Virtual Scrolling for File Lists
+
+For large numbers of files, implement virtual scrolling:
+
+```javascript
+// Simple virtual scrolling for file lists
+class VirtualFileList {
+    constructor(container, itemHeight = 60) {
+        this.container = container;
+        this.itemHeight = itemHeight;
+        this.visibleItems = Math.ceil(container.clientHeight / itemHeight) + 2;
+        this.scrollTop = 0;
+        this.files = [];
+        
+        this.setupScrolling();
+    }
+    
+    setupScrolling() {
+        this.container.addEventListener('scroll', () => {
+            this.scrollTop = this.container.scrollTop;
+            this.render();
+        });
+    }
+    
+    setFiles(files) {
+        this.files = files;
+        this.render();
+    }
+    
+    render() {
+        const startIndex = Math.floor(this.scrollTop / this.itemHeight);
+        const endIndex = Math.min(startIndex + this.visibleItems, this.files.length);
+        
+        // Clear existing items
+        this.container.innerHTML = '';
+        
+        // Create spacer for scrolling
+        const spacerHeight = this.files.length * this.itemHeight;
+        const spacer = document.createElement('div');
+        spacer.style.height = `${spacerHeight}px`;
+        spacer.style.position = 'relative';
+        this.container.appendChild(spacer);
+        
+        // Render visible items
+        for (let i = startIndex; i < endIndex; i++) {
+            const file = this.files[i];
+            const item = this.createFileItem(file);
+            item.style.position = 'absolute';
+            item.style.top = `${i * this.itemHeight}px`;
+            item.style.height = `${this.itemHeight}px`;
+            spacer.appendChild(item);
+        }
+    }
+    
+    createFileItem(file) {
+        const item = document.createElement('div');
+        item.className = 'file-item';
+        item.innerHTML = `
+            <span class="file-name">${file.name}</span>
+            <span class="file-size">${formatBytes(file.size)}</span>
+        `;
+        return item;
+    }
+}
+```
+
+## Performance Monitoring
+
+### Upload Performance Metrics
+
+Track and optimize upload performance:
+
+```javascript
+class UploadMetrics {
+    constructor() {
+        this.metrics = {
+            initTime: 0,
+            firstByteTime: 0,
+            totalUploadTime: 0,
+            avgSpeed: 0,
+            errors: []
+        };
+    }
+    
+    startTracking() {
+        this.startTime = Date.now();
+        this.firstByteReceived = false;
+    }
+    
+    trackProgress(progress) {
+        if (!this.firstByteReceived && progress.loaded > 0) {
+            this.metrics.firstByteTime = Date.now() - this.startTime;
+            this.firstByteReceived = true;
+        }
+        
+        const elapsed = (Date.now() - this.startTime) / 1000;
+        this.metrics.avgSpeed = progress.loaded / elapsed;
+    }
+    
+    trackComplete() {
+        this.metrics.totalUploadTime = Date.now() - this.startTime;
+        
+        // Send metrics to analytics
+        this.sendMetrics();
+    }
+    
+    sendMetrics() {
+        analytics.track('upload_performance', {
+            init_time: this.metrics.initTime,
+            first_byte_time: this.metrics.firstByteTime,
+            total_time: this.metrics.totalUploadTime,
+            avg_speed_mbps: Math.round(this.metrics.avgSpeed / (1024 * 1024) * 8),
+            user_agent: navigator.userAgent,
+            connection: navigator.connection?.effectiveType
+        });
+    }
+}
+```
+
+## Best Practices Summary
+
+### Development Best Practices
+
+1. **Lazy load** the widget when not immediately needed
+2. **Clean up** widget instances and event listeners
+3. **Throttle** progress updates for better performance
+4. **Implement retry logic** for network failures
+5. **Monitor performance** with analytics
+
+### Production Optimizations
+
+1. **Use minified builds** in production
+2. **Enable compression** (gzip/brotli) on CDN
+3. **Set proper cache headers** for static assets
+4. **Implement CSP** for security
+5. **Monitor error rates** and performance metrics
+
+### User Experience Tips
+
+1. **Show progress indicators** for long uploads
+2. **Provide upload speed** and ETA information
+3. **Handle network issues** gracefully
+4. **Warn about large files** before upload
+5. **Implement file validation** client-side for immediate feedback

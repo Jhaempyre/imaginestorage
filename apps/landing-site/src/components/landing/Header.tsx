@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
+import Link from "next/link";
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -34,25 +35,30 @@ export default function Header() {
             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-sm">IS</span>
             </div>
-            <span className="text-xl font-bold text-gray-900">Imaginary Storage</span>
+            <span className="text-xl font-bold text-gray-900">
+              Imaginary Storage
+            </span>
           </div>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
             {navLinks.map((link) => (
-              <a
+              <Link
                 key={link.href}
                 href={link.href}
                 className="text-gray-600 hover:text-blue-600 transition-colors font-medium"
               >
                 {link.label}
-              </a>
+              </Link>
             ))}
-            <Button 
+            <Button
               className="bg-blue-600 hover:bg-blue-700"
               onClick={() => {
-                if (typeof window !== 'undefined') {
-                  window.open('https://dashboard.imaginarystorage.com/auth/login', '_blank');
+                if (typeof window !== "undefined") {
+                  window.open(
+                    "https://dashboard.imaginarystorage.com/auth/login",
+                    "_blank"
+                  );
                 }
               }}
             >
@@ -87,11 +93,14 @@ export default function Header() {
                   {link.label}
                 </a>
               ))}
-              <Button 
+              <Button
                 className="bg-blue-600 hover:bg-blue-700 w-full"
                 onClick={() => {
-                  if (typeof window !== 'undefined') {
-                    window.open('https://dashboard.imaginarystorage.com/auth/login', '_blank');
+                  if (typeof window !== "undefined") {
+                    window.open(
+                      "https://dashboard.imaginarystorage.com/auth/login",
+                      "_blank"
+                    );
                   }
                 }}
               >

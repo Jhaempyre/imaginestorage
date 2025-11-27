@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { ArrowRight, Cloud, Shield, Zap } from "lucide-react";
+import Link from "next/link";
 
 export default function HeroSection() {
   return (
@@ -22,7 +23,9 @@ export default function HeroSection() {
           >
             <div className="inline-flex items-center space-x-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-full mb-6">
               <Shield className="w-4 h-4" />
-              <span className="text-sm font-medium">Secure Multi-Provider Storage</span>
+              <span className="text-sm font-medium">
+                Secure Multi-Provider Storage
+              </span>
             </div>
 
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight">
@@ -32,24 +35,33 @@ export default function HeroSection() {
             </h1>
 
             <p className="text-xl md:text-2xl text-gray-600 mb-10 max-w-3xl mx-auto leading-relaxed">
-              Connect, manage, and share files across multiple cloud storage providers with enterprise-grade security and seamless developer integration.
+              Connect, manage, and share files across multiple cloud storage
+              providers with enterprise-grade security and seamless developer
+              integration.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-              <Button 
-                size="lg" 
+              <Button
+                size="lg"
                 className="bg-blue-600 hover:bg-blue-700 text-lg px-8 py-6 group"
-                onClick={() => {
-                  if (typeof window !== 'undefined') {
-                    window.open('https://dashboard.imaginarystorage.com/auth/login', '_blank');
-                  }
-                }}
+                asChild
               >
-                Get Started
-                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                <Link
+                  href="https://dashboard.imaginarystorage.com/auth/login"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Get Started
+                  <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </Link>
               </Button>
-              <Button size="lg" variant="outline" className="text-lg px-8 py-6 border-2">
-                View Documentation
+              <Button
+                size="lg"
+                variant="outline"
+                className="text-lg px-8 py-6 border-2"
+                asChild
+              >
+                <Link href="/docs/upload-widget">View Documentation</Link>
               </Button>
             </div>
 

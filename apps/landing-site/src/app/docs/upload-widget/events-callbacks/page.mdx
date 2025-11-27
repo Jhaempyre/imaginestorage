@@ -1,0 +1,515 @@
+# Events & Callbacks
+
+Learn how to handle upload events and implement custom callbacks to create responsive user interfaces.
+
+## Upload Events
+
+### upload:progress
+
+Track real-time upload progress for individual files and overall batch uploads.
+
+#### Event Data Structure
+
+```javascript
+{
+    percent: 65,                    // Upload percentage (0-100)
+    loaded: 6500000,               // Bytes uploaded so far
+    total: 10000000,               // Total bytes to upload
+    file: {                        // Current file being uploaded (optional)
+        name: 'presentation.pdf',
+        size: 2500000,
+        type: 'application/pdf'
+    }
+}
+```
+
+#### Implementation Examples
+
+**Basic Progress Bar:**
+
+```javascript
+widget.on('upload:progress', (progress) => {
+    const progressBar = document.getElementById('progress-bar');
+    const progressText = document.getElementById('progress-text');
+    
+    // Update progress bar width
+    progressBar.style.width = `${progress.percent}%`;
+    
+    // Show current file and percentage
+    if (progress.file) {
+        progressText.textContent = 
+            `Uploading ${progress.file.name}: ${Math.round(progress.percent)}%`;
+    } else {
+        progressText.textContent = `Upload progress: ${Math.round(progress.percent)}%`;
+    }
+});
+```
+
+**Advanced Progress with Speed Calculation:**
+
+```javascript
+let startTime = null;
+let lastLoaded = 0;
+let lastTime = null;
+
+widget.on('upload:progress', (progress) => {
+    const now = Date.now();
+    
+    if (!startTime) {
+        startTime = now;
+        lastTime = now;
+        lastLoaded = progress.loaded;
+        return;
+    }
+    
+    // Calculate upload speed
+    const timeDiff = now - lastTime;
+    const bytesDiff = progress.loaded - lastLoaded;
+    const speed = bytesDiff / (timeDiff / 1000); // bytes per second
+    
+    // Calculate ETA
+    const remainingBytes = progress.total - progress.loaded;
+    const eta = remainingBytes / speed; // seconds
+    
+    // Update UI
+    updateProgressUI({
+        percent: progress.percent,
+        speed: formatSpeed(speed),
+        eta: formatTime(eta),
+        file: progress.file
+    });
+    
+    // Update tracking variables
+    lastLoaded = progress.loaded;
+    lastTime = now;
+});
+
+function formatSpeed(bytesPerSecond) {
+    if (bytesPerSecond < 1024) return `${Math.round(bytesPerSecond)} B/s`;
+    if (bytesPerSecond < 1024 * 1024) return `${Math.round(bytesPerSecond / 1024)} KB/s`;
+    return `${Math.round(bytesPerSecond / (1024 * 1024))} MB/s`;
+}
+
+function formatTime(seconds) {
+    if (seconds < 60) return `${Math.round(seconds)}s`;
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.round(seconds % 60);
+    return `${minutes}m ${remainingSeconds}s`;
+}
+```
+
+### upload:success
+
+Fired when files are successfully uploaded to the server.
+
+#### Event Data Structure
+
+```javascript
+[
+    {
+        id: 'uuid-1234-5678-9012',         // Unique file identifier
+        name: 'document.pdf',              // Original filename
+        size: 2500000,                     // File size in bytes
+        type: 'application/pdf',           // MIME type
+        url: 'https://cdn.example.com/files/uuid-1234.pdf', // Access URL
+        thumbnailUrl: 'https://cdn.example.com/thumbs/uuid-1234.jpg', // Thumbnail (if available)
+        uploadedAt: '2024-01-15T10:30:00Z', // Upload timestamp
+        metadata: {                        // Additional file metadata
+            width: 1920,                   // Image width (if image)
+            height: 1080,                  // Image height (if image)
+            duration: 120                  // Video duration (if video)
+        }
+    }
+    // ... additional files
+]
+```
+
+#### Implementation Examples
+
+**Update File Gallery:**
+
+```javascript
+widget.on('upload:success', (files) => {
+    const gallery = document.getElementById('file-gallery');
+    
+    files.forEach(file => {
+        const fileElement = createFileCard(file);
+        gallery.appendChild(fileElement);
+    });
+    
+    // Show success notification
+    showNotification(`Successfully uploaded ${files.length} file(s)`, 'success');
+    
+    // Update file counter
+    updateFileCounter(files.length);
+    
+    // Close widget after successful upload
+    widget.close();
+});
+
+function createFileCard(file) {
+    const card = document.createElement('div');
+    card.className = 'file-card';
+    card.innerHTML = `
+        <div class="file-thumbnail">
+            ${file.thumbnailUrl ? 
+                `<img src="${file.thumbnailUrl}" alt="${file.name}" />` :
+                `<div class="file-icon">${getFileIcon(file.type)}</div>`
+            }
+        </div>
+        <div class="file-info">
+            <h3>${file.name}</h3>
+            <p>${formatFileSize(file.size)} • ${new Date(file.uploadedAt).toLocaleDateString()}</p>
+        </div>
+        <div class="file-actions">
+            <a href="${file.url}" target="_blank">View</a>
+            <button onclick="copyFileLink('${file.url}')">Copy Link</button>
+        </div>
+    `;
+    return card;
+}
+```
+
+**Integration with State Management:**
+
+```javascript
+// React/Redux example
+widget.on('upload:success', (files) => {
+    // Dispatch to Redux store
+    dispatch(addUploadedFiles(files));
+    
+    // Update local state
+    setUploadedFiles(prevFiles => [...prevFiles, ...files]);
+    
+    // Track analytics
+    analytics.track('files_uploaded', {
+        count: files.length,
+        totalSize: files.reduce((sum, file) => sum + file.size, 0)
+    });
+});
+```
+
+### upload:error
+
+Handle upload failures with detailed error information.
+
+#### Event Data Structure
+
+```javascript
+{
+    message: 'Upload failed: File too large',
+    code: 'FILE_TOO_LARGE',
+    details: {
+        file: {
+            name: 'large-video.mp4',
+            size: 52428800,                // 50MB
+            type: 'video/mp4'
+        },
+        maxSize: 10485760,                 // 10MB limit
+        actualSize: 52428800
+    },
+    timestamp: '2024-01-15T10:30:00Z'
+}
+```
+
+#### Error Codes
+
+| Code | Description | Typical Cause |
+|------|-------------|---------------|
+| `FILE_TOO_LARGE` | File exceeds size limit | File size > maxFileSize constraint |
+| `INVALID_FILE_TYPE` | File type not allowed | MIME type not in allowedMimeTypes |
+| `NETWORK_ERROR` | Network connectivity issue | Internet connection problems |
+| `AUTH_ERROR` | Authentication failed | Invalid or expired API key |
+| `QUOTA_EXCEEDED` | Storage quota exceeded | Account storage limit reached |
+| `SERVER_ERROR` | Server-side error | Backend processing failure |
+
+#### Implementation Examples
+
+**User-Friendly Error Handling:**
+
+```javascript
+widget.on('upload:error', (error) => {
+    console.error('Upload error:', error);
+    
+    let userMessage;
+    let actionButton = null;
+    
+    switch (error.code) {
+        case 'FILE_TOO_LARGE':
+            const maxSizeMB = Math.round(error.details.maxSize / (1024 * 1024));
+            userMessage = `File "${error.details.file.name}" is too large. Maximum size allowed is ${maxSizeMB}MB.`;
+            actionButton = {
+                text: 'Choose Different File',
+                action: () => widget.open()
+            };
+            break;
+            
+        case 'INVALID_FILE_TYPE':
+            userMessage = `File type "${error.details.file.type}" is not supported.`;
+            actionButton = {
+                text: 'See Supported Types',
+                action: () => showSupportedTypes()
+            };
+            break;
+            
+        case 'NETWORK_ERROR':
+            userMessage = 'Network connection error. Please check your internet connection and try again.';
+            actionButton = {
+                text: 'Retry Upload',
+                action: () => widget.open()
+            };
+            break;
+            
+        case 'QUOTA_EXCEEDED':
+            userMessage = 'Storage quota exceeded. Please free up space or upgrade your plan.';
+            actionButton = {
+                text: 'Manage Storage',
+                action: () => window.open('/settings/storage', '_blank')
+            };
+            break;
+            
+        default:
+            userMessage = `Upload failed: ${error.message}`;
+    }
+    
+    showErrorNotification(userMessage, actionButton);
+});
+
+function showErrorNotification(message, actionButton) {
+    const notification = document.createElement('div');
+    notification.className = 'error-notification';
+    notification.innerHTML = `
+        <div class="error-icon">❌</div>
+        <div class="error-content">
+            <p>${message}</p>
+            ${actionButton ? `
+                <button class="error-action-btn" onclick="${actionButton.action}">
+                    ${actionButton.text}
+                </button>
+            ` : ''}
+        </div>
+        <button class="close-btn" onclick="this.parentElement.remove()">×</button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 10 seconds
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 10000);
+}
+```
+
+### upload:complete
+
+Triggered when all uploads in a batch are finished, regardless of success or failure.
+
+#### Event Data Structure
+
+```javascript
+{
+    successful: [/* array of successfully uploaded files */],
+    failed: [/* array of failed file attempts */],
+    totalFiles: 5,
+    successfulCount: 3,
+    failedCount: 2,
+    totalSize: 25000000,               // Total bytes attempted
+    uploadedSize: 15000000,            // Bytes successfully uploaded
+    duration: 45000,                   // Upload duration in milliseconds
+    timestamp: '2024-01-15T10:30:00Z'
+}
+```
+
+#### Implementation Examples
+
+**Comprehensive Upload Summary:**
+
+```javascript
+widget.on('upload:complete', (result) => {
+    const { successful, failed, totalFiles, duration } = result;
+    
+    // Log summary
+    console.log(`Upload batch complete: ${successful.length}/${totalFiles} successful in ${duration/1000}s`);
+    
+    // Show appropriate notification
+    if (failed.length === 0) {
+        // All uploads successful
+        showSuccessMessage(`All ${successful.length} files uploaded successfully!`);
+    } else if (successful.length === 0) {
+        // All uploads failed
+        showErrorMessage(`Failed to upload ${failed.length} file(s). Please try again.`);
+    } else {
+        // Partial success
+        showWarningMessage(
+            `${successful.length} file(s) uploaded successfully. ` +
+            `${failed.length} file(s) failed to upload.`
+        );
+    }
+    
+    // Update UI state
+    updateUploadState(result);
+    
+    // Analytics tracking
+    trackUploadBatch(result);
+    
+    // Cleanup
+    resetUploadProgress();
+});
+
+function trackUploadBatch(result) {
+    analytics.track('upload_batch_complete', {
+        total_files: result.totalFiles,
+        successful_files: result.successfulCount,
+        failed_files: result.failedCount,
+        total_size_mb: Math.round(result.totalSize / (1024 * 1024)),
+        duration_seconds: Math.round(result.duration / 1000),
+        success_rate: result.successfulCount / result.totalFiles
+    });
+}
+```
+
+## Widget Events
+
+### widget:open
+
+Fired when the upload modal is displayed.
+
+```javascript
+widget.on('widget:open', () => {
+    console.log('Upload widget opened');
+    
+    // Track user interaction
+    analytics.track('upload_widget_opened');
+    
+    // Update UI state
+    document.body.classList.add('widget-open');
+    
+    // Pause any background operations
+    pauseBackgroundTasks();
+});
+```
+
+### widget:close
+
+Fired when the upload modal is hidden.
+
+```javascript
+widget.on('widget:close', () => {
+    console.log('Upload widget closed');
+    
+    // Track user interaction
+    analytics.track('upload_widget_closed');
+    
+    // Update UI state
+    document.body.classList.remove('widget-open');
+    
+    // Resume background operations
+    resumeBackgroundTasks();
+    
+    // Clear any temporary state
+    clearTemporaryUploadState();
+});
+```
+
+### core:initialized
+
+Fired when the widget core is fully initialized and ready to use.
+
+```javascript
+widget.on('core:initialized', () => {
+    console.log('Widget core initialized');
+    
+    // Get and display upload constraints
+    const constraints = widget.getConstraints();
+    if (constraints) {
+        displayUploadLimits(constraints);
+    }
+    
+    // Enable upload triggers
+    enableUploadButtons();
+    
+    // Pre-load any necessary resources
+    preloadAssets();
+});
+```
+
+## Event Data Structure Reference
+
+### Progress Event Data
+
+```javascript
+{
+    percent: number,        // 0-100
+    loaded: number,         // Bytes uploaded
+    total: number,          // Total bytes
+    file?: {                // Current file (optional)
+        name: string,
+        size: number,
+        type: string
+    }
+}
+```
+
+### Success Event Data
+
+```javascript
+Array<{
+    id: string,             // Unique identifier
+    name: string,           // Filename
+    size: number,           // File size in bytes
+    type: string,           // MIME type
+    url: string,            // Access URL
+    thumbnailUrl?: string,  // Thumbnail URL (optional)
+    uploadedAt: string,     // ISO timestamp
+    metadata?: object       // Additional metadata (optional)
+}>
+```
+
+### Error Event Data
+
+```javascript
+{
+    message: string,        // Human-readable error message
+    code: string,          // Error code for programmatic handling
+    details?: object,      // Additional error details
+    timestamp: string      // ISO timestamp
+}
+```
+
+### Complete Event Data
+
+```javascript
+{
+    successful: Array<UploadedFile>,  // Successfully uploaded files
+    failed: Array<FailedUpload>,      // Failed upload attempts
+    totalFiles: number,               // Total files attempted
+    successfulCount: number,          // Number of successful uploads
+    failedCount: number,              // Number of failed uploads
+    totalSize: number,                // Total bytes attempted
+    uploadedSize: number,             // Bytes successfully uploaded
+    duration: number,                 // Duration in milliseconds
+    timestamp: string                 // ISO timestamp
+}
+```
+
+## Best Practices
+
+### Error Handling
+
+1. **Always implement error handlers** - Never leave upload errors unhandled
+2. **Provide actionable feedback** - Tell users what went wrong and how to fix it
+3. **Log errors for debugging** - Keep detailed error logs for troubleshooting
+
+### Progress Updates
+
+1. **Update UI responsively** - Keep progress indicators smooth and responsive
+2. **Show meaningful information** - Display file names, speeds, and ETAs when possible
+3. **Handle edge cases** - Account for very fast or very slow uploads
+
+### User Experience
+
+1. **Provide clear feedback** - Always inform users about upload status
+2. **Allow cancellation** - Implement upload cancellation when needed
+3. **Handle interruptions gracefully** - Deal with network issues and browser refreshes

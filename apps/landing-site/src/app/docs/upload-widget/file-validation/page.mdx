@@ -1,0 +1,431 @@
+# File Validation & Constraints
+
+Learn how ImaginaryWidget validates files and how to implement custom validation rules.
+
+## File Size Limits
+
+File size constraints are enforced both client-side and server-side to ensure optimal performance and prevent abuse.
+
+### Server-Side Constraints
+
+The server defines maximum file sizes based on your account plan and configuration:
+
+```javascript
+// Example constraints from server
+{
+    maxFileSize: 10485760,        // 10MB in bytes
+    maxFiles: 10,                 // Maximum files per upload batch
+    totalSizeLimit: 104857600     // 100MB total per batch
+}
+```
+
+### Client-Side Validation
+
+```javascript
+// Get current constraints
+const constraints = widget.getConstraints();
+
+function validateFileSize(file) {
+    if (!constraints) {
+        console.warn('Constraints not yet loaded');
+        return true; // Allow validation to proceed server-side
+    }
+    
+    if (file.size > constraints.maxFileSize) {
+        const maxSizeMB = Math.round(constraints.maxFileSize / (1024 * 1024));
+        throw new Error(`File "${file.name}" exceeds ${maxSizeMB}MB size limit`);
+    }
+    
+    return true;
+}
+```
+
+## Supported MIME Types
+
+Control which file types users can upload to maintain security and consistency.
+
+### Default Supported Types
+
+Common file types supported by default:
+
+- **Images:** `image/jpeg`, `image/png`, `image/gif`, `image/webp`
+- **Documents:** `application/pdf`, `text/plain`
+- **Archives:** `application/zip`
+
+### Custom MIME Type Configuration
+
+Configure allowed types in your backend:
+
+```javascript
+// Backend configuration example
+{
+    allowedMimeTypes: [
+        'image/jpeg',
+        'image/png', 
+        'application/pdf',
+        'text/csv',
+        'application/json'
+    ]
+}
+```
+
+### Client-Side Type Validation
+
+```javascript
+function validateFileType(file) {
+    const constraints = widget.getConstraints();
+    if (!constraints) return true;
+    
+    const allowed = constraints.allowedMimeTypes;
+    
+    if (!allowed.includes(file.type)) {
+        const friendlyTypes = allowed.map(type => 
+            type.split('/')[1].toUpperCase()
+        ).join(', ');
+        
+        throw new Error(
+            `File type "${file.type}" not allowed. ` +
+            `Supported types: ${friendlyTypes}`
+        );
+    }
+    
+    return true;
+}
+```
+
+## Domain Restrictions
+
+*This feature is planned for future releases.*
+
+Configure which domains can use your upload widget:
+
+```javascript
+// Future feature - domain restrictions
+{
+    allowedDomains: [
+        'yoursite.com',
+        '*.yoursite.com',
+        'staging.yoursite.com'
+    ]
+}
+```
+
+## Custom Validation Logic
+
+Implement additional validation beyond the built-in constraints.
+
+### File Name Validation
+
+```javascript
+function validateFileName(file) {
+    // Check for prohibited characters
+    const prohibitedChars = /[<>:"/\\|?*]/;
+    if (prohibitedChars.test(file.name)) {
+        throw new Error('File name contains prohibited characters');
+    }
+    
+    // Check name length
+    if (file.name.length > 255) {
+        throw new Error('File name too long (max 255 characters)');
+    }
+    
+    // Check for empty name
+    if (!file.name.trim()) {
+        throw new Error('File name cannot be empty');
+    }
+    
+    return true;
+}
+```
+
+### Content-Based Validation
+
+```javascript
+async function validateImageDimensions(file) {
+    if (!file.type.startsWith('image/')) return true;
+    
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        
+        img.onload = () => {
+            URL.revokeObjectURL(url);
+            
+            // Check dimensions
+            if (img.width > 4000 || img.height > 4000) {
+                reject(new Error('Image dimensions too large (max 4000x4000)'));
+            } else if (img.width < 100 || img.height < 100) {
+                reject(new Error('Image too small (min 100x100)'));
+            } else {
+                resolve(true);
+            }
+        };
+        
+        img.onerror = () => {
+            URL.revokeObjectURL(url);
+            reject(new Error('Invalid image file'));
+        };
+        
+        img.src = url;
+    });
+}
+```
+
+## Error Handling for Invalid Files
+
+Implement comprehensive error handling for validation failures.
+
+### Validation Error Types
+
+| Error Type | Description | Example |
+|------------|-------------|---------|
+| `FILE_TOO_LARGE` | File exceeds size limit | File > 10MB |
+| `INVALID_FILE_TYPE` | Unsupported MIME type | .exe file |
+| `INVALID_FILE_NAME` | Prohibited characters in name | file.txt |
+| `DIMENSIONS_INVALID` | Image dimensions out of range | 50x50 image |
+| `CONTENT_INVALID` | File content validation failed | Corrupted file |
+
+### Comprehensive Validation Function
+
+```javascript
+async function validateFile(file) {
+    const errors = [];
+    
+    try {
+        // Basic validations
+        validateFileSize(file);
+        validateFileType(file);
+        validateFileName(file);
+        
+        // Content-based validations
+        if (file.type.startsWith('image/')) {
+            await validateImageDimensions(file);
+        }
+        
+        return { valid: true, errors: [] };
+        
+    } catch (error) {
+        errors.push(error.message);
+    }
+    
+    return { valid: false, errors };
+}
+
+// Usage with multiple files
+async function validateFiles(files) {
+    const results = await Promise.all(
+        Array.from(files).map(validateFile)
+    );
+    
+    const validFiles = [];
+    const invalidFiles = [];
+    
+    results.forEach((result, index) => {
+        if (result.valid) {
+            validFiles.push(files[index]);
+        } else {
+            invalidFiles.push({
+                file: files[index],
+                errors: result.errors
+            });
+        }
+    });
+    
+    return { validFiles, invalidFiles };
+}
+```
+
+### User-Friendly Error Display
+
+```javascript
+function showValidationErrors(invalidFiles) {
+    const errorContainer = document.getElementById('validation-errors');
+    
+    if (invalidFiles.length === 0) {
+        errorContainer.innerHTML = '';
+        return;
+    }
+    
+    const errorHTML = invalidFiles.map(({ file, errors }) => `
+        <div class="validation-error">
+            <strong>${file.name}</strong>
+            <ul>
+                ${errors.map(error => `<li>${error}</li>`).join('')}
+            </ul>
+        </div>
+    `).join('');
+    
+    errorContainer.innerHTML = `
+        <div class="error-summary">
+            <h3>Some files cannot be uploaded:</h3>
+            ${errorHTML}
+        </div>
+    `;
+}
+
+// Example usage before upload
+document.getElementById('upload-btn').addEventListener('click', async () => {
+    const fileInput = document.getElementById('file-input');
+    const files = fileInput.files;
+    
+    if (!files.length) {
+        widget.open();
+        return;
+    }
+    
+    const { validFiles, invalidFiles } = await validateFiles(files);
+    
+    if (invalidFiles.length > 0) {
+        showValidationErrors(invalidFiles);
+        
+        if (validFiles.length === 0) {
+            return; // No valid files, don't open widget
+        }
+        
+        // Ask user if they want to upload valid files only
+        const proceed = confirm(
+            `${invalidFiles.length} file(s) are invalid. ` +
+            `Upload ${validFiles.length} valid file(s)?`
+        );
+        
+        if (!proceed) return;
+    }
+    
+    // Clear any previous errors
+    showValidationErrors([]);
+    
+    // Open widget (it will receive valid files)
+    widget.open();
+});
+```
+
+## Pre-Upload Validation Workflow
+
+Create a complete validation workflow that runs before the widget opens:
+
+```javascript
+class FileValidator {
+    constructor(constraints) {
+        this.constraints = constraints;
+    }
+    
+    async validateBatch(files) {
+        const results = {
+            valid: [],
+            invalid: [],
+            warnings: [],
+            totalSize: 0
+        };
+        
+        for (const file of files) {
+            try {
+                await this.validateSingleFile(file);
+                results.valid.push(file);
+                results.totalSize += file.size;
+            } catch (error) {
+                results.invalid.push({
+                    file,
+                    error: error.message
+                });
+            }
+        }
+        
+        // Check batch constraints
+        if (results.valid.length > this.constraints.maxFiles) {
+            results.warnings.push(
+                `Too many files selected. Only first ${this.constraints.maxFiles} will be uploaded.`
+            );
+            results.valid = results.valid.slice(0, this.constraints.maxFiles);
+        }
+        
+        if (results.totalSize > this.constraints.totalSizeLimit) {
+            results.warnings.push(
+                'Total file size exceeds limit. Some files may be skipped.'
+            );
+        }
+        
+        return results;
+    }
+    
+    async validateSingleFile(file) {
+        // Size validation
+        if (file.size > this.constraints.maxFileSize) {
+            throw new Error(`File too large (max ${this.formatBytes(this.constraints.maxFileSize)})`);
+        }
+        
+        // Type validation  
+        if (!this.constraints.allowedMimeTypes.includes(file.type)) {
+            throw new Error(`File type not supported: ${file.type}`);
+        }
+        
+        // Name validation
+        if (!/^[a-zA-Z0-9._-]+$/.test(file.name)) {
+            throw new Error('File name contains invalid characters');
+        }
+        
+        // Content validation for images
+        if (file.type.startsWith('image/')) {
+            await this.validateImage(file);
+        }
+    }
+    
+    async validateImage(file) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            const url = URL.createObjectURL(file);
+            
+            img.onload = () => {
+                URL.revokeObjectURL(url);
+                
+                if (img.width < 50 || img.height < 50) {
+                    reject(new Error('Image too small (minimum 50x50 pixels)'));
+                } else if (img.width > 8000 || img.height > 8000) {
+                    reject(new Error('Image too large (maximum 8000x8000 pixels)'));
+                } else {
+                    resolve();
+                }
+            };
+            
+            img.onerror = () => {
+                URL.revokeObjectURL(url);
+                reject(new Error('Invalid or corrupted image file'));
+            };
+            
+            img.src = url;
+        });
+    }
+    
+    formatBytes(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+}
+
+// Usage
+widget.on('core:initialized', () => {
+    const constraints = widget.getConstraints();
+    const validator = new FileValidator(constraints);
+    
+    document.getElementById('upload-btn').addEventListener('click', async () => {
+        const files = document.getElementById('file-input').files;
+        
+        if (files.length === 0) {
+            widget.open();
+            return;
+        }
+        
+        const validation = await validator.validateBatch(Array.from(files));
+        
+        if (validation.invalid.length > 0) {
+            showValidationReport(validation);
+        }
+        
+        if (validation.valid.length > 0) {
+            widget.open(); // Widget will handle valid files
+        }
+    });
+});
+```

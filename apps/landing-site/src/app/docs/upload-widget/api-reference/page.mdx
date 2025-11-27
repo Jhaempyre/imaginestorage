@@ -1,0 +1,534 @@
+# API Reference
+
+Complete reference for all ImaginaryWidget methods, properties, and configuration options.
+
+## Widget Initialization
+
+### Constructor
+
+Create a new widget instance.
+
+```javascript
+const widget = new ImaginaryWidget();
+```
+
+The constructor takes no parameters. Configuration is done through the `init()` method.
+
+### init(options)
+
+Initialize the widget with configuration options.
+
+```javascript
+await widget.init(options);
+```
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `options` | `Object` | Yes | Configuration object |
+
+#### Options Object
+
+| Property | Type | Required | Default | Description |
+|----------|------|----------|---------|-------------|
+| `apiKey` | `string` | Yes | - | Your public API key (starts with `pk_`) |
+| `apiUrl` | `string` | Yes | - | Backend API URL |
+| `mount` | `string \| Element` | No | `null` | CSS selector or DOM element for mounting |
+| `onSuccess` | `function` | No | `null` | Success callback function |
+| `onError` | `function` | No | `null` | Error callback function |
+| `onProgress` | `function` | No | `null` | Progress callback function |
+| `onComplete` | `function` | No | `null` | Completion callback function |
+
+#### Returns
+
+`Promise<ImaginaryWidget>` - Returns the widget instance when initialization completes.
+
+#### Example
+
+```javascript
+const widget = new ImaginaryWidget();
+
+try {
+    await widget.init({
+        apiKey: 'pk_live_1234567890abcdef',
+        apiUrl: 'https://api.yoursite.com/api',
+        mount: '#upload-container',
+        onSuccess: (files) => console.log('Upload successful:', files),
+        onError: (error) => console.error('Upload failed:', error)
+    });
+    console.log('Widget initialized successfully');
+} catch (error) {
+    console.error('Initialization failed:', error);
+}
+```
+
+## Core Methods
+
+### open()
+
+Display the upload modal interface.
+
+```javascript
+widget.open();
+```
+
+#### Parameters
+
+None.
+
+#### Returns
+
+`void`
+
+#### Example
+
+```javascript
+// Open widget when button is clicked
+document.getElementById('upload-btn').addEventListener('click', () => {
+    widget.open();
+});
+```
+
+#### Throws
+
+- Throws error if widget is not initialized
+- Throws error if widget is already open
+
+### close()
+
+Hide the upload modal interface.
+
+```javascript
+widget.close();
+```
+
+#### Parameters
+
+None.
+
+#### Returns
+
+`void`
+
+#### Example
+
+```javascript
+// Close widget programmatically
+widget.close();
+
+// Close widget after successful upload
+widget.init({
+    // ... other options
+    onSuccess: (files) => {
+        console.log('Upload complete, closing widget');
+        widget.close();
+    }
+});
+```
+
+### destroy()
+
+Clean up the widget instance and remove all event listeners.
+
+```javascript
+widget.destroy();
+```
+
+#### Parameters
+
+None.
+
+#### Returns
+
+`void`
+
+#### Example
+
+```javascript
+// Clean up when component unmounts
+function cleanup() {
+    if (widget) {
+        widget.destroy();
+    }
+}
+
+// In React useEffect cleanup
+useEffect(() => {
+    return () => {
+        widget.destroy();
+    };
+}, []);
+```
+
+### getConstraints()
+
+Get the current file upload constraints from the server.
+
+```javascript
+const constraints = widget.getConstraints();
+```
+
+#### Parameters
+
+None.
+
+#### Returns
+
+`Object | null` - Constraints object or null if not initialized.
+
+#### Constraints Object
+
+```javascript
+{
+    maxFileSize: 10485760,           // Max file size in bytes (10MB)
+    allowedMimeTypes: [              // Allowed MIME types
+        'image/jpeg',
+        'image/png',
+        'image/gif',
+        'application/pdf'
+    ],
+    maxFiles: 10,                    // Maximum number of files per upload
+    allowedDomains: [                // Allowed domains (if restricted)
+        'yoursite.com',
+        '*.yoursite.com'
+    ]
+}
+```
+
+#### Example
+
+```javascript
+const constraints = widget.getConstraints();
+
+if (constraints) {
+    console.log('Max file size:', constraints.maxFileSize, 'bytes');
+    console.log('Allowed types:', constraints.allowedMimeTypes);
+    
+    // Use constraints to validate files before upload
+    function validateFile(file) {
+        if (file.size > constraints.maxFileSize) {
+            throw new Error('File too large');
+        }
+        if (!constraints.allowedMimeTypes.includes(file.type)) {
+            throw new Error('File type not allowed');
+        }
+    }
+}
+```
+
+## Event System
+
+### on(event, callback)
+
+Add an event listener for the specified event.
+
+```javascript
+widget.on(event, callback);
+```
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `event` | `string` | Yes | Event name |
+| `callback` | `function` | Yes | Callback function |
+
+#### Returns
+
+`void`
+
+#### Example
+
+```javascript
+// Add event listeners after initialization
+widget.on('upload:progress', (progress) => {
+    console.log(`Upload progress: ${progress.percent}%`);
+    updateProgressBar(progress.percent);
+});
+
+widget.on('upload:success', (files) => {
+    console.log('Upload successful:', files);
+    showSuccessMessage(files);
+});
+```
+
+### off(event, callback)
+
+Remove an event listener for the specified event.
+
+```javascript
+widget.off(event, callback);
+```
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `event` | `string` | Yes | Event name |
+| `callback` | `function` | No | Specific callback to remove (if omitted, removes all) |
+
+#### Returns
+
+`void`
+
+#### Example
+
+```javascript
+// Remove specific callback
+widget.off('upload:progress', progressCallback);
+
+// Remove all listeners for an event
+widget.off('upload:progress');
+```
+
+## Available Events
+
+### upload:progress
+
+Fired during file upload progress.
+
+#### Event Data
+
+```javascript
+{
+    percent: 75,                    // Upload percentage (0-100)
+    loaded: 7500000,               // Bytes uploaded
+    total: 10000000,               // Total bytes
+    file: {                        // Current file being uploaded
+        name: 'document.pdf',
+        size: 2500000,
+        type: 'application/pdf'
+    }
+}
+```
+
+#### Example
+
+```javascript
+widget.on('upload:progress', (progress) => {
+    const percentComplete = Math.round(progress.percent);
+    document.getElementById('progress').textContent = `${percentComplete}%`;
+    
+    if (progress.file) {
+        document.getElementById('current-file').textContent = 
+            `Uploading: ${progress.file.name}`;
+    }
+});
+```
+
+### upload:success
+
+Fired when files are successfully uploaded.
+
+#### Event Data
+
+```javascript
+[
+    {
+        id: 'file-uuid-1',
+        name: 'document.pdf',
+        size: 2500000,
+        type: 'application/pdf',
+        url: 'https://cdn.yoursite.com/files/document.pdf',
+        uploadedAt: '2024-01-15T10:30:00Z'
+    },
+    // ... more files
+]
+```
+
+#### Example
+
+```javascript
+widget.on('upload:success', (files) => {
+    files.forEach(file => {
+        addFileToGallery(file);
+        console.log(`✅ ${file.name} uploaded successfully`);
+    });
+    
+    showNotification(`${files.length} file(s) uploaded successfully!`);
+});
+```
+
+### upload:error
+
+Fired when an upload fails.
+
+#### Event Data
+
+```javascript
+{
+    message: 'Upload failed',
+    code: 'UPLOAD_ERROR',
+    details: {
+        file: 'document.pdf',
+        reason: 'File too large'
+    },
+    timestamp: '2024-01-15T10:30:00Z'
+}
+```
+
+#### Example
+
+```javascript
+widget.on('upload:error', (error) => {
+    console.error('Upload failed:', error);
+    
+    let message = 'Upload failed';
+    if (error.details?.reason) {
+        message += `: ${error.details.reason}`;
+    }
+    
+    showErrorNotification(message);
+});
+```
+
+### upload:complete
+
+Fired when all uploads in a batch are finished (success or failure).
+
+#### Event Data
+
+```javascript
+{
+    successful: [/* successful files */],
+    failed: [/* failed files */],
+    totalFiles: 5,
+    totalSize: 12500000,
+    duration: 15000,              // Duration in milliseconds
+    timestamp: '2024-01-15T10:30:00Z'
+}
+```
+
+#### Example
+
+```javascript
+widget.on('upload:complete', (result) => {
+    const { successful, failed, totalFiles } = result;
+    
+    console.log(`Upload complete: ${successful.length}/${totalFiles} successful`);
+    
+    if (failed.length > 0) {
+        console.warn(`${failed.length} uploads failed:`, failed);
+        showPartialSuccessMessage(successful.length, failed.length);
+    } else {
+        showSuccessMessage(`All ${successful.length} files uploaded!`);
+    }
+    
+    // Analytics
+    trackUploadComplete({
+        successCount: successful.length,
+        failCount: failed.length,
+        duration: result.duration
+    });
+});
+```
+
+### widget:open
+
+Fired when the widget modal is opened.
+
+#### Example
+
+```javascript
+widget.on('widget:open', () => {
+    console.log('Widget opened');
+    trackEvent('upload_widget_opened');
+});
+```
+
+### widget:close
+
+Fired when the widget modal is closed.
+
+#### Example
+
+```javascript
+widget.on('widget:close', () => {
+    console.log('Widget closed');
+    trackEvent('upload_widget_closed');
+});
+```
+
+### core:initialized
+
+Fired when the widget core is fully initialized.
+
+#### Example
+
+```javascript
+widget.on('core:initialized', () => {
+    console.log('Widget core initialized');
+    // Safe to call other widget methods now
+});
+```
+
+## Error Handling
+
+### Common Error Codes
+
+| Code | Description | Solution |
+|------|-------------|----------|
+| `INIT_ERROR` | Initialization failed | Check API key and URL |
+| `AUTH_ERROR` | Authentication failed | Verify API key is valid |
+| `UPLOAD_ERROR` | Upload failed | Check file constraints |
+| `NETWORK_ERROR` | Network connectivity issue | Check internet connection |
+| `VALIDATION_ERROR` | File validation failed | Check file type/size |
+| `CONSTRAINT_ERROR` | File violates constraints | Review file restrictions |
+
+### Error Object Structure
+
+```javascript
+{
+    message: 'Human readable error message',
+    code: 'ERROR_CODE',
+    details: {
+        // Additional error details
+    },
+    timestamp: '2024-01-15T10:30:00Z'
+}
+```
+
+## Widget State
+
+### Properties
+
+Access widget state through these read-only properties:
+
+```javascript
+widget.isInitialized  // boolean - Whether widget is initialized
+widget.isOpen         // boolean - Whether modal is currently open
+widget.isUploading    // boolean - Whether upload is in progress
+```
+
+### Example
+
+```javascript
+// Check widget state before operations
+if (widget.isInitialized) {
+    if (!widget.isOpen) {
+        widget.open();
+    }
+} else {
+    console.error('Widget not initialized');
+}
+```
+
+## TypeScript Support
+
+*TypeScript definitions will be available in future releases.*
+
+Example TypeScript usage:
+```typescript
+// Future TypeScript support
+interface WidgetOptions {
+    apiKey: string;
+    apiUrl: string;
+    mount?: string | HTMLElement;
+    onSuccess?: (files: UploadedFile[]) => void;
+    onError?: (error: UploadError) => void;
+}
+
+const widget: ImaginaryWidget = new ImaginaryWidget();
+await widget.init(options);
+```

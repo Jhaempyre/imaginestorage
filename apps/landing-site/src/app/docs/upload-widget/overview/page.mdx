@@ -1,0 +1,99 @@
+# Overview & Introduction
+
+## What is ImaginaryWidget?
+
+ImaginaryWidget is a lightweight, embeddable JavaScript widget that provides seamless file upload functionality for web applications. Built with vanilla JavaScript, it offers a modern, user-friendly interface for uploading files to your ImaginaryStore backend.
+
+The widget handles all the complexity of file uploads, including:
+- Progress tracking
+- File validation
+- Error handling
+- Token-based authentication
+- Drag and drop support
+
+## Key Features and Capabilities
+
+### 🚀 Easy Integration
+- **Zero dependencies** - Pure JavaScript implementation
+- **Framework agnostic** - Works with React, Vue, Angular, or vanilla JS
+- **CDN ready** - Simple script tag integration
+- **Customizable** - Flexible configuration options
+
+### 📁 File Management
+- **Multi-file uploads** - Upload multiple files simultaneously
+- **Drag & drop support** - Intuitive drag-and-drop interface
+- **File validation** - Built-in file type and size validation
+- **Progress tracking** - Real-time upload progress indicators
+
+### 🔐 Security & Authentication
+- **Token-based uploads** - Secure upload process with temporary tokens
+- **API key authentication** - Secure API key management
+- **File constraints** - Server-side validation and restrictions
+- **CORS support** - Proper cross-origin resource sharing
+
+### 🎨 User Experience
+- **Modal interface** - Clean, non-intrusive popup modal
+- **Event system** - Comprehensive event callbacks
+- **Error handling** - User-friendly error messages
+- **Responsive design** - Works on desktop and mobile devices
+
+## Browser Compatibility
+
+ImaginaryWidget supports all modern browsers:
+
+| Browser | Minimum Version |
+|---------|----------------|
+| Chrome | 60+ |
+| Firefox | 55+ |
+| Safari | 12+ |
+| Edge | 79+ |
+| Opera | 47+ |
+
+### Required Features
+- ES6 modules support
+- Fetch API
+- FileReader API
+- Drag and Drop API
+
+## Use Cases and Target Audience
+
+### Perfect For:
+- **Web developers** building file upload functionality
+- **SaaS applications** requiring user content uploads
+- **Content management systems** with media upload needs
+- **E-commerce platforms** for product image uploads
+- **Documentation sites** with file attachment features
+
+### Common Implementations:
+- Profile picture uploads
+- Document submission forms
+- Media galleries
+- File sharing applications
+- Backup and storage solutions
+
+## Architecture Overview
+
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Your Web App  │    │  ImaginaryWidget │    │ ImaginaryStore  │
+│                 │    │                  │    │    Backend      │
+│  ┌───────────┐  │    │  ┌─────────────┐ │    │                 │
+│  │   HTML    │──┼────┼─▶│    Core     │─┼────┼─▶ File Storage  │
+│  │   Page    │  │    │  │   Logic     │ │    │                 │
+│  └───────────┘  │    │  └─────────────┘ │    │                 │
+│                 │    │  ┌─────────────┐ │    │                 │
+│                 │    │  │     UI      │ │    │                 │
+│                 │    │  │  Component  │ │    │                 │
+│                 │    │  └─────────────┘ │    │                 │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+```
+
+## Getting Started
+
+Ready to integrate ImaginaryWidget? Check out our [Quick Start Guide](/docs/upload-widget/quick-start) for a 5-minute setup, or jump to [Installation](/docs/upload-widget/installation) for detailed setup options.
+
+## Need Help?
+
+- 📖 Browse the complete [API Reference](/docs/upload-widget/api-reference)
+- 🔧 Check [Troubleshooting](/docs/upload-widget/troubleshooting) for common issues
+- 💡 View [Examples](/docs/upload-widget/examples) for real-world implementations
